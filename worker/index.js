@@ -30,6 +30,16 @@ const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
 let SUBREQ = 0, SUBREQ_CAP = 45;
 const budgetLeft = () => SUBREQ_CAP - SUBREQ;
 
+// Run an async fn over items with bounded concurrency (keeps wall-clock low without
+// firing all subrequests at once). Used for the heavy per-team / per-player loops.
+async function pmap(items, fn, concurrency = 8) {
+  let i = 0;
+  const workers = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
+    while (i < items.length) { const idx = i++; await fn(items[idx]); }
+  });
+  await Promise.all(workers);
+}
+
 // ── tiny API client (rate-limit aware) ──
 // API-Football returns HTTP 200 with {errors:{rateLimit:"..."}} when the per-minute
 // cap is exceeded. We back off and retry a few times (the per-minute window resets
@@ -193,9 +203,9 @@ async function buildClubWatch(env, cfg, teams, players, remainingFixtures, prevC
   const wcPlayerIds = new Set();
   for (const code of Object.keys(teams)) (teams[code].squad || []).forEach((id) => wcPlayerIds.add(String(id)));
   const clubWatch = {};
-  for (const [slug, club] of Object.entries(cfg.clubs)) {
+  await pmap(Object.entries(cfg.clubs), async ([slug, club]) => {
     // Under a tight budget, keep the previous entry rather than dropping the club.
-    if (budgetLeft() <= 1 && prevClubWatch[slug]) { clubWatch[slug] = prevClubWatch[slug]; continue; }
+    if (budgetLeft() <= 1 && prevClubWatch[slug]) { clubWatch[slug] = prevClubWatch[slug]; return; }
     let squad = [];
     try {
       const resp = await apiGet(env, "/players/squads", { team: club.id });
@@ -216,7 +226,7 @@ async function buildClubWatch(env, cfg, teams, players, remainingFixtures, prevC
     for (const p of ps) if (p.nextFixture && (!nextAction || p.nextFixture.kickoff < nextAction.kickoff))
       nextAction = { playerId: p.playerId, nation: p.nation, ...p.nextFixture };
     clubWatch[slug] = { name: club.name, players: ps, nextAction };
-  }
+  }, 6);
   return clubWatch;
 }
 
@@ -387,26 +397,26 @@ function sumCardBuckets(obj) {
 async function enrichTeamStats(env, base, teams, groups) {
   const rowByCode = {};
   for (const rows of Object.values(groups)) for (const r of rows) rowByCode[r.code] = r;
-  for (const t of Object.values(teams)) {
-    if (!t._id) continue;
-    if (budgetLeft() <= 2) break;                          // resume next poll
+  const todo = Object.values(teams).filter((t) => t._id).slice(0, Math.max(0, budgetLeft() - 2));
+  await pmap(todo, async (t) => {
     try {
       const s = await apiGet(env, "/teams/statistics", { ...base, team: t._id });
       const st = Array.isArray(s) ? s[0] : s;     // /teams/statistics returns an object
-      if (!st) continue;
+      if (!st) return;
       const y = sumCardBuckets(st.cards?.yellow), r = sumCardBuckets(st.cards?.red);
       t.cleanSheets = st.clean_sheet?.total ?? t.cleanSheets;
       t.formStr = st.form || t.formStr;
       if (rowByCode[t.code]) { rowByCode[t.code].yellow = y; rowByCode[t.code].red = r; }
     } catch { /* leave defaults */ }
-  }
+  });
 }
 
 // ── nation squads (fetched once, then persisted) → teams[].squad + clubWatch join ──
 async function ensureNationSquads(env, base, teams, players) {
-  for (const t of Object.values(teams)) {
-    if (!t._id || (t.squad && t.squad.length)) continue;   // already have it (persisted)
-    if (budgetLeft() <= 2) break;                          // resume next poll
+  const todo = Object.values(teams)
+    .filter((t) => t._id && !(t.squad && t.squad.length))   // missing squads only (persisted)
+    .slice(0, Math.max(0, budgetLeft() - 2));
+  await pmap(todo, async (t) => {
     try {
       const resp = await apiGet(env, "/players/squads", { team: t._id });
       const squad = resp?.[0]?.players || [];
@@ -422,7 +432,7 @@ async function ensureNationSquads(env, base, teams, players) {
         if (!players[id].code) players[id].code = t.code;
       }
     } catch { /* nation squad not published yet — fine */ }
-  }
+  });
 }
 
 // Which players are worth a deep drill-in? Leaderboards + Player-Watch + recent XIs.
@@ -441,13 +451,11 @@ function curatedPlayerIds({ scorers, assists, discipline, prev, matches }) {
 // ── deep player drill-in: stats per competition + bio + transfers + trophies ──
 // Profiles/transfers/trophies are static-ish → fetched once per player and persisted.
 // Capped per poll so cost stays bounded; the set fills in over successive polls.
-async function enrichPlayers(env, base, ids, players, cfg, dir, cap = 25) {
-  let budget = cap;
-  for (const id of ids) {
-    if (budget <= 0 || budgetLeft() <= 6) break;   // each player = ~3 subrequests
+async function enrichPlayers(env, base, ids, players, cfg, dir, cap = 60) {
+  const todo = [...ids].filter((id) => !players[id]?._enriched)
+    .slice(0, Math.min(cap, Math.floor(Math.max(0, budgetLeft() - 6) / 3)));   // ~3 subrequests each
+  await pmap(todo, async (id) => {
     const existing = players[id];
-    if (existing?._enriched) continue;       // done already (persisted)
-    budget--;
     try {
       const statsResp = await apiGet(env, "/players", { id, season: base.season });
       const rec = normPlayer(statsResp, cfg.league, dir) || {};
@@ -464,7 +472,7 @@ async function enrichPlayers(env, base, ids, players, cfg, dir, cap = 25) {
       } catch {}
       players[id] = { ...(existing || {}), ...rec, career, honours, _enriched: true };
     } catch { /* skip this player this round */ }
-  }
+  }, 8);
 }
 function normPlayer(resp, leagueId, dir) {
   const p = resp?.[0]; if (!p) return null;
