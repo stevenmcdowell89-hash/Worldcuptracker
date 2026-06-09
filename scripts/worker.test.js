@@ -182,3 +182,10 @@ test("bracket built with full structure", () => {
   assert.equal(snap.bracket.matches.filter((m) => m.rd === "R32").length, 16);
   assert.equal(snap.bracket.matches.length, 31);
 });
+
+test("tight subrequest budget degrades gracefully (no crash)", async () => {
+  globalThis.fetch = async (url) => ({ ok: true, status: 200, json: async () => ({ response: cannedFetch(url) }) });
+  const s = await buildSnapshot({ APIFOOTBALL_KEY: "t", WC_LEAGUE_ID: "1", WC_SEASON: "2026", SUBREQUEST_BUDGET: "5" }, null, false);
+  assert.equal(Object.keys(s.groups).length, 2);          // core still works under a tiny budget
+  assert.ok(typeof s.meta.squadCount === "number");       // no throw; just fewer enriched
+});

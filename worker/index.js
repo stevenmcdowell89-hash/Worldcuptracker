@@ -23,11 +23,19 @@ const META_KEY = "poll-meta";
 
 const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
 
+// Subrequest budget. Cloudflare Workers cap subrequests per invocation (50 on the
+// free plan, 1000 on paid). A full poll wants ~110 calls, so we count them and let
+// the enrichment steps stop before the cap — squads/stats fill in over several polls
+// (squads persist once fetched). Reset at the start of each buildSnapshot.
+let SUBREQ = 0, SUBREQ_CAP = 45;
+const budgetLeft = () => SUBREQ_CAP - SUBREQ;
+
 // ── tiny API client (rate-limit aware) ──
 // API-Football returns HTTP 200 with {errors:{rateLimit:"..."}} when the per-minute
 // cap is exceeded. We back off and retry a few times (the per-minute window resets
 // each minute) so a burst of live calls degrades gracefully instead of throwing.
 async function apiGet(env, path, params = {}, attempt = 0) {
+  if (attempt === 0) SUBREQ++;
   const url = new URL(API + path);
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
   const r = await fetch(url, { headers: { "x-apisports-key": env.APIFOOTBALL_KEY } });
@@ -181,11 +189,13 @@ function normStats(resp) {
 }
 
 // ── Player Watch join: club squad × WC nation rosters (brief §7a) ──
-async function buildClubWatch(env, cfg, teams, players, remainingFixtures) {
+async function buildClubWatch(env, cfg, teams, players, remainingFixtures, prevClubWatch = {}) {
   const wcPlayerIds = new Set();
   for (const code of Object.keys(teams)) (teams[code].squad || []).forEach((id) => wcPlayerIds.add(String(id)));
   const clubWatch = {};
   for (const [slug, club] of Object.entries(cfg.clubs)) {
+    // Under a tight budget, keep the previous entry rather than dropping the club.
+    if (budgetLeft() <= 1 && prevClubWatch[slug]) { clubWatch[slug] = prevClubWatch[slug]; continue; }
     let squad = [];
     try {
       const resp = await apiGet(env, "/players/squads", { team: club.id });
@@ -217,6 +227,8 @@ async function buildClubWatch(env, cfg, teams, players, remainingFixtures) {
 export async function buildSnapshot(env, prev, liveOnly) {
   const cfg = CFG(env);
   const base = { league: cfg.league, season: cfg.season };
+  SUBREQ = 0;
+  SUBREQ_CAP = parseInt(env.SUBREQUEST_BUDGET || "45", 10);   // < the plan's per-invocation cap
 
   // Team directory (id → code/name/logo) — standings/fixtures lack the 3-letter code.
   const dir = await buildTeamDir(env, base);
@@ -263,8 +275,10 @@ export async function buildSnapshot(env, prev, liveOnly) {
       discipline = normDiscipline(y, r, dir);
     } catch {}
     ({ teams, players } = buildTeamsAndPlayers(groups, prev));
+    // Priority order under the subrequest budget: squads (Watch + team rosters) first
+    // — they persist once fetched — then team aggregates, then deep player drill-in.
+    try { await ensureNationSquads(env, base, teams, players); } catch {}
     try { await enrichTeamStats(env, base, teams, groups); } catch {}   // aggregates + fair-play cards
-    try { await ensureNationSquads(env, base, teams, players); } catch {}  // squads (once) → clubWatch + team squad
     try { await enrichPlayers(env, base, curatedPlayerIds({ scorers, assists, discipline, prev, matches }), players, cfg, dir); } catch {}
   }
 
@@ -277,7 +291,7 @@ export async function buildSnapshot(env, prev, liveOnly) {
   annotateProgression(matches, groups, remainingFixtures, teams, race);
 
   if (!liveOnly) {
-    try { clubWatch = await buildClubWatch(env, cfg, teams, players, remainingFixtures); } catch {}
+    try { clubWatch = await buildClubWatch(env, cfg, teams, players, remainingFixtures, prev?.clubWatch || {}); } catch {}
   }
   for (const m of matches) { delete m._homeId; delete m._awayId; delete m._final; }  // strip internals
   for (const g of Object.keys(groups)) groups[g].forEach((r) => delete r._id);
@@ -375,6 +389,7 @@ async function enrichTeamStats(env, base, teams, groups) {
   for (const rows of Object.values(groups)) for (const r of rows) rowByCode[r.code] = r;
   for (const t of Object.values(teams)) {
     if (!t._id) continue;
+    if (budgetLeft() <= 2) break;                          // resume next poll
     try {
       const s = await apiGet(env, "/teams/statistics", { ...base, team: t._id });
       const st = Array.isArray(s) ? s[0] : s;     // /teams/statistics returns an object
@@ -390,7 +405,8 @@ async function enrichTeamStats(env, base, teams, groups) {
 // ── nation squads (fetched once, then persisted) → teams[].squad + clubWatch join ──
 async function ensureNationSquads(env, base, teams, players) {
   for (const t of Object.values(teams)) {
-    if (!t._id || (t.squad && t.squad.length)) continue;   // already have it
+    if (!t._id || (t.squad && t.squad.length)) continue;   // already have it (persisted)
+    if (budgetLeft() <= 2) break;                          // resume next poll
     try {
       const resp = await apiGet(env, "/players/squads", { team: t._id });
       const squad = resp?.[0]?.players || [];
@@ -428,7 +444,7 @@ function curatedPlayerIds({ scorers, assists, discipline, prev, matches }) {
 async function enrichPlayers(env, base, ids, players, cfg, dir, cap = 25) {
   let budget = cap;
   for (const id of ids) {
-    if (budget <= 0) break;
+    if (budget <= 0 || budgetLeft() <= 6) break;   // each player = ~3 subrequests
     const existing = players[id];
     if (existing?._enriched) continue;       // done already (persisted)
     budget--;
@@ -608,7 +624,8 @@ export default {
         return new Response(JSON.stringify({
           ok: true, updated: snap.meta.updated, groups: Object.keys(snap.groups).length,
           matches: snap.matches.length, remaining: snap.remainingFixtures.length,
-          squadCount: snap.meta.squadCount, players: Object.keys(snap.players || {}).length, clubWatch,
+          squadCount: snap.meta.squadCount, players: Object.keys(snap.players || {}).length,
+          subrequests: SUBREQ, budget: SUBREQ_CAP, clubWatch,
         }, null, 2), { headers: { "content-type": "application/json" } });
       } catch (e) {
         return new Response(JSON.stringify({ ok: false, error: e.message }), { status: 500, headers: { "content-type": "application/json" } });
