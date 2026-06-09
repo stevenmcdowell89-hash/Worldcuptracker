@@ -3,6 +3,7 @@
 // rows, the one-liner on match pages, the verdict chip on team pages (brief §7).
 
 import { state, colour, teamName, player, flag, statusChip, fmtTime, fmtDay, countdown, gd } from "./data.js";
+import { qualifyOutlook } from "./engine.js";
 
 const S = () => state.snap;
 
@@ -19,7 +20,7 @@ function compactRaceCard() {
     </div>${t.rank === 8 ? cutLineHTML() : ""}`;
   }).join("");
   return `<div class="racecard">
-    <div class="head"><h3>Race for the last 8</h3><span class="go" data-nav="race">Full table ›</span></div>
+    <div class="head"><h3>Third-place race <span class="faint" style="font-weight:600;text-transform:none">· 8 of 12 reach R32</span></h3><span class="go" data-nav="race">Full table ›</span></div>
     <div class="cutlist">${rows}</div>
   </div>`;
 }
@@ -35,9 +36,10 @@ function matchRow(m) {
   else if (ft) mid = `<span class="score">${m.home.score}–${m.away.score}</span><span class="ko">FT</span>`;
   else mid = `<span class="ko">${fmtTime(m.kickoff)}</span>`;
   const stageLabel = m.group ? `Group ${m.group}` : (m.stage && m.stage !== "Group Stage" ? m.stage : "");
+  // A stake tag only when this game can actually decide a team's qualification.
   const meta = `<div class="match-meta">
       ${stageLabel ? `<span class="grp-pill">${stageLabel}</span>` : ""}
-      ${m.affectsCut ? `<span class="race-tag">● could shape the last-8 race</span>` : ""}
+      ${m.affectsCut ? `<span class="race-tag">● qualification on the line</span>` : ""}
     </div>`;
   return `<div class="match-card">
     <div class="match clickable" data-nav="match/${m.id}">
@@ -152,28 +154,40 @@ export function renderBracket(ctx) {
   const tab = ctx.query.get("r") || "R32";
   const tabBar = `<div class="tabs">${b.rounds.map((r) =>
     `<button data-nav="bracket?r=${r}" data-replace class="${r === tab ? "active" : ""}">${r}</button>`).join("")}</div>`;
-  const banner = !done
-    ? `<div class="banner">🔒 Teams are placeholders until the group stage finishes. Third-place slots then resolve via FIFA's Annex C allocation.</div>` : "";
+  const legend = !done
+    ? `<div class="bx-legend">Teams shown are <b>as it stands</b>. <span class="bx-dot solid"></span> locked in · <span class="bx-dot prov"></span> current leader (can still change) · ✓ already qualified</div>`
+    : "";
 
   const teamSide = (s) => {
     if (!s) return `<div class="bx-team ph"><span class="nm">TBD</span></div>`;
-    if (s.code) return `<div class="bx-team clickable" data-nav="team/${s.code}">${flag(s.code)}
-        <span class="nm">${teamName(s.code)}</span>${s.pos ? `<span class="bx-pos">${s.pos}</span>` : ""}
-        <span class="sc">${s.score ?? ""}</span></div>`;
+    if (s.code) {
+      // locked = the group is finished; otherwise this is the current occupant. A ✓
+      // marks a team already through even if its exact slot can still shift.
+      const qualified = !done && qualifyOutlook(S(), s.code, state.annexC).status === "qualified";
+      const cls = done ? "locked" : "prov";
+      return `<div class="bx-team ${cls} clickable" data-nav="team/${s.code}">${flag(s.code)}
+        <span class="nm">${teamName(s.code)}</span>${qualified ? `<span class="bx-q">✓</span>` : ""}
+        ${s.pos ? `<span class="bx-pos">${s.pos}</span>` : ""}<span class="sc">${s.score ?? ""}</span></div>`;
+    }
     const third = !!s.thirdPlaceSlot;
     return `<div class="bx-team ph ${third ? "third" : ""}">
         <span class="nm">${third ? "3rd place" : (s.label || "TBD")}</span>
         <span class="bx-pos">${third ? s.thirdPlaceSlot.join("/") : (s.pos || "")}</span></div>`;
   };
   const hasMatch = (id) => (S().matches || []).some((x) => x.id === id);
+  // Order so the two matches feeding the same next-round tie sit side by side (the
+  // 2-up grid then reads like a bracket).
   const ms = b.matches.filter((m) => m.rd === tab);
-  const list = ms.map((m) => `<div class="bx" ${hasMatch(m.id) ? `data-nav="match/${m.id}"` : ""}>
+  const byNext = {};
+  ms.forEach((m) => { const k = m.next || m.id; (byNext[k] = byNext[k] || []).push(m); });
+  const ordered = Object.values(byNext).flat();
+  const list = ordered.map((m) => `<div class="bx" ${hasMatch(m.id) ? `data-nav="match/${m.id}"` : ""}>
       <div class="bx-head"><span class="bx-no">Match ${m.id}</span></div>
       ${teamSide(m.a)}<div class="bx-v"><span>vs</span></div>${teamSide(m.b)}
     </div>`).join("");
 
-  return { title: "Bracket", html: tabBar + banner +
-    `<div class="bx-round">${ROUND_DESC[tab] || tab}</div><div class="bxwrap">${list}</div>` };
+  return { title: "Bracket", html: tabBar +
+    `<div class="bx-round">${ROUND_DESC[tab] || tab}</div>${legend}<div class="bxwrap">${list}</div>` };
 }
 
 // ── Watch (club tracker) ──
@@ -313,12 +327,14 @@ export function renderTeam(ctx) {
   const t = S().teams?.[code];
   if (!t) return { title: code, html: emptyState("Team not found") };
   const c = colour(code);
-  const v = t.verdict || raceStatus(code) || "in";
+  const outlook = qualifyOutlook(S(), code, state.annexC);
+  const v = outlook.status;
   const tab = ctx.query.get("t") || "overview";
 
   const hero = `<div class="hero" style="background:linear-gradient(135deg, ${c.primary}, ${c.secondary})">
     <div class="top">${flag(code, "crest")}<div><h1>${t.name}</h1><div class="meta">Group ${t.group}${t.coach && t.coach !== "—" ? ` · ${t.coach}` : ""}</div></div></div>
     <div style="margin-top:10px">${statusChip(v)}</div>
+    <div class="hero-outlook">${outlook.line}</div>
     <div class="agg">
       <div><div class="v">${t.W}-${t.D}-${t.L}</div><div class="k">W-D-L</div></div>
       <div><div class="v">${t.GF}:${t.GA}</div><div class="k">For:Ag</div></div>

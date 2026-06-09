@@ -13,7 +13,7 @@
 // The shared engine pre-derives the third-place race & verdicts so the snapshot is
 // engine-ready and the frontend renders instantly.
 
-import { thirdPlaceTable, recompute, verdicts, compareGroupRows, plainEnglish } from "../web/js/engine.js";
+import { thirdPlaceTable, recompute, verdicts, compareGroupRows, qualifyOutlook } from "../web/js/engine.js";
 import { buildBracket } from "../web/js/bracket.js";
 import ANNEXC from "../web/js/annexC.data.js";
 
@@ -512,24 +512,23 @@ function applyTeamVerdicts(teams, groups, race) {
   }
 }
 
-// ── woven-in progression: flag only matches that genuinely bear on qualification,
-// and only once the tournament is under way (pre-tournament nothing is decided). ──
+// ── woven-in progression: flag a group match only when it can actually decide a
+// team's qualification, and only once the tournament is under way. The one-liner uses
+// the full qualification outlook (top-two OR third place), not just the third-place race. ──
 function annotateProgression(matches, groups, remainingFixtures, teams, race, anyPlayed) {
-  const contender = new Set(race.map((t) => t.code));
-  const posByCode = {};
-  for (const rows of Object.values(groups)) rows.forEach((r, i) => (posByCode[r.code] = i + 1));
   const engineSnap = { groups, remainingFixtures, teams };
+  const outlookCache = {};
+  const outlook = (code) => (outlookCache[code] = outlookCache[code] || qualifyOutlook(engineSnap, code, ANNEXC));
   for (const m of matches) {
     m.affectsCut = false;
-    if (!anyPlayed || m.stage !== "Group Stage") continue;
-    // A match bears on the third-place cut only if a side is currently 3rd/4th (the
-    // bubble) AND it's a third-place contender's group — not "every group game".
+    if (!anyPlayed || m.stage !== "Group Stage" || m.status === "ft") continue;
     const codes = [m.home.code, m.away.code];
-    const onBubble = codes.some((c) => contender.has(c) && (posByCode[c] === 3 || posByCode[c] === 4));
-    m.affectsCut = onBubble;
-    if (onBubble && (m.status === "live" || m.status === "ht")) {
-      const focus = codes.find((c) => contender.has(c)) || codes[0];
-      try { m.progressionLine = plainEnglish(engineSnap, focus, ANNEXC); } catch {}
+    // "On the line" = a side's place is genuinely undecided (not already through/out).
+    const live = codes.map(outlook).filter((o) => o.status === "sweating" || o.status === "in" || o.status === "out");
+    m.affectsCut = live.length > 0;
+    if (m.affectsCut && (m.status === "live" || m.status === "ht")) {
+      const focus = codes.find((c) => outlook(c).status === "sweating") || codes[0];
+      m.progressionLine = outlook(focus).line;
     }
   }
 }
@@ -552,23 +551,29 @@ async function writeSnapshot(env, snap) { await env.SNAPSHOT.put(KV_KEY, JSON.st
 
 // Background full poll (used by /admin/refresh). Writes the snapshot + a small
 // "refresh-status" summary so the next request can report what happened.
+// Background full poll. Returns a summary AND writes it to "refresh-status". Holds a
+// short lock so concurrent triggers don't stack and blow the API per-minute limit.
 async function runRefresh(env) {
   const lock = await env.SNAPSHOT.get("refresh-lock");
-  if (lock && Date.now() - +lock < 120000) return;   // a run is already in progress — don't stack
+  if (lock && Date.now() - +lock < 120000) return { busy: true, note: "A refresh is already running — try again in ~30s." };
   await env.SNAPSHOT.put("refresh-lock", String(Date.now()), { expirationTtl: 120 });
   try {
     const snap = await buildSnapshot(env, await readSnapshot(env), false);
     await writeSnapshot(env, snap);
     await env.SNAPSHOT.put(META_KEY, JSON.stringify({ lastFull: Date.now(), lastLive: Date.now() }));
     const clubWatch = Object.fromEntries(Object.entries(snap.clubWatch || {}).map(([k, c]) => [k, c.players.length]));
-    await env.SNAPSHOT.put("refresh-status", JSON.stringify({
+    const summary = {
       ok: true, finished: new Date().toISOString(), groups: Object.keys(snap.groups).length,
       matches: snap.matches.length, remaining: snap.remainingFixtures.length,
       squadCount: snap.meta.squadCount, players: Object.keys(snap.players || {}).length,
       subrequests: SUBREQ, budget: SUBREQ_CAP, clubWatch,
-    }));
+    };
+    await env.SNAPSHOT.put("refresh-status", JSON.stringify(summary));
+    return summary;
   } catch (e) {
-    await env.SNAPSHOT.put("refresh-status", JSON.stringify({ ok: false, finished: new Date().toISOString(), error: e.message }));
+    const err = { ok: false, finished: new Date().toISOString(), error: e.message, subrequests: SUBREQ };
+    await env.SNAPSHOT.put("refresh-status", JSON.stringify(err));
+    return err;
   } finally {
     await env.SNAPSHOT.delete("refresh-lock");
   }
@@ -651,20 +656,17 @@ export default {
       return new Response(JSON.stringify(out, null, 2), { headers: { "content-type": "application/json" } });
     }
 
-    // Trigger a full poll in the BACKGROUND and return immediately (the build makes
-    // ~110 API calls and can ride out per-minute rate limits without timing out the
-    // request). Returns the previous run's summary; re-hit after ~30s for fresh data.
+    // Trigger a full poll. The build runs to completion via waitUntil even if the
+    // client disconnects (writing KV + refresh-status); if the client stays connected
+    // it also gets the summary directly. Re-hit to read the last result any time.
     if (path === "/admin/refresh") {
       if (env.DEBUG_TOKEN && url.searchParams.get("t") !== env.DEBUG_TOKEN) {
         return new Response(JSON.stringify({ error: "forbidden" }), { status: 403, headers: { "content-type": "application/json" } });
       }
-      ctx.waitUntil(runRefresh(env));
-      const last = await env.SNAPSHOT.get("refresh-status");
-      return new Response(JSON.stringify({
-        started: true,
-        note: "Refresh running in the background. Re-open this URL (or /data/latest.json) in ~30s.",
-        lastRun: last ? JSON.parse(last) : null,
-      }, null, 2), { headers: { "content-type": "application/json" } });
+      const work = runRefresh(env);
+      ctx.waitUntil(work);
+      let res; try { res = await work; } catch (e) { res = { ok: false, error: String(e && e.message || e) }; }
+      return new Response(JSON.stringify(res, null, 2), { headers: { "content-type": "application/json" } });
     }
 
     // Everything else: the static /web app.

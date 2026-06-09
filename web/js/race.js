@@ -6,7 +6,7 @@
 // already tell the story without the what-if complexity.)
 
 import { state, teamName, flag, statusChip, gd } from "./data.js";
-import { resolve, verdicts, plainEnglish, QUALIFY_COUNT } from "./engine.js";
+import { resolve, verdicts, qualifyOutlook, QUALIFY_COUNT } from "./engine.js";
 
 const S = () => state.snap;
 
@@ -53,18 +53,23 @@ export function renderRace() {
         <span class="pts">${t.Pts}</span><span class="gd">${gd(t.GD)}</span>
       </div>${line}`;
   }).join("");
-  const cutCard = `<div class="racecard"><div class="head"><h3>Race for the last 8</h3>
-      <span class="go" style="color:var(--muted)">best 8 of 12 advance</span></div>
+  const cutCard = `<div class="sec-head"><h2>Third-place race</h2><span class="faint" style="font-size:12px;font-weight:600">8 of 12 reach the R32</span></div>
+      <div class="racecard"><div class="head"><h3>The 12 third-placed teams</h3>
+      <span class="go" style="color:var(--muted)">best 8 go through</span></div>
       <div class="cutlist">${rows}</div></div>
-      <div class="updated">${started ? "The 12 group third-placed teams, ranked. The dashed line is the cut." : "Provisional order — no games played yet."}</div>`;
+      <div class="updated">${started ? "Ranked by points, then goal difference, goals scored, fair play. The dashed line is the cut." : "Provisional order — no games played yet."}</div>`;
 
-  // plain-English: teams on the bubble first, else the teams nearest the line. The
-  // status chip is only meaningful once games are played.
-  const focus = table.filter((t) => byStatus[t.code] === "sweating").slice(0, 6);
-  const peList = (focus.length ? focus : table.slice(5, 9)).map((t) => `
-    <div class="pe"><div class="who clickable" data-nav="team/${t.code}">${flag(t.code)}<span class="nm">${teamName(t.code)}</span>${started ? statusChip(byStatus[t.code] || "in") : ""}</div>
-      <p>${plainEnglish(S(), t.code, state.annexC)}</p></div>`).join("");
+  // "What does my team need?" — full qualification outlook (top-2 OR third place),
+  // worded honestly. Shown for the teams whose place is genuinely undecided.
+  const all = [];
+  for (const g of Object.keys(S().groups)) for (const r of S().groups[g]) {
+    const o = qualifyOutlook(S(), r.code, state.annexC);
+    if (o.status === "sweating" || o.status === "in" || o.status === "out") all.push({ code: r.code, ...o });
+  }
+  const peList = (all.length ? all.slice(0, 10) : table.slice(5, 9).map((t) => ({ code: t.code, ...qualifyOutlook(S(), t.code, state.annexC) })))
+    .map((o) => `<div class="pe"><div class="who clickable" data-nav="team/${o.code}">${flag(o.code)}<span class="nm">${teamName(o.code)}</span>${started ? statusChip(o.status) : ""}</div>
+      <p>${o.line}</p></div>`).join("");
   const peCard = `<div class="sec-head"><h2>What does my team need?</h2></div><div class="block">${peList}</div>`;
 
-  return { title: "Race", html: preBanner + cutCard + peCard + annexCHandoff(out) };
+  return { title: "Race", html: preBanner + peCard + cutCard + annexCHandoff(out) };
 }

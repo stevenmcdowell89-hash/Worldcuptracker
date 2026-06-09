@@ -3,7 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   discPoints, compareGroupRows, compareThird, recompute, thirdPlaceTable,
-  qualifiersFrom, resolve, verdicts, plainEnglish, resultFromWDL, annexCSlots,
+  qualifiersFrom, resolve, verdicts, plainEnglish, resultFromWDL, annexCSlots, qualifyOutlook,
 } from "./engine.js";
 
 function gr(code, Pts, GD, GF, y = 0, r = 0) {
@@ -106,6 +106,58 @@ test("annexCSlots looks up by sorted group key", () => {
   const annexC = { combinations: { ABCDEFGH: { A: "r32-1", B: "r32-2" } } };
   const slots = annexCSlots(["H", "A", "C", "B", "E", "D", "G", "F"], annexC);
   assert.equal(slots.A, "r32-1");
+});
+
+// ── qualification outlook: whole-picture narrative across real scenarios ──
+const rem = (id, g, h, a) => ({ id, group: g, home: h, away: a, kickoff: "", affectsThird: true });
+const gr0 = (code) => ({ code, name: code, P: 0, W: 0, D: 0, L: 0, GF: 0, GA: 0, GD: 0, Pts: 0, yellow: 0, red: 0 });
+
+test("outlook: pre-tournament is honest, no false certainty", () => {
+  const s = { groups: { A: ["AA", "BB", "CC", "DD"].map(gr0) }, remainingFixtures: [rem("f1", "A", "AA", "BB")], teams: { AA: { name: "Argentina" } } };
+  const o = qualifyOutlook(s, "AA");
+  assert.match(o.line, /hasn't kicked off|all to play for/);
+});
+
+test("outlook: clinched top two → through", () => {
+  const s = {
+    groups: { A: [gr("AA", 6, 3, 5), gr("BB", 6, 2, 4), gr("CC", 0, -2, 1), gr("DD", 0, -3, 0)] },
+    remainingFixtures: [rem("f1", "A", "AA", "BB"), rem("f2", "A", "CC", "DD")], teams: {},
+  };
+  const o = qualifyOutlook(s, "AA");
+  assert.equal(o.status, "qualified");
+  assert.match(o.line, /Round of 32|through/i);
+});
+
+test("outlook: can't be caught from the bottom → eliminated", () => {
+  const s = {
+    groups: { A: [gr("BB", 6, 3, 5), gr("CC", 6, 2, 4), gr("DD", 4, 1, 3), gr("AA", 0, -6, 0)] },
+    remainingFixtures: [rem("f1", "A", "AA", "BB"), rem("f2", "A", "CC", "DD")], teams: {},
+  };
+  const o = qualifyOutlook(s, "AA");
+  assert.equal(o.status, "eliminated");
+  assert.match(o.line, /can no longer/i);
+});
+
+test("outlook: a draw is enough → 'in' and the sentence says so", () => {
+  // AA draw vs CC always keeps a top-3 spot, but a defeat (with DD beating BB) drops
+  // AA to last → not yet guaranteed, so the honest line is "a draw is enough".
+  const s = {
+    groups: { A: [gr("BB", 6, 3, 5), gr("AA", 4, 1, 3), gr("CC", 3, 0, 2), gr("DD", 3, 0, 2)] },
+    remainingFixtures: [rem("f1", "A", "AA", "CC"), rem("f2", "A", "BB", "DD")], teams: {},
+  };
+  const o = qualifyOutlook(s, "AA");
+  assert.equal(o.status, "in");
+  assert.match(o.line, /draw/i);
+});
+
+test("outlook: finished group winner is stated definitively", () => {
+  const s = {
+    groups: { A: [gr("AA", 7, 4, 6), gr("BB", 4, 1, 3), gr("CC", 4, 0, 2), gr("DD", 1, -5, 1)] },
+    remainingFixtures: [], teams: {},
+  };
+  const o = qualifyOutlook(s, "AA");
+  assert.equal(o.status, "qualified");
+  assert.match(o.line, /won Group A/i);
 });
 
 test("resultFromWDL gives default margins and flags non-exact", () => {

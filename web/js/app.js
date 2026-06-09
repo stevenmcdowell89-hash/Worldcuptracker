@@ -64,8 +64,8 @@ function renderAppbar(route, ctx) {
 
 function renderNav(activeTab) {
   $nav.innerHTML = TABS.map((t) =>
-    `<a data-nav="${t.id}" class="${t.id === activeTab ? "active" : ""}">
-       <span class="ico">${t.ico}</span><span>${t.label}</span></a>`).join("");
+    `<button type="button" data-nav="${t.id}" class="${t.id === activeTab ? "active" : ""}">
+       <span class="ico">${t.ico}</span><span>${t.label}</span></button>`).join("");
 }
 
 function render(opts = {}) {
@@ -85,21 +85,25 @@ function render(opts = {}) {
   renderNav(route.tab);
   $screen.innerHTML = result.html;
   $screen.scrollTop = 0;                 // scroll the content area only (not the window)
-  if (opts.animate !== false) {          // subtle enter transition
-    $screen.classList.remove("entering");
-    void $screen.offsetWidth;            // reflow to retrigger
-    $screen.classList.add("entering");
+  if (opts.animate !== false && $screen.animate) {   // visible enter transition (WAAPI is reliable)
+    $screen.animate(
+      [{ opacity: 0, transform: `translateX(${navDir * 26}px)` }, { opacity: 1, transform: "none" }],
+      { duration: 260, easing: "cubic-bezier(.2,.75,.25,1)" },
+    );
+    navDir = 1;
   }
   if (result.mount) result.mount($screen);
 }
 
 // ── global interactions ──
+let navDir = 1;   // 1 = forward (slide in from right), -1 = back (from left)
 document.addEventListener("click", (e) => {
   const back = e.target.closest("[data-back]");
-  if (back) { history.length > 1 ? history.back() : navigate("matches"); return; }
+  if (back) { navDir = -1; history.length > 1 ? history.back() : navigate("matches"); return; }
   const nav = e.target.closest("[data-nav]");
-  if (nav) { navigate(nav.dataset.nav, nav.hasAttribute("data-replace")); return; }
+  if (nav) { navDir = 1; navigate(nav.dataset.nav, nav.hasAttribute("data-replace")); return; }
 });
+window.addEventListener("popstate", () => { navDir = -1; });
 
 window.addEventListener("hashchange", render);
 window.addEventListener("wc-toast", (e) => toast(e.detail));

@@ -268,7 +268,7 @@ export function plainEnglish(snapshot, code, annexC = null) {
   const name = NAME(snapshot, code);
   // Nothing is decided until games are played — don't fabricate certainties.
   const played = GROUP_LETTERS.reduce((s, g) => s + (snapshot.groups[g] || []).reduce((a, r) => a + (r.P || 0), 0), 0);
-  if (played === 0) return `Group games haven't started — ${name}'s route to the last 8 is still wide open.`;
+  if (played === 0) return `Group games haven't started — ${name}'s route to the Round of 32 is still wide open.`;
 
   const fx = snapshot.remainingFixtures.find((f) => f.home === code || f.away === code);
   const v = verdicts(snapshot).find((t) => t.code === code);
@@ -292,11 +292,99 @@ export function plainEnglish(snapshot, code, annexC = null) {
   // guide to what their own result needs to do, not a locked-in guarantee.
   if (win && draw && loss) return `As it stands, ${name} are through against ${oppName} whatever the result.`;
   if (win && draw && !loss) return `As it stands, a draw against ${oppName} would be enough for ${name}; a defeat could open the door to others.`;
-  if (win && !draw && !loss) return `As it stands, ${name} would need to beat ${oppName} to make the last 8.`;
+  if (win && !draw && !loss) return `As it stands, ${name} would need to beat ${oppName} to reach the Round of 32.`;
   if (!win && !draw && !loss) return `As it stands, ${name} need other results to go their way — even beating ${oppName} may not be enough.`;
   if (win && !draw && loss) return `${name} largely control it against ${oppName}, but goal difference is tight.`;
   if (!win && draw && loss) return `${name}'s goal difference is on a knife-edge against ${oppName} — the margin matters.`;
   return `${name}'s game against ${oppName} is pivotal — the result swings their place in the race.`;
 }
 
-export default { resolve, verdicts, plainEnglish, recompute, thirdPlaceTable, qualifiersFrom, annexCSlots, resultFromWDL, GROUP_LETTERS, QUALIFY_COUNT };
+// ── qualification outlook (the honest, whole-picture narrative) ──────────────────
+// Covers the FULL route to the Round of 32: top two of a group qualify directly, the
+// best 8 of the 12 third-placed teams fill the rest, the bottom team is out. Returns
+// a 5-state status + a plain sentence about what the team's own next game does.
+// Other groups are held at their current standing for the third-place cut (an honest
+// "as it stands" projection, not a guarantee) — the sentences are worded accordingly.
+
+function groupOf(snapshot, code) {
+  for (const g of GROUP_LETTERS) if ((snapshot.groups[g] || []).some((r) => r.code === code)) return g;
+  return null;
+}
+function totalPlayed(snapshot) {
+  return GROUP_LETTERS.reduce((s, g) => s + (snapshot.groups[g] || []).reduce((a, r) => a + (r.P || 0), 0), 0);
+}
+function enumerateWDL(fixtures) {
+  let combos = [[]];
+  for (const f of fixtures) {
+    const next = [];
+    for (const c of combos) for (const o of ["W", "D", "L"]) next.push([...c, resultFromWDL(f, o)]);
+    combos = next;
+  }
+  return combos;
+}
+const teamOutcome = (res, code) =>
+  res.home === code ? (res.hg > res.ag ? "W" : res.hg < res.ag ? "L" : "D")
+                    : (res.ag > res.hg ? "W" : res.ag < res.hg ? "L" : "D");
+
+/** Does `code` reach the R32 given concrete results for its group's remaining games? */
+function reachesR32(snapshot, group, code, groupResults) {
+  const tables = recompute(snapshot, groupResults);   // sorts groups; other groups unchanged
+  const idx = tables[group].findIndex((r) => r.code === code);
+  if (idx <= 1) return true;        // top two: direct
+  if (idx === 3) return false;      // bottom: out
+  return qualifiersFrom(thirdPlaceTable(tables)).includes(code);  // 3rd: best-8 cut
+}
+
+export function qualifyOutlook(snapshot, code, annexC = null) {
+  const name = NAME(snapshot, code);
+  const group = groupOf(snapshot, code);
+  if (!group) return { status: "eliminated", line: `${name} are not in the tournament.` };
+  if (totalPlayed(snapshot) === 0)
+    return { status: "sweating", line: `The group stage hasn't kicked off — ${name}'s campaign is all to play for.` };
+
+  const groupRem = snapshot.remainingFixtures.filter((f) => f.group === group);
+
+  // Group already finished → state the definitive result.
+  if (!groupRem.length) {
+    const tables = recompute(snapshot, []);
+    const idx = tables[group].findIndex((r) => r.code === code);
+    if (idx === 0) return { status: "qualified", line: `${name} won Group ${group} and are into the Round of 32.` };
+    if (idx === 1) return { status: "qualified", line: `${name} finished runners-up in Group ${group} — through to the Round of 32.` };
+    if (idx === 3) return { status: "eliminated", line: `${name} finished bottom of Group ${group} and are out.` };
+    const through = qualifiersFrom(thirdPlaceTable(tables)).includes(code);
+    return through
+      ? { status: "qualified", line: `${name} squeezed through as one of the eight best third-placed teams.` }
+      : { status: "eliminated", line: `${name} finished third but missed the third-place cut — out.` };
+  }
+
+  // Too many permutations early on (cap for safety) → give a measured line.
+  if (groupRem.length > 4)
+    return { status: "sweating", line: `${name} are still in the mix in Group ${group} with plenty to play for.` };
+
+  const myNext = groupRem.find((f) => f.home === code || f.away === code);
+  const oppName = myNext ? NAME(snapshot, myNext.home === code ? myNext.away : myNext.home) : "";
+  const combos = enumerateWDL(groupRem);
+  const tally = { W: { q: 0, t: 0 }, D: { q: 0, t: 0 }, L: { q: 0, t: 0 } };
+  let qAll = 0;
+  for (const combo of combos) {
+    const q = reachesR32(snapshot, group, code, combo);
+    if (q) qAll++;
+    if (myNext) { const o = teamOutcome(combo.find((r) => r.id === myNext.id), code); tally[o].t++; if (q) tally[o].q++; }
+  }
+  if (qAll === combos.length) return { status: "qualified", line: `${name} are through to the Round of 32.` };
+  if (qAll === 0) return { status: "eliminated", line: `${name} can no longer reach the Round of 32.` };
+
+  const winSure = tally.W.t > 0 && tally.W.q === tally.W.t;
+  const drawSure = tally.D.t > 0 && tally.D.q === tally.D.t;
+  const lossAlive = tally.L.q > 0;
+  const winAlive = tally.W.q > 0;
+
+  if (!myNext) return { status: "sweating", line: `${name}'s fate hinges on the other games in Group ${group}.` };
+  if (drawSure && lossAlive) return { status: "in", line: `${name} reach the knockouts with at least a draw against ${oppName} — and might even survive a defeat.` };
+  if (drawSure) return { status: "in", line: `A draw against ${oppName} sends ${name} through; defeat would likely put them out.` };
+  if (winSure) return { status: "sweating", line: `${name} need to beat ${oppName} to be sure of going through.` };
+  if (winAlive) return { status: "sweating", line: `Even beating ${oppName} might not be enough for ${name} — they'll need other results to fall their way.` };
+  return { status: "out", line: `${name} can't make it on their own result against ${oppName} — they need help elsewhere.` };
+}
+
+export default { resolve, verdicts, plainEnglish, qualifyOutlook, recompute, thirdPlaceTable, qualifiersFrom, annexCSlots, resultFromWDL, GROUP_LETTERS, QUALIFY_COUNT };
