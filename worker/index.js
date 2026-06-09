@@ -564,6 +564,36 @@ export default {
     }
     if (path === "/healthz") return new Response("ok");
 
+    // Probe whether /players/squads returns data for a national team vs a club, so we
+    // can tell "squads not published yet" from "endpoint not returning nationals".
+    if (path === "/debug/squad") {
+      if (env.DEBUG_TOKEN && url.searchParams.get("t") !== env.DEBUG_TOKEN) {
+        return new Response(JSON.stringify({ error: "forbidden" }), { status: 403, headers: { "content-type": "application/json" } });
+      }
+      const base = { league: CFG(env).league, season: CFG(env).season };
+      const out = {};
+      try {
+        const dir = await buildTeamDir(env, base);
+        const ids = Object.keys(dir.byId);
+        const nationId = +(url.searchParams.get("team") || ids[0]);
+        out.nationProbed = { id: nationId, code: dir.byId[nationId]?.code };
+        try {
+          const r = await apiGet(env, "/players/squads", { team: nationId });
+          out.nationSquad = { count: r?.[0]?.players?.length || 0, sample: (r?.[0]?.players || []).slice(0, 3).map((p) => ({ id: p.id, name: p.name })) };
+        } catch (e) { out.nationSquadError = e.message; }
+        try {
+          const r = await apiGet(env, "/players/squads", { team: 33 }); // Man Utd (club) — known to have a squad
+          out.club33Squad = { count: r?.[0]?.players?.length || 0, sample: (r?.[0]?.players || []).slice(0, 3).map((p) => ({ id: p.id, name: p.name })) };
+        } catch (e) { out.club33SquadError = e.message; }
+        // alternative source: /players?team=&season= (paginated; players with appearances)
+        try {
+          const r = await apiGet(env, "/players", { team: nationId, season: base.season });
+          out.nationPlayersEndpoint = { count: r.length };
+        } catch (e) { out.nationPlayersError = e.message; }
+      } catch (e) { out.error = e.message; }
+      return new Response(JSON.stringify(out, null, 2), { headers: { "content-type": "application/json" } });
+    }
+
     // Force a full poll now (don't wait for the cron baseline). Useful for ops + to
     // seed KV after a deploy. Guarded by DEBUG_TOKEN when that var is set.
     if (path === "/admin/refresh") {
