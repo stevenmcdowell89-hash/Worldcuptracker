@@ -563,6 +563,28 @@ export default {
       });
     }
     if (path === "/healthz") return new Response("ok");
+
+    // Force a full poll now (don't wait for the cron baseline). Useful for ops + to
+    // seed KV after a deploy. Guarded by DEBUG_TOKEN when that var is set.
+    if (path === "/admin/refresh") {
+      if (env.DEBUG_TOKEN && url.searchParams.get("t") !== env.DEBUG_TOKEN) {
+        return new Response(JSON.stringify({ error: "forbidden" }), { status: 403, headers: { "content-type": "application/json" } });
+      }
+      try {
+        const snap = await buildSnapshot(env, await readSnapshot(env), false);
+        await writeSnapshot(env, snap);
+        await env.SNAPSHOT.put(META_KEY, JSON.stringify({ lastFull: Date.now(), lastLive: Date.now() }));
+        const clubWatch = Object.fromEntries(Object.entries(snap.clubWatch || {}).map(([k, c]) => [k, c.players.length]));
+        return new Response(JSON.stringify({
+          ok: true, updated: snap.meta.updated, groups: Object.keys(snap.groups).length,
+          matches: snap.matches.length, remaining: snap.remainingFixtures.length,
+          squadCount: snap.meta.squadCount, players: Object.keys(snap.players || {}).length, clubWatch,
+        }, null, 2), { headers: { "content-type": "application/json" } });
+      } catch (e) {
+        return new Response(JSON.stringify({ ok: false, error: e.message }), { status: 500, headers: { "content-type": "application/json" } });
+      }
+    }
+
     // Everything else: the static /web app.
     return env.ASSETS.fetch(request);
   },
