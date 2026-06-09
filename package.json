@@ -1,0 +1,18 @@
+{
+  "name": "wc26-tracker",
+  "version": "0.1.0",
+  "private": true,
+  "description": "2026 FIFA World Cup live scores + third-place progression tracker",
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "gen:mock": "node scripts/gen-mock.js",
+    "gen:annexc": "node scripts/gen-annexc.js",
+    "dev:web": "python3 -m http.server 8788 --directory web",
+    "dev:worker": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^3.80.0"
+  }
+}

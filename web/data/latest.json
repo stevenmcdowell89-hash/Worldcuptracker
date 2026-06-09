@@ -1,0 +1,4759 @@
+{
+  "meta": {
+    "stage": "Group Stage",
+    "updated": "2026-06-09T19:46:53.735Z",
+    "groupStageComplete": false,
+    "dataSource": "mock"
+  },
+  "groups": {
+    "A": [
+      {
+        "code": "MEX",
+        "name": "Mexico",
+        "P": 2,
+        "W": 2,
+        "D": 0,
+        "L": 0,
+        "GF": 5,
+        "GA": 2,
+        "GD": 3,
+        "Pts": 6,
+        "yellow": 3,
+        "red": 0
+      },
+      {
+        "code": "CRO",
+        "name": "Croatia",
+        "P": 2,
+        "W": 1,
+        "D": 0,
+        "L": 1,
+        "GF": 3,
+        "GA": 3,
+        "GD": 0,
+        "Pts": 3,
+        "yellow": 4,
+        "red": 0
+      },
+      {
+        "code": "CMR",
+        "name": "Cameroon",
+        "P": 2,
+        "W": 1,
+        "D": 0,
+        "L": 1,
+        "GF": 2,
+        "GA": 3,
+        "GD": -1,
+        "Pts": 3,
+        "yellow": 5,
+        "red": 1
+      },
+      {
+        "code": "KSA",
+        "name": "Saudi Arabia",
+        "P": 2,
+        "W": 0,
+        "D": 0,
+        "L": 2,
+        "GF": 1,
+        "GA": 3,
+        "GD": -2,
+        "Pts": 0,
+        "yellow": 4,
+        "red": 0
+      }
+    ],
+    "B": [
+      {
+        "code": "BEL",
+        "name": "Belgium",
+        "P": 2,
+        "W": 1,
+        "D": 1,
+        "L": 0,
+        "GF": 4,
+        "GA": 2,
+        "GD": 2,
+        "Pts": 4,
+        "yellow": 2,
+        "red": 0
+      },
+      {
+        "code": "CAN",
+        "name": "Canada",
+        "P": 2,
+        "W": 1,
+        "D": 1,
+        "L": 0,
+        "GF": 3,
+        "GA": 1,
+        "GD": 2,
+        "Pts": 4,
+        "yellow": 3,
+        "red": 0
+      },
+      {
+        "code": "MAR",
+        "name": "Morocco",
+        "P": 2,
+        "W": 1,
+        "D": 0,
+        "L": 1,
+        "GF": 2,
+        "GA": 2,
+        "GD": 0,
+        "Pts": 3,
+        "yellow": 3,
+        "red": 0
+      },
+      {
+        "code": "JPN",
+        "name": "Japan",
+        "P": 2,
+        "W": 0,
+        "D": 0,
+        "L": 2,
+        "GF": 1,
+        "GA": 5,
+        "GD": -4,
+        "Pts": 0,
+        "yellow": 5,
+        "red": 0
+      }
+    ],
+    "C": [
+      {
+        "code": "ENG",
+        "name": "England",
+        "P": 2,
+        "W": 2,
+        "D": 0,
+        "L": 0,
+        "GF": 4,
+        "GA": 1,
+        "GD": 3,
+        "Pts": 6,
+        "yellow": 1,
+        "red": 0
+      },
+      {
+        "code": "USA",
+        "name": "United States",
+        "P": 2,
+        "W": 1,
+        "D": 0,
+        "L": 1,
+        "GF": 3,
+        "GA": 2,
+        "GD": 1,
+        "Pts": 3,
+        "yellow": 4,
+        "red": 0
+      },
+      {
+        "code": "SEN",
+        "name": "Senegal",
+        "P": 2,
+        "W": 1,
+        "D": 0,
+        "L": 1,
+        "GF": 3,
+        "GA": 3,
+        "GD": 0,
+        "Pts": 3,
+        "yellow": 6,
+        "red": 1
+      },
+      {
+        "code": "IRN",
+        "name": "Iran",
+        "P": 2,
+        "W": 0,
+        "D": 0,
+        "L": 2,
+        "GF": 1,
+        "GA": 5,
+        "GD": -4,
+        "Pts": 0,
+        "yellow": 5,
+        "red": 0
+      }
+    ],
+    "D": [
+      {
+        "code": "ARG",
+        "name": "Argentina",
+        "P": 2,
+        "W": 2,
+        "D": 0,
+        "L": 0,
+        "GF": 6,
+        "GA": 1,
+        "GD": 5,
+        "Pts": 6,
+        "yellow": 2,
+        "red": 0
+      },
+      {
+        "code": "AUS",
+        "name": "Australia",
+        "P": 2,
+        "W": 1,
+        "D": 0,
+        "L": 1,
+        "GF": 2,
+        "GA": 2,
+        "GD": 0,
+        "Pts": 3,
+        "yellow": 4,
+        "red": 0
+      },
+      {
+        "code": "POL",
+        "name": "Poland",
+        "P": 2,
+        "W": 0,
+        "D": 1,
+        "L": 1,
+        "GF": 2,
+        "GA": 3,
+        "GD": -1,
+        "Pts": 1,
+        "yellow": 3,
+        "red": 0
+      },
+      {
+        "code": "RSA",
+        "name": "South Africa",
+        "P": 2,
+        "W": 0,
+        "D": 1,
+        "L": 1,
+        "GF": 1,
+        "GA": 5,
+        "GD": -4,
+        "Pts": 1,
+        "yellow": 5,
+        "red": 0
+      }
+    ],
+    "E": [
+      {
+        "code": "FRA",
+        "name": "France",
+        "P": 2,
+        "W": 2,
+        "D": 0,
+        "L": 0,
+        "GF": 5,
+        "GA": 1,
+        "GD": 4,
+        "Pts": 6,
+        "yellow": 2,
+        "red": 0
+      },
+      {
+        "code": "SUI",
+        "name": "Switzerland",
+        "P": 2,
+        "W": 1,
+        "D": 0,
+        "L": 1,
+        "GF": 3,
+        "GA": 2,
+        "GD": 1,
+        "Pts": 3,
+        "yellow": 3,
+        "red": 0
+      },
+      {
+        "code": "KOR",
+        "name": "South Korea",
+        "P": 2,
+        "W": 1,
+        "D": 0,
+        "L": 1,
+        "GF": 2,
+        "GA": 2,
+        "GD": 0,
+        "Pts": 3,
+        "yellow": 4,
+        "red": 0
+      },
+      {
+        "code": "GHA",
+        "name": "Ghana",
+        "P": 2,
+        "W": 0,
+        "D": 0,
+        "L": 2,
+        "GF": 2,
+        "GA": 7,
+        "GD": -5,
+        "Pts": 0,
+        "yellow": 6,
+        "red": 1
+      }
+    ],
+    "F": [
+      {
+        "code": "BRA",
+        "name": "Brazil",
+        "P": 2,
+        "W": 2,
+        "D": 0,
+        "L": 0,
+        "GF": 4,
+        "GA": 0,
+        "GD": 4,
+        "Pts": 6,
+        "yellow": 1,
+        "red": 0
+      },
+      {
+        "code": "ECU",
+        "name": "Ecuador",
+        "P": 2,
+        "W": 1,
+        "D": 1,
+        "L": 0,
+        "GF": 3,
+        "GA": 1,
+        "GD": 2,
+        "Pts": 4,
+        "yellow": 2,
+        "red": 0
+      },
+      {
+        "code": "SRB",
+        "name": "Serbia",
+        "P": 2,
+        "W": 0,
+        "D": 1,
+        "L": 1,
+        "GF": 2,
+        "GA": 3,
+        "GD": -1,
+        "Pts": 1,
+        "yellow": 5,
+        "red": 0
+      },
+      {
+        "code": "TUN",
+        "name": "Tunisia",
+        "P": 2,
+        "W": 0,
+        "D": 0,
+        "L": 2,
+        "GF": 1,
+        "GA": 6,
+        "GD": -5,
+        "Pts": 0,
+        "yellow": 5,
+        "red": 0
+      }
+    ],
+    "G": [
+      {
+        "code": "ESP",
+        "name": "Spain",
+        "P": 2,
+        "W": 1,
+        "D": 1,
+        "L": 0,
+        "GF": 4,
+        "GA": 2,
+        "GD": 2,
+        "Pts": 4,
+        "yellow": 2,
+        "red": 0
+      },
+      {
+        "code": "URU",
+        "name": "Uruguay",
+        "P": 2,
+        "W": 1,
+        "D": 1,
+        "L": 0,
+        "GF": 3,
+        "GA": 2,
+        "GD": 1,
+        "Pts": 4,
+        "yellow": 3,
+        "red": 0
+      },
+      {
+        "code": "EGY",
+        "name": "Egypt",
+        "P": 2,
+        "W": 0,
+        "D": 1,
+        "L": 1,
+        "GF": 2,
+        "GA": 3,
+        "GD": -1,
+        "Pts": 1,
+        "yellow": 4,
+        "red": 0
+      },
+      {
+        "code": "QAT",
+        "name": "Qatar",
+        "P": 2,
+        "W": 0,
+        "D": 0,
+        "L": 2,
+        "GF": 1,
+        "GA": 5,
+        "GD": -4,
+        "Pts": 0,
+        "yellow": 4,
+        "red": 0
+      }
+    ],
+    "H": [
+      {
+        "code": "GER",
+        "name": "Germany",
+        "P": 2,
+        "W": 2,
+        "D": 0,
+        "L": 0,
+        "GF": 5,
+        "GA": 2,
+        "GD": 3,
+        "Pts": 6,
+        "yellow": 2,
+        "red": 0
+      },
+      {
+        "code": "COL",
+        "name": "Colombia",
+        "P": 2,
+        "W": 1,
+        "D": 0,
+        "L": 1,
+        "GF": 3,
+        "GA": 2,
+        "GD": 1,
+        "Pts": 3,
+        "yellow": 3,
+        "red": 0
+      },
+      {
+        "code": "CRC",
+        "name": "Costa Rica",
+        "P": 2,
+        "W": 0,
+        "D": 1,
+        "L": 1,
+        "GF": 2,
+        "GA": 4,
+        "GD": -2,
+        "Pts": 1,
+        "yellow": 5,
+        "red": 0
+      },
+      {
+        "code": "UZB",
+        "name": "Uzbekistan",
+        "P": 2,
+        "W": 0,
+        "D": 1,
+        "L": 1,
+        "GF": 2,
+        "GA": 4,
+        "GD": -2,
+        "Pts": 1,
+        "yellow": 4,
+        "red": 1
+      }
+    ],
+    "I": [
+      {
+        "code": "POR",
+        "name": "Portugal",
+        "P": 2,
+        "W": 2,
+        "D": 0,
+        "L": 0,
+        "GF": 4,
+        "GA": 1,
+        "GD": 3,
+        "Pts": 6,
+        "yellow": 1,
+        "red": 0
+      },
+      {
+        "code": "CIV",
+        "name": "Ivory Coast",
+        "P": 2,
+        "W": 1,
+        "D": 0,
+        "L": 1,
+        "GF": 3,
+        "GA": 3,
+        "GD": 0,
+        "Pts": 3,
+        "yellow": 5,
+        "red": 0
+      },
+      {
+        "code": "JOR",
+        "name": "Jordan",
+        "P": 2,
+        "W": 0,
+        "D": 1,
+        "L": 1,
+        "GF": 2,
+        "GA": 3,
+        "GD": -1,
+        "Pts": 1,
+        "yellow": 4,
+        "red": 0
+      },
+      {
+        "code": "PAN",
+        "name": "Panama",
+        "P": 2,
+        "W": 0,
+        "D": 1,
+        "L": 1,
+        "GF": 1,
+        "GA": 3,
+        "GD": -2,
+        "Pts": 1,
+        "yellow": 5,
+        "red": 1
+      }
+    ],
+    "J": [
+      {
+        "code": "ITA",
+        "name": "Italy",
+        "P": 2,
+        "W": 1,
+        "D": 1,
+        "L": 0,
+        "GF": 3,
+        "GA": 1,
+        "GD": 2,
+        "Pts": 4,
+        "yellow": 2,
+        "red": 0
+      },
+      {
+        "code": "DEN",
+        "name": "Denmark",
+        "P": 2,
+        "W": 1,
+        "D": 1,
+        "L": 0,
+        "GF": 3,
+        "GA": 2,
+        "GD": 1,
+        "Pts": 4,
+        "yellow": 3,
+        "red": 0
+      },
+      {
+        "code": "PAR",
+        "name": "Paraguay",
+        "P": 2,
+        "W": 0,
+        "D": 1,
+        "L": 1,
+        "GF": 1,
+        "GA": 2,
+        "GD": -1,
+        "Pts": 1,
+        "yellow": 5,
+        "red": 0
+      },
+      {
+        "code": "CPV",
+        "name": "Cape Verde",
+        "P": 2,
+        "W": 0,
+        "D": 1,
+        "L": 1,
+        "GF": 2,
+        "GA": 4,
+        "GD": -2,
+        "Pts": 1,
+        "yellow": 4,
+        "red": 0
+      }
+    ],
+    "K": [
+      {
+        "code": "NED",
+        "name": "Netherlands",
+        "P": 2,
+        "W": 2,
+        "D": 0,
+        "L": 0,
+        "GF": 4,
+        "GA": 1,
+        "GD": 3,
+        "Pts": 6,
+        "yellow": 1,
+        "red": 0
+      },
+      {
+        "code": "MLI",
+        "name": "Mali",
+        "P": 2,
+        "W": 1,
+        "D": 0,
+        "L": 1,
+        "GF": 2,
+        "GA": 2,
+        "GD": 0,
+        "Pts": 3,
+        "yellow": 4,
+        "red": 0
+      },
+      {
+        "code": "HON",
+        "name": "Honduras",
+        "P": 2,
+        "W": 0,
+        "D": 1,
+        "L": 1,
+        "GF": 2,
+        "GA": 3,
+        "GD": -1,
+        "Pts": 1,
+        "yellow": 5,
+        "red": 0
+      },
+      {
+        "code": "NZL",
+        "name": "New Zealand",
+        "P": 2,
+        "W": 0,
+        "D": 1,
+        "L": 1,
+        "GF": 1,
+        "GA": 3,
+        "GD": -2,
+        "Pts": 1,
+        "yellow": 3,
+        "red": 0
+      }
+    ],
+    "L": [
+      {
+        "code": "NGA",
+        "name": "Nigeria",
+        "P": 2,
+        "W": 1,
+        "D": 1,
+        "L": 0,
+        "GF": 4,
+        "GA": 2,
+        "GD": 2,
+        "Pts": 4,
+        "yellow": 3,
+        "red": 1
+      },
+      {
+        "code": "AUT",
+        "name": "Austria",
+        "P": 2,
+        "W": 1,
+        "D": 0,
+        "L": 1,
+        "GF": 3,
+        "GA": 3,
+        "GD": 0,
+        "Pts": 3,
+        "yellow": 3,
+        "red": 0
+      },
+      {
+        "code": "SCO",
+        "name": "Scotland",
+        "P": 2,
+        "W": 1,
+        "D": 0,
+        "L": 1,
+        "GF": 2,
+        "GA": 2,
+        "GD": 0,
+        "Pts": 3,
+        "yellow": 4,
+        "red": 0
+      },
+      {
+        "code": "CUW",
+        "name": "Curaçao",
+        "P": 2,
+        "W": 0,
+        "D": 1,
+        "L": 1,
+        "GF": 2,
+        "GA": 4,
+        "GD": -2,
+        "Pts": 1,
+        "yellow": 9,
+        "red": 1
+      }
+    ]
+  },
+  "thirdPlaceRace": [
+    {
+      "code": "SEN",
+      "group": "C",
+      "Pts": 3,
+      "GD": 0,
+      "GF": 3,
+      "disc": 9,
+      "rank": 1,
+      "status": "in",
+      "bestRank": 1,
+      "worstRank": 12,
+      "curRank": 1
+    },
+    {
+      "code": "MAR",
+      "group": "B",
+      "Pts": 3,
+      "GD": 0,
+      "GF": 2,
+      "disc": 3,
+      "rank": 2,
+      "status": "in",
+      "bestRank": 1,
+      "worstRank": 12,
+      "curRank": 2
+    },
+    {
+      "code": "KOR",
+      "group": "E",
+      "Pts": 3,
+      "GD": 0,
+      "GF": 2,
+      "disc": 4,
+      "rank": 3,
+      "status": "in",
+      "bestRank": 1,
+      "worstRank": 12,
+      "curRank": 3
+    },
+    {
+      "code": "SCO",
+      "group": "L",
+      "Pts": 3,
+      "GD": 0,
+      "GF": 2,
+      "disc": 4,
+      "rank": 4,
+      "status": "in",
+      "bestRank": 1,
+      "worstRank": 12,
+      "curRank": 4
+    },
+    {
+      "code": "CMR",
+      "group": "A",
+      "Pts": 3,
+      "GD": -1,
+      "GF": 2,
+      "disc": 8,
+      "rank": 5,
+      "status": "in",
+      "bestRank": 1,
+      "worstRank": 12,
+      "curRank": 5
+    },
+    {
+      "code": "POL",
+      "group": "D",
+      "Pts": 1,
+      "GD": -1,
+      "GF": 2,
+      "disc": 3,
+      "rank": 6,
+      "status": "sweating",
+      "bestRank": 1,
+      "worstRank": 12,
+      "curRank": 6
+    },
+    {
+      "code": "EGY",
+      "group": "G",
+      "Pts": 1,
+      "GD": -1,
+      "GF": 2,
+      "disc": 4,
+      "rank": 7,
+      "status": "sweating",
+      "bestRank": 1,
+      "worstRank": 12,
+      "curRank": 7
+    },
+    {
+      "code": "JOR",
+      "group": "I",
+      "Pts": 1,
+      "GD": -1,
+      "GF": 2,
+      "disc": 4,
+      "rank": 8,
+      "status": "sweating",
+      "bestRank": 1,
+      "worstRank": 12,
+      "curRank": 8
+    },
+    {
+      "code": "HON",
+      "group": "K",
+      "Pts": 1,
+      "GD": -1,
+      "GF": 2,
+      "disc": 5,
+      "rank": 9,
+      "status": "sweating",
+      "bestRank": 1,
+      "worstRank": 12,
+      "curRank": 9
+    },
+    {
+      "code": "SRB",
+      "group": "F",
+      "Pts": 1,
+      "GD": -1,
+      "GF": 2,
+      "disc": 5,
+      "rank": 10,
+      "status": "sweating",
+      "bestRank": 1,
+      "worstRank": 12,
+      "curRank": 10
+    },
+    {
+      "code": "PAR",
+      "group": "J",
+      "Pts": 1,
+      "GD": -1,
+      "GF": 1,
+      "disc": 5,
+      "rank": 11,
+      "status": "sweating",
+      "bestRank": 1,
+      "worstRank": 12,
+      "curRank": 11
+    },
+    {
+      "code": "CRC",
+      "group": "H",
+      "Pts": 1,
+      "GD": -2,
+      "GF": 2,
+      "disc": 5,
+      "rank": 12,
+      "status": "sweating",
+      "bestRank": 1,
+      "worstRank": 12,
+      "curRank": 12
+    }
+  ],
+  "remainingFixtures": [
+    {
+      "id": "f1",
+      "group": "A",
+      "home": "MEX",
+      "away": "KSA",
+      "kickoff": "2026-06-25T16:00:00.000Z",
+      "affectsThird": true
+    },
+    {
+      "id": "f2",
+      "group": "A",
+      "home": "CRO",
+      "away": "CMR",
+      "kickoff": "2026-06-25T19:00:00.000Z",
+      "affectsThird": true
+    },
+    {
+      "id": "f3",
+      "group": "B",
+      "home": "BEL",
+      "away": "JPN",
+      "kickoff": "2026-06-25T22:00:00.000Z",
+      "affectsThird": true
+    },
+    {
+      "id": "f4",
+      "group": "B",
+      "home": "CAN",
+      "away": "MAR",
+      "kickoff": "2026-06-26T01:00:00.000Z",
+      "affectsThird": true
+    },
+    {
+      "id": "f5",
+      "group": "C",
+      "home": "ENG",
+      "away": "IRN",
+      "kickoff": "2026-06-26T04:00:00.000Z",
+      "affectsThird": true
+    },
+    {
+      "id": "f6",
+      "group": "C",
+      "home": "USA",
+      "away": "SEN",
+      "kickoff": "2026-06-26T07:00:00.000Z",
+      "affectsThird": true
+    },
+    {
+      "id": "f7",
+      "group": "D",
+      "home": "ARG",
+      "away": "RSA",
+      "kickoff": "2026-06-26T10:00:00.000Z",
+      "affectsThird": true
+    },
+    {
+      "id": "f8",
+      "group": "D",
+      "home": "AUS",
+      "away": "POL",
+      "kickoff": "2026-06-26T13:00:00.000Z",
+      "affectsThird": true
+    },
+    {
+      "id": "f9",
+      "group": "E",
+      "home": "FRA",
+      "away": "GHA",
+      "kickoff": "2026-06-26T16:00:00.000Z",
+      "affectsThird": true
+    },
+    {
+      "id": "f10",
+      "group": "E",
+      "home": "SUI",
+      "away": "KOR",
+      "kickoff": "2026-06-26T19:00:00.000Z",
+      "affectsThird": true
+    },
+    {
+      "id": "f11",
+      "group": "F",
+      "home": "BRA",
+      "away": "TUN",
+      "kickoff": "2026-06-26T22:00:00.000Z",
+      "affectsThird": true
+    },
+    {
+      "id": "f12",
+      "group": "F",
+      "home": "SRB",
+      "away": "ECU",
+      "kickoff": "2026-06-27T01:00:00.000Z",
+      "affectsThird": true
+    },
+    {
+      "id": "f13",
+      "group": "G",
+      "home": "ESP",
+      "away": "QAT",
+      "kickoff": "2026-06-27T04:00:00.000Z",
+      "affectsThird": true
+    },
+    {
+      "id": "f14",
+      "group": "G",
+      "home": "URU",
+      "away": "EGY",
+      "kickoff": "2026-06-27T07:00:00.000Z",
+      "affectsThird": true
+    },
+    {
+      "id": "f15",
+      "group": "H",
+      "home": "GER",
+      "away": "UZB",
+      "kickoff": "2026-06-27T10:00:00.000Z",
+      "affectsThird": true
+    },
+    {
+      "id": "f16",
+      "group": "H",
+      "home": "COL",
+      "away": "CRC",
+      "kickoff": "2026-06-27T13:00:00.000Z",
+      "affectsThird": true
+    },
+    {
+      "id": "f17",
+      "group": "I",
+      "home": "POR",
+      "away": "PAN",
+      "kickoff": "2026-06-27T16:00:00.000Z",
+      "affectsThird": true
+    },
+    {
+      "id": "f18",
+      "group": "I",
+      "home": "CIV",
+      "away": "JOR",
+      "kickoff": "2026-06-27T19:00:00.000Z",
+      "affectsThird": true
+    },
+    {
+      "id": "f19",
+      "group": "J",
+      "home": "ITA",
+      "away": "CPV",
+      "kickoff": "2026-06-27T22:00:00.000Z",
+      "affectsThird": true
+    },
+    {
+      "id": "f20",
+      "group": "J",
+      "home": "DEN",
+      "away": "PAR",
+      "kickoff": "2026-06-28T01:00:00.000Z",
+      "affectsThird": true
+    },
+    {
+      "id": "f21",
+      "group": "K",
+      "home": "NED",
+      "away": "HON",
+      "kickoff": "2026-06-28T04:00:00.000Z",
+      "affectsThird": true
+    },
+    {
+      "id": "f22",
+      "group": "K",
+      "home": "MLI",
+      "away": "NZL",
+      "kickoff": "2026-06-28T07:00:00.000Z",
+      "affectsThird": true
+    },
+    {
+      "id": "f23",
+      "group": "L",
+      "home": "NGA",
+      "away": "CUW",
+      "kickoff": "2026-06-28T10:00:00.000Z",
+      "affectsThird": true
+    },
+    {
+      "id": "f24",
+      "group": "L",
+      "home": "SCO",
+      "away": "AUT",
+      "kickoff": "2026-06-28T13:00:00.000Z",
+      "affectsThird": true
+    }
+  ],
+  "matches": [
+    {
+      "id": "mA1",
+      "stage": "Group Stage",
+      "group": "A",
+      "status": "live",
+      "minute": "67'",
+      "kickoff": "2026-06-25T16:00:00.000Z",
+      "venue": "Estadio Azteca, Mexico City",
+      "home": {
+        "code": "MEX",
+        "score": 2
+      },
+      "away": {
+        "code": "KSA",
+        "score": 1
+      },
+      "affectsCut": true,
+      "progressionLine": "As it stands, this win keeps Croatia sweating for the last third-place spot.",
+      "events": [
+        {
+          "min": "12'",
+          "side": "h",
+          "type": "goal",
+          "player": "S. Giménez",
+          "assist": "H. Lozano"
+        },
+        {
+          "min": "34'",
+          "side": "a",
+          "type": "goal",
+          "player": "S. Al-Dawsari"
+        },
+        {
+          "min": "41'",
+          "side": "h",
+          "type": "yellow",
+          "player": "E. Álvarez"
+        },
+        {
+          "min": "58'",
+          "side": "h",
+          "type": "goal",
+          "player": "S. Giménez",
+          "assist": "O. Pineda"
+        },
+        {
+          "min": "63'",
+          "side": "h",
+          "type": "subst",
+          "player": "R. Jiménez",
+          "detail": "S. Giménez"
+        }
+      ],
+      "stats": [
+        {
+          "k": "Possession",
+          "h": 58,
+          "a": 42,
+          "unit": "%"
+        },
+        {
+          "k": "Shots",
+          "h": 14,
+          "a": 7
+        },
+        {
+          "k": "Shots on target",
+          "h": 6,
+          "a": 3
+        },
+        {
+          "k": "Big chances",
+          "h": 3,
+          "a": 1
+        },
+        {
+          "k": "Passes",
+          "h": 512,
+          "a": 388
+        },
+        {
+          "k": "Pass accuracy",
+          "h": 88,
+          "a": 81,
+          "unit": "%"
+        },
+        {
+          "k": "Corners",
+          "h": 7,
+          "a": 2
+        },
+        {
+          "k": "Fouls",
+          "h": 9,
+          "a": 13
+        },
+        {
+          "k": "Offsides",
+          "h": 2,
+          "a": 1
+        }
+      ],
+      "lineups": {
+        "h": {
+          "formation": "4-3-3",
+          "coach": "Javier Aguirre",
+          "xi": [
+            {
+              "num": 1,
+              "name": "G. Ochoa",
+              "pos": "GK",
+              "grid": "1:1"
+            },
+            {
+              "num": 2,
+              "name": "J. Sánchez",
+              "pos": "RB",
+              "grid": "2:4"
+            },
+            {
+              "num": 15,
+              "name": "C. Montes",
+              "pos": "CB",
+              "grid": "2:3"
+            },
+            {
+              "num": 3,
+              "name": "C. Vásquez",
+              "pos": "CB",
+              "grid": "2:2"
+            },
+            {
+              "num": 23,
+              "name": "J. Gallardo",
+              "pos": "LB",
+              "grid": "2:1"
+            },
+            {
+              "num": 4,
+              "name": "E. Álvarez",
+              "pos": "CM",
+              "grid": "3:3"
+            },
+            {
+              "num": 16,
+              "name": "O. Pineda",
+              "pos": "CM",
+              "grid": "3:2"
+            },
+            {
+              "num": 8,
+              "name": "L. Chávez",
+              "pos": "CM",
+              "grid": "3:1"
+            },
+            {
+              "num": 22,
+              "name": "H. Lozano",
+              "pos": "RW",
+              "grid": "4:3"
+            },
+            {
+              "num": 9,
+              "name": "S. Giménez",
+              "pos": "ST",
+              "rating": 8.4,
+              "sub": 63,
+              "playerId": 123,
+              "grid": "4:2"
+            },
+            {
+              "num": 11,
+              "name": "A. Vega",
+              "pos": "LW",
+              "grid": "4:1"
+            }
+          ],
+          "subs": [
+            {
+              "num": 19,
+              "name": "R. Jiménez",
+              "pos": "ST",
+              "playerId": 140
+            }
+          ]
+        },
+        "a": {
+          "formation": "4-2-3-1",
+          "coach": "Hervé Renard",
+          "xi": [
+            {
+              "num": 21,
+              "name": "M. Al-Owais",
+              "pos": "GK",
+              "grid": "1:1"
+            },
+            {
+              "num": 13,
+              "name": "Y. Al-Shahrani",
+              "pos": "LB",
+              "grid": "2:1"
+            },
+            {
+              "num": 5,
+              "name": "A. Al-Bulayhi",
+              "pos": "CB",
+              "grid": "2:2"
+            },
+            {
+              "num": 3,
+              "name": "A. Al-Amri",
+              "pos": "CB",
+              "grid": "2:3"
+            },
+            {
+              "num": 2,
+              "name": "S. Abdulhamid",
+              "pos": "RB",
+              "grid": "2:4"
+            },
+            {
+              "num": 7,
+              "name": "S. Al-Faraj",
+              "pos": "CM",
+              "grid": "3:2"
+            },
+            {
+              "num": 14,
+              "name": "A. Otayf",
+              "pos": "CM",
+              "grid": "3:3"
+            },
+            {
+              "num": 10,
+              "name": "S. Al-Dawsari",
+              "pos": "LW",
+              "rating": 7.6,
+              "playerId": 201,
+              "grid": "4:1"
+            },
+            {
+              "num": 8,
+              "name": "A. Al-Malki",
+              "pos": "AM",
+              "grid": "4:2"
+            },
+            {
+              "num": 18,
+              "name": "N. Al-Ghannam",
+              "pos": "RW",
+              "grid": "4:3"
+            },
+            {
+              "num": 9,
+              "name": "F. Al-Buraikan",
+              "pos": "ST",
+              "grid": "5:2"
+            }
+          ],
+          "subs": []
+        }
+      }
+    },
+    {
+      "id": "mD1",
+      "stage": "Group Stage",
+      "group": "D",
+      "status": "live",
+      "minute": "39'",
+      "venue": "MetLife Stadium, New Jersey",
+      "home": {
+        "code": "ARG",
+        "score": 1
+      },
+      "away": {
+        "code": "RSA",
+        "score": 0
+      },
+      "affectsCut": true,
+      "progressionLine": "Australia go through as it stands; a South Africa goal would reopen it.",
+      "events": [
+        {
+          "min": "22'",
+          "side": "h",
+          "type": "goal",
+          "player": "J. Álvarez",
+          "assist": "L. Messi"
+        }
+      ],
+      "stats": [
+        {
+          "k": "Possession",
+          "h": 64,
+          "a": 36,
+          "unit": "%"
+        },
+        {
+          "k": "Shots",
+          "h": 9,
+          "a": 3
+        },
+        {
+          "k": "Shots on target",
+          "h": 4,
+          "a": 1
+        },
+        {
+          "k": "Big chances",
+          "h": 2,
+          "a": 0
+        },
+        {
+          "k": "Corners",
+          "h": 5,
+          "a": 1
+        },
+        {
+          "k": "Fouls",
+          "h": 6,
+          "a": 11
+        }
+      ],
+      "lineups": {
+        "h": {
+          "formation": "4-4-2",
+          "coach": "Lionel Scaloni",
+          "xi": [],
+          "subs": []
+        }
+      }
+    },
+    {
+      "id": "mC0",
+      "stage": "Group Stage",
+      "group": "C",
+      "status": "ft",
+      "minute": "FT",
+      "venue": "AT&T Stadium, Dallas",
+      "home": {
+        "code": "ENG",
+        "score": 2
+      },
+      "away": {
+        "code": "SEN",
+        "score": 1
+      },
+      "affectsCut": false,
+      "events": [
+        {
+          "min": "18'",
+          "side": "h",
+          "type": "goal",
+          "player": "H. Kane",
+          "assist": "B. Saka"
+        },
+        {
+          "min": "44'",
+          "side": "a",
+          "type": "goal",
+          "player": "S. Mané"
+        },
+        {
+          "min": "71'",
+          "side": "h",
+          "type": "goal",
+          "player": "J. Bellingham",
+          "assist": "C. Palmer"
+        },
+        {
+          "min": "80'",
+          "side": "a",
+          "type": "yellow",
+          "player": "I. Gueye"
+        }
+      ],
+      "stats": [
+        {
+          "k": "Possession",
+          "h": 55,
+          "a": 45,
+          "unit": "%"
+        },
+        {
+          "k": "Shots",
+          "h": 13,
+          "a": 9
+        },
+        {
+          "k": "Shots on target",
+          "h": 5,
+          "a": 4
+        },
+        {
+          "k": "Big chances",
+          "h": 3,
+          "a": 2
+        },
+        {
+          "k": "Passes",
+          "h": 487,
+          "a": 401
+        },
+        {
+          "k": "Pass accuracy",
+          "h": 86,
+          "a": 82,
+          "unit": "%"
+        },
+        {
+          "k": "Corners",
+          "h": 6,
+          "a": 4
+        },
+        {
+          "k": "Fouls",
+          "h": 10,
+          "a": 12
+        },
+        {
+          "k": "Offsides",
+          "h": 1,
+          "a": 3
+        }
+      ],
+      "lineups": {
+        "h": {
+          "formation": "4-2-3-1",
+          "coach": "Thomas Tuchel",
+          "xi": [
+            {
+              "num": 1,
+              "name": "J. Pickford",
+              "pos": "GK",
+              "rating": 7,
+              "grid": "1:1"
+            },
+            {
+              "num": 2,
+              "name": "K. Walker",
+              "pos": "RB",
+              "rating": 6.8,
+              "grid": "2:4"
+            },
+            {
+              "num": 5,
+              "name": "J. Stones",
+              "pos": "CB",
+              "rating": 7.2,
+              "grid": "2:3"
+            },
+            {
+              "num": 6,
+              "name": "M. Guéhi",
+              "pos": "CB",
+              "rating": 7.4,
+              "grid": "2:2"
+            },
+            {
+              "num": 3,
+              "name": "L. Shaw",
+              "pos": "LB",
+              "rating": 6.9,
+              "grid": "2:1"
+            },
+            {
+              "num": 4,
+              "name": "D. Rice",
+              "pos": "CM",
+              "rating": 7.6,
+              "grid": "3:3"
+            },
+            {
+              "num": 8,
+              "name": "J. Bellingham",
+              "pos": "CM",
+              "rating": 8.3,
+              "playerId": 150,
+              "grid": "3:1"
+            },
+            {
+              "num": 7,
+              "name": "B. Saka",
+              "pos": "RW",
+              "rating": 7.9,
+              "playerId": 151,
+              "grid": "4:3"
+            },
+            {
+              "num": 10,
+              "name": "C. Palmer",
+              "pos": "AM",
+              "rating": 7.7,
+              "playerId": 152,
+              "grid": "4:2"
+            },
+            {
+              "num": 11,
+              "name": "P. Foden",
+              "pos": "LW",
+              "rating": 7.1,
+              "sub": 75,
+              "grid": "4:1"
+            },
+            {
+              "num": 9,
+              "name": "H. Kane",
+              "pos": "ST",
+              "rating": 8.1,
+              "playerId": 153,
+              "grid": "5:2"
+            }
+          ],
+          "subs": [
+            {
+              "num": 20,
+              "name": "J. Grealish",
+              "pos": "LW",
+              "rating": 6.6,
+              "playerId": 154
+            }
+          ]
+        },
+        "a": {
+          "formation": "4-3-3",
+          "coach": "Pape Thiaw",
+          "xi": [
+            {
+              "num": 16,
+              "name": "É. Mendy",
+              "pos": "GK",
+              "rating": 6.5,
+              "grid": "1:1"
+            },
+            {
+              "num": 10,
+              "name": "S. Mané",
+              "pos": "LW",
+              "rating": 7.8,
+              "playerId": 170,
+              "grid": "4:1"
+            }
+          ],
+          "subs": []
+        }
+      }
+    },
+    {
+      "id": "f2",
+      "stage": "Group Stage",
+      "group": "A",
+      "status": "scheduled",
+      "kickoff": "2026-06-25T19:00:00.000Z",
+      "home": {
+        "code": "CRO",
+        "score": null
+      },
+      "away": {
+        "code": "CMR",
+        "score": null
+      },
+      "affectsCut": true
+    },
+    {
+      "id": "f3",
+      "stage": "Group Stage",
+      "group": "B",
+      "status": "scheduled",
+      "kickoff": "2026-06-25T22:00:00.000Z",
+      "home": {
+        "code": "BEL",
+        "score": null
+      },
+      "away": {
+        "code": "JPN",
+        "score": null
+      },
+      "affectsCut": true
+    },
+    {
+      "id": "f4",
+      "stage": "Group Stage",
+      "group": "B",
+      "status": "scheduled",
+      "kickoff": "2026-06-26T01:00:00.000Z",
+      "home": {
+        "code": "CAN",
+        "score": null
+      },
+      "away": {
+        "code": "MAR",
+        "score": null
+      },
+      "affectsCut": true
+    },
+    {
+      "id": "f5",
+      "stage": "Group Stage",
+      "group": "C",
+      "status": "scheduled",
+      "kickoff": "2026-06-26T04:00:00.000Z",
+      "home": {
+        "code": "ENG",
+        "score": null
+      },
+      "away": {
+        "code": "IRN",
+        "score": null
+      },
+      "affectsCut": true
+    },
+    {
+      "id": "f6",
+      "stage": "Group Stage",
+      "group": "C",
+      "status": "scheduled",
+      "kickoff": "2026-06-26T07:00:00.000Z",
+      "home": {
+        "code": "USA",
+        "score": null
+      },
+      "away": {
+        "code": "SEN",
+        "score": null
+      },
+      "affectsCut": true
+    },
+    {
+      "id": "f8",
+      "stage": "Group Stage",
+      "group": "D",
+      "status": "scheduled",
+      "kickoff": "2026-06-26T13:00:00.000Z",
+      "home": {
+        "code": "AUS",
+        "score": null
+      },
+      "away": {
+        "code": "POL",
+        "score": null
+      },
+      "affectsCut": true
+    },
+    {
+      "id": "f9",
+      "stage": "Group Stage",
+      "group": "E",
+      "status": "scheduled",
+      "kickoff": "2026-06-26T16:00:00.000Z",
+      "home": {
+        "code": "FRA",
+        "score": null
+      },
+      "away": {
+        "code": "GHA",
+        "score": null
+      },
+      "affectsCut": true
+    },
+    {
+      "id": "f10",
+      "stage": "Group Stage",
+      "group": "E",
+      "status": "scheduled",
+      "kickoff": "2026-06-26T19:00:00.000Z",
+      "home": {
+        "code": "SUI",
+        "score": null
+      },
+      "away": {
+        "code": "KOR",
+        "score": null
+      },
+      "affectsCut": true
+    },
+    {
+      "id": "f11",
+      "stage": "Group Stage",
+      "group": "F",
+      "status": "scheduled",
+      "kickoff": "2026-06-26T22:00:00.000Z",
+      "home": {
+        "code": "BRA",
+        "score": null
+      },
+      "away": {
+        "code": "TUN",
+        "score": null
+      },
+      "affectsCut": true
+    },
+    {
+      "id": "f12",
+      "stage": "Group Stage",
+      "group": "F",
+      "status": "scheduled",
+      "kickoff": "2026-06-27T01:00:00.000Z",
+      "home": {
+        "code": "SRB",
+        "score": null
+      },
+      "away": {
+        "code": "ECU",
+        "score": null
+      },
+      "affectsCut": true
+    },
+    {
+      "id": "f13",
+      "stage": "Group Stage",
+      "group": "G",
+      "status": "scheduled",
+      "kickoff": "2026-06-27T04:00:00.000Z",
+      "home": {
+        "code": "ESP",
+        "score": null
+      },
+      "away": {
+        "code": "QAT",
+        "score": null
+      },
+      "affectsCut": true
+    },
+    {
+      "id": "f14",
+      "stage": "Group Stage",
+      "group": "G",
+      "status": "scheduled",
+      "kickoff": "2026-06-27T07:00:00.000Z",
+      "home": {
+        "code": "URU",
+        "score": null
+      },
+      "away": {
+        "code": "EGY",
+        "score": null
+      },
+      "affectsCut": true
+    },
+    {
+      "id": "f15",
+      "stage": "Group Stage",
+      "group": "H",
+      "status": "scheduled",
+      "kickoff": "2026-06-27T10:00:00.000Z",
+      "home": {
+        "code": "GER",
+        "score": null
+      },
+      "away": {
+        "code": "UZB",
+        "score": null
+      },
+      "affectsCut": true
+    },
+    {
+      "id": "f16",
+      "stage": "Group Stage",
+      "group": "H",
+      "status": "scheduled",
+      "kickoff": "2026-06-27T13:00:00.000Z",
+      "home": {
+        "code": "COL",
+        "score": null
+      },
+      "away": {
+        "code": "CRC",
+        "score": null
+      },
+      "affectsCut": true
+    },
+    {
+      "id": "f17",
+      "stage": "Group Stage",
+      "group": "I",
+      "status": "scheduled",
+      "kickoff": "2026-06-27T16:00:00.000Z",
+      "home": {
+        "code": "POR",
+        "score": null
+      },
+      "away": {
+        "code": "PAN",
+        "score": null
+      },
+      "affectsCut": true
+    },
+    {
+      "id": "f18",
+      "stage": "Group Stage",
+      "group": "I",
+      "status": "scheduled",
+      "kickoff": "2026-06-27T19:00:00.000Z",
+      "home": {
+        "code": "CIV",
+        "score": null
+      },
+      "away": {
+        "code": "JOR",
+        "score": null
+      },
+      "affectsCut": true
+    },
+    {
+      "id": "f19",
+      "stage": "Group Stage",
+      "group": "J",
+      "status": "scheduled",
+      "kickoff": "2026-06-27T22:00:00.000Z",
+      "home": {
+        "code": "ITA",
+        "score": null
+      },
+      "away": {
+        "code": "CPV",
+        "score": null
+      },
+      "affectsCut": true
+    },
+    {
+      "id": "f20",
+      "stage": "Group Stage",
+      "group": "J",
+      "status": "scheduled",
+      "kickoff": "2026-06-28T01:00:00.000Z",
+      "home": {
+        "code": "DEN",
+        "score": null
+      },
+      "away": {
+        "code": "PAR",
+        "score": null
+      },
+      "affectsCut": true
+    },
+    {
+      "id": "f21",
+      "stage": "Group Stage",
+      "group": "K",
+      "status": "scheduled",
+      "kickoff": "2026-06-28T04:00:00.000Z",
+      "home": {
+        "code": "NED",
+        "score": null
+      },
+      "away": {
+        "code": "HON",
+        "score": null
+      },
+      "affectsCut": true
+    },
+    {
+      "id": "f22",
+      "stage": "Group Stage",
+      "group": "K",
+      "status": "scheduled",
+      "kickoff": "2026-06-28T07:00:00.000Z",
+      "home": {
+        "code": "MLI",
+        "score": null
+      },
+      "away": {
+        "code": "NZL",
+        "score": null
+      },
+      "affectsCut": true
+    },
+    {
+      "id": "f23",
+      "stage": "Group Stage",
+      "group": "L",
+      "status": "scheduled",
+      "kickoff": "2026-06-28T10:00:00.000Z",
+      "home": {
+        "code": "NGA",
+        "score": null
+      },
+      "away": {
+        "code": "CUW",
+        "score": null
+      },
+      "affectsCut": true
+    },
+    {
+      "id": "f24",
+      "stage": "Group Stage",
+      "group": "L",
+      "status": "scheduled",
+      "kickoff": "2026-06-28T13:00:00.000Z",
+      "home": {
+        "code": "SCO",
+        "score": null
+      },
+      "away": {
+        "code": "AUT",
+        "score": null
+      },
+      "affectsCut": true
+    }
+  ],
+  "bracket": {
+    "rounds": [
+      "R32",
+      "R16",
+      "QF",
+      "SF",
+      "Final"
+    ],
+    "matches": [
+      {
+        "id": "r32-1",
+        "rd": "R32",
+        "slot": "r32-1",
+        "a": {
+          "code": null,
+          "label": "1A"
+        },
+        "b": {
+          "code": null,
+          "label": "3CDFG"
+        },
+        "next": "r16-1",
+        "thirdPlaceSlot": null
+      },
+      {
+        "id": "r32-2",
+        "rd": "R32",
+        "slot": "r32-2",
+        "a": {
+          "code": null,
+          "label": "1C"
+        },
+        "b": {
+          "code": null,
+          "label": "2F"
+        },
+        "next": "r16-1",
+        "thirdPlaceSlot": null
+      },
+      {
+        "id": "r32-3",
+        "rd": "R32",
+        "slot": "r32-3",
+        "a": {
+          "code": null,
+          "label": "1E"
+        },
+        "b": {
+          "code": null,
+          "label": "3ABDG"
+        },
+        "next": "r16-2",
+        "thirdPlaceSlot": null
+      },
+      {
+        "id": "r32-4",
+        "rd": "R32",
+        "slot": "r32-4",
+        "a": {
+          "code": null,
+          "label": "1G"
+        },
+        "b": {
+          "code": null,
+          "label": "2C"
+        },
+        "next": "r16-2",
+        "thirdPlaceSlot": null
+      },
+      {
+        "id": "r32-5",
+        "rd": "R32",
+        "slot": "r32-5",
+        "a": {
+          "code": null,
+          "label": "1I"
+        },
+        "b": {
+          "code": null,
+          "label": "3BEFJ"
+        },
+        "next": "r16-3",
+        "thirdPlaceSlot": null
+      },
+      {
+        "id": "r32-6",
+        "rd": "R32",
+        "slot": "r32-6",
+        "a": {
+          "code": null,
+          "label": "1K"
+        },
+        "b": {
+          "code": null,
+          "label": "2I"
+        },
+        "next": "r16-3",
+        "thirdPlaceSlot": null
+      },
+      {
+        "id": "r32-7",
+        "rd": "R32",
+        "slot": "r32-7",
+        "a": {
+          "code": null,
+          "label": "2B"
+        },
+        "b": {
+          "code": null,
+          "label": "2J"
+        },
+        "next": "r16-4",
+        "thirdPlaceSlot": null
+      },
+      {
+        "id": "r32-8",
+        "rd": "R32",
+        "slot": "r32-8",
+        "a": {
+          "code": null,
+          "label": "1D"
+        },
+        "b": {
+          "code": null,
+          "label": "3BEHL"
+        },
+        "next": "r16-4",
+        "thirdPlaceSlot": null
+      },
+      {
+        "id": "r32-9",
+        "rd": "R32",
+        "slot": "r32-9",
+        "a": {
+          "code": null,
+          "label": "1F"
+        },
+        "b": {
+          "code": null,
+          "label": "2A"
+        },
+        "next": "r16-5",
+        "thirdPlaceSlot": null
+      },
+      {
+        "id": "r32-10",
+        "rd": "R32",
+        "slot": "r32-10",
+        "a": {
+          "code": null,
+          "label": "1H"
+        },
+        "b": {
+          "code": null,
+          "label": "3ACDH"
+        },
+        "next": "r16-5",
+        "thirdPlaceSlot": null
+      },
+      {
+        "id": "r32-11",
+        "rd": "R32",
+        "slot": "r32-11",
+        "a": {
+          "code": null,
+          "label": "2E"
+        },
+        "b": {
+          "code": null,
+          "label": "2K"
+        },
+        "next": "r16-6",
+        "thirdPlaceSlot": null
+      },
+      {
+        "id": "r32-12",
+        "rd": "R32",
+        "slot": "r32-12",
+        "a": {
+          "code": null,
+          "label": "1B"
+        },
+        "b": {
+          "code": null,
+          "label": "3EHIJ"
+        },
+        "next": "r16-6",
+        "thirdPlaceSlot": null
+      },
+      {
+        "id": "r32-13",
+        "rd": "R32",
+        "slot": "r32-13",
+        "a": {
+          "code": null,
+          "label": "1J"
+        },
+        "b": {
+          "code": null,
+          "label": "2H"
+        },
+        "next": "r16-7",
+        "thirdPlaceSlot": null
+      },
+      {
+        "id": "r32-14",
+        "rd": "R32",
+        "slot": "r32-14",
+        "a": {
+          "code": null,
+          "label": "2D"
+        },
+        "b": {
+          "code": null,
+          "label": "2G"
+        },
+        "next": "r16-7",
+        "thirdPlaceSlot": null
+      },
+      {
+        "id": "r32-15",
+        "rd": "R32",
+        "slot": "r32-15",
+        "a": {
+          "code": null,
+          "label": "1L"
+        },
+        "b": {
+          "code": null,
+          "label": "2L"
+        },
+        "next": "r16-8",
+        "thirdPlaceSlot": null
+      },
+      {
+        "id": "r32-16",
+        "rd": "R32",
+        "slot": "r32-16",
+        "a": {
+          "code": null,
+          "label": "2 ... "
+        },
+        "b": {
+          "code": null,
+          "label": "..."
+        },
+        "next": "r16-8",
+        "thirdPlaceSlot": null
+      },
+      {
+        "id": "r16-1",
+        "rd": "R16",
+        "a": {
+          "code": null,
+          "label": "W"
+        },
+        "b": {
+          "code": null,
+          "label": "W"
+        },
+        "next": "qf-1"
+      },
+      {
+        "id": "r16-2",
+        "rd": "R16",
+        "a": {
+          "code": null,
+          "label": "W"
+        },
+        "b": {
+          "code": null,
+          "label": "W"
+        },
+        "next": "qf-1"
+      },
+      {
+        "id": "r16-3",
+        "rd": "R16",
+        "a": {
+          "code": null,
+          "label": "W"
+        },
+        "b": {
+          "code": null,
+          "label": "W"
+        },
+        "next": "qf-2"
+      },
+      {
+        "id": "r16-4",
+        "rd": "R16",
+        "a": {
+          "code": null,
+          "label": "W"
+        },
+        "b": {
+          "code": null,
+          "label": "W"
+        },
+        "next": "qf-2"
+      },
+      {
+        "id": "r16-5",
+        "rd": "R16",
+        "a": {
+          "code": null,
+          "label": "W"
+        },
+        "b": {
+          "code": null,
+          "label": "W"
+        },
+        "next": "qf-3"
+      },
+      {
+        "id": "r16-6",
+        "rd": "R16",
+        "a": {
+          "code": null,
+          "label": "W"
+        },
+        "b": {
+          "code": null,
+          "label": "W"
+        },
+        "next": "qf-3"
+      },
+      {
+        "id": "r16-7",
+        "rd": "R16",
+        "a": {
+          "code": null,
+          "label": "W"
+        },
+        "b": {
+          "code": null,
+          "label": "W"
+        },
+        "next": "qf-4"
+      },
+      {
+        "id": "r16-8",
+        "rd": "R16",
+        "a": {
+          "code": null,
+          "label": "W"
+        },
+        "b": {
+          "code": null,
+          "label": "W"
+        },
+        "next": "qf-4"
+      },
+      {
+        "id": "qf-1",
+        "rd": "QF",
+        "a": {
+          "code": null,
+          "label": "W"
+        },
+        "b": {
+          "code": null,
+          "label": "W"
+        },
+        "next": "sf-1"
+      },
+      {
+        "id": "qf-2",
+        "rd": "QF",
+        "a": {
+          "code": null,
+          "label": "W"
+        },
+        "b": {
+          "code": null,
+          "label": "W"
+        },
+        "next": "sf-1"
+      },
+      {
+        "id": "qf-3",
+        "rd": "QF",
+        "a": {
+          "code": null,
+          "label": "W"
+        },
+        "b": {
+          "code": null,
+          "label": "W"
+        },
+        "next": "sf-2"
+      },
+      {
+        "id": "qf-4",
+        "rd": "QF",
+        "a": {
+          "code": null,
+          "label": "W"
+        },
+        "b": {
+          "code": null,
+          "label": "W"
+        },
+        "next": "sf-2"
+      },
+      {
+        "id": "sf-1",
+        "rd": "SF",
+        "a": {
+          "code": null,
+          "label": "W"
+        },
+        "b": {
+          "code": null,
+          "label": "W"
+        },
+        "next": "final-1"
+      },
+      {
+        "id": "sf-2",
+        "rd": "SF",
+        "a": {
+          "code": null,
+          "label": "W"
+        },
+        "b": {
+          "code": null,
+          "label": "W"
+        },
+        "next": "final-1"
+      },
+      {
+        "id": "final-1",
+        "rd": "Final",
+        "a": {
+          "code": null,
+          "label": "W"
+        },
+        "b": {
+          "code": null,
+          "label": "W"
+        }
+      }
+    ]
+  },
+  "scorers": [
+    {
+      "playerId": 153,
+      "code": "ENG",
+      "name": "H. Kane",
+      "team": "England",
+      "g": 4,
+      "a": 1
+    },
+    {
+      "playerId": 123,
+      "code": "MEX",
+      "name": "S. Giménez",
+      "team": "Mexico",
+      "g": 3,
+      "a": 1
+    },
+    {
+      "playerId": 300,
+      "code": "FRA",
+      "name": "K. Mbappé",
+      "team": "France",
+      "g": 3,
+      "a": 2
+    },
+    {
+      "playerId": 301,
+      "code": "BRA",
+      "name": "Vinícius Jr",
+      "team": "Brazil",
+      "g": 3,
+      "a": 0
+    },
+    {
+      "playerId": 150,
+      "code": "ENG",
+      "name": "J. Bellingham",
+      "team": "England",
+      "g": 2,
+      "a": 2
+    },
+    {
+      "playerId": 302,
+      "code": "ARG",
+      "name": "J. Álvarez",
+      "team": "Argentina",
+      "g": 2,
+      "a": 1
+    },
+    {
+      "playerId": 170,
+      "code": "SEN",
+      "name": "S. Mané",
+      "team": "Senegal",
+      "g": 2,
+      "a": 1
+    },
+    {
+      "playerId": 303,
+      "code": "POR",
+      "name": "C. Ronaldo",
+      "team": "Portugal",
+      "g": 2,
+      "a": 0
+    }
+  ],
+  "assists": [
+    {
+      "playerId": 304,
+      "code": "ARG",
+      "name": "L. Messi",
+      "team": "Argentina",
+      "a": 3,
+      "g": 1
+    },
+    {
+      "playerId": 300,
+      "code": "FRA",
+      "name": "K. Mbappé",
+      "team": "France",
+      "a": 2,
+      "g": 3
+    },
+    {
+      "playerId": 151,
+      "code": "ENG",
+      "name": "B. Saka",
+      "team": "England",
+      "a": 2,
+      "g": 1
+    },
+    {
+      "playerId": 152,
+      "code": "ENG",
+      "name": "C. Palmer",
+      "team": "England",
+      "a": 2,
+      "g": 1
+    }
+  ],
+  "discipline": [
+    {
+      "code": "CUW",
+      "team": "Curaçao",
+      "y": 9,
+      "r": 1
+    },
+    {
+      "code": "GHA",
+      "team": "Ghana",
+      "y": 6,
+      "r": 1
+    },
+    {
+      "code": "SEN",
+      "team": "Senegal",
+      "y": 6,
+      "r": 1
+    },
+    {
+      "code": "CMR",
+      "team": "Cameroon",
+      "y": 5,
+      "r": 1
+    },
+    {
+      "code": "NGA",
+      "team": "Nigeria",
+      "y": 3,
+      "r": 1
+    }
+  ],
+  "teams": {
+    "MEX": {
+      "code": "MEX",
+      "name": "Mexico",
+      "group": "A",
+      "rank": 12,
+      "coach": "—",
+      "P": 2,
+      "W": 2,
+      "D": 0,
+      "L": 0,
+      "GF": 5,
+      "GA": 2,
+      "possession": 56,
+      "cleanSheets": 1,
+      "form": [
+        {
+          "o": "CRO",
+          "r": "2-0",
+          "w": true
+        },
+        {
+          "o": "CMR",
+          "r": "1-1",
+          "w": false
+        }
+      ],
+      "squad": [],
+      "verdict": "in"
+    },
+    "CRO": {
+      "code": "CRO",
+      "name": "Croatia",
+      "group": "A",
+      "rank": 13,
+      "coach": "—",
+      "P": 2,
+      "W": 1,
+      "D": 0,
+      "L": 1,
+      "GF": 3,
+      "GA": 3,
+      "possession": 50,
+      "cleanSheets": 0,
+      "form": [
+        {
+          "o": "CMR",
+          "r": "2-0",
+          "w": true
+        },
+        {
+          "o": "KSA",
+          "r": "1-1",
+          "w": false
+        }
+      ],
+      "squad": [],
+      "verdict": "in"
+    },
+    "CMR": {
+      "code": "CMR",
+      "name": "Cameroon",
+      "group": "A",
+      "rank": 14,
+      "coach": "—",
+      "P": 2,
+      "W": 1,
+      "D": 0,
+      "L": 1,
+      "GF": 2,
+      "GA": 3,
+      "possession": 48,
+      "cleanSheets": 0,
+      "form": [
+        {
+          "o": "KSA",
+          "r": "2-0",
+          "w": true
+        },
+        {
+          "o": "MEX",
+          "r": "1-1",
+          "w": false
+        }
+      ],
+      "squad": [],
+      "verdict": "in"
+    },
+    "KSA": {
+      "code": "KSA",
+      "name": "Saudi Arabia",
+      "group": "A",
+      "rank": 15,
+      "coach": "—",
+      "P": 2,
+      "W": 0,
+      "D": 0,
+      "L": 2,
+      "GF": 1,
+      "GA": 3,
+      "possession": 46,
+      "cleanSheets": 0,
+      "form": [
+        {
+          "o": "MEX",
+          "r": "1-0",
+          "w": false
+        },
+        {
+          "o": "CRO",
+          "r": "1-1",
+          "w": false
+        }
+      ],
+      "squad": [],
+      "verdict": "out"
+    },
+    "BEL": {
+      "code": "BEL",
+      "name": "Belgium",
+      "group": "B",
+      "rank": 12,
+      "coach": "—",
+      "P": 2,
+      "W": 1,
+      "D": 1,
+      "L": 0,
+      "GF": 4,
+      "GA": 2,
+      "possession": 54,
+      "cleanSheets": 0,
+      "form": [
+        {
+          "o": "CAN",
+          "r": "2-0",
+          "w": true
+        },
+        {
+          "o": "MAR",
+          "r": "1-1",
+          "w": null
+        }
+      ],
+      "squad": [],
+      "verdict": "in"
+    },
+    "CAN": {
+      "code": "CAN",
+      "name": "Canada",
+      "group": "B",
+      "rank": 13,
+      "coach": "—",
+      "P": 2,
+      "W": 1,
+      "D": 1,
+      "L": 0,
+      "GF": 3,
+      "GA": 1,
+      "possession": 54,
+      "cleanSheets": 0,
+      "form": [
+        {
+          "o": "MAR",
+          "r": "2-0",
+          "w": true
+        },
+        {
+          "o": "JPN",
+          "r": "1-1",
+          "w": null
+        }
+      ],
+      "squad": [],
+      "verdict": "in"
+    },
+    "MAR": {
+      "code": "MAR",
+      "name": "Morocco",
+      "group": "B",
+      "rank": 14,
+      "coach": "—",
+      "P": 2,
+      "W": 1,
+      "D": 0,
+      "L": 1,
+      "GF": 2,
+      "GA": 2,
+      "possession": 50,
+      "cleanSheets": 0,
+      "form": [
+        {
+          "o": "JPN",
+          "r": "2-0",
+          "w": true
+        },
+        {
+          "o": "BEL",
+          "r": "1-1",
+          "w": false
+        }
+      ],
+      "squad": [],
+      "verdict": "in"
+    },
+    "JPN": {
+      "code": "JPN",
+      "name": "Japan",
+      "group": "B",
+      "rank": 15,
+      "coach": "—",
+      "P": 2,
+      "W": 0,
+      "D": 0,
+      "L": 2,
+      "GF": 1,
+      "GA": 5,
+      "possession": 42,
+      "cleanSheets": 0,
+      "form": [
+        {
+          "o": "BEL",
+          "r": "1-0",
+          "w": false
+        },
+        {
+          "o": "CAN",
+          "r": "1-1",
+          "w": false
+        }
+      ],
+      "squad": [],
+      "verdict": "out"
+    },
+    "ENG": {
+      "code": "ENG",
+      "name": "England",
+      "group": "C",
+      "rank": 12,
+      "coach": "—",
+      "P": 2,
+      "W": 2,
+      "D": 0,
+      "L": 0,
+      "GF": 4,
+      "GA": 1,
+      "possession": 56,
+      "cleanSheets": 1,
+      "form": [
+        {
+          "o": "USA",
+          "r": "2-0",
+          "w": true
+        },
+        {
+          "o": "SEN",
+          "r": "1-1",
+          "w": false
+        }
+      ],
+      "squad": [],
+      "verdict": "in"
+    },
+    "USA": {
+      "code": "USA",
+      "name": "United States",
+      "group": "C",
+      "rank": 13,
+      "coach": "—",
+      "P": 2,
+      "W": 1,
+      "D": 0,
+      "L": 1,
+      "GF": 3,
+      "GA": 2,
+      "possession": 52,
+      "cleanSheets": 0,
+      "form": [
+        {
+          "o": "SEN",
+          "r": "2-0",
+          "w": true
+        },
+        {
+          "o": "IRN",
+          "r": "1-1",
+          "w": false
+        }
+      ],
+      "squad": [],
+      "verdict": "in"
+    },
+    "SEN": {
+      "code": "SEN",
+      "name": "Senegal",
+      "group": "C",
+      "rank": 14,
+      "coach": "—",
+      "P": 2,
+      "W": 1,
+      "D": 0,
+      "L": 1,
+      "GF": 3,
+      "GA": 3,
+      "possession": 50,
+      "cleanSheets": 0,
+      "form": [
+        {
+          "o": "IRN",
+          "r": "2-0",
+          "w": true
+        },
+        {
+          "o": "ENG",
+          "r": "1-1",
+          "w": false
+        }
+      ],
+      "squad": [],
+      "verdict": "in"
+    },
+    "IRN": {
+      "code": "IRN",
+      "name": "Iran",
+      "group": "C",
+      "rank": 15,
+      "coach": "—",
+      "P": 2,
+      "W": 0,
+      "D": 0,
+      "L": 2,
+      "GF": 1,
+      "GA": 5,
+      "possession": 42,
+      "cleanSheets": 0,
+      "form": [
+        {
+          "o": "ENG",
+          "r": "1-0",
+          "w": false
+        },
+        {
+          "o": "USA",
+          "r": "1-1",
+          "w": false
+        }
+      ],
+      "squad": [],
+      "verdict": "out"
+    },
+    "ARG": {
+      "code": "ARG",
+      "name": "Argentina",
+      "group": "D",
+      "rank": 12,
+      "coach": "—",
+      "P": 2,
+      "W": 2,
+      "D": 0,
+      "L": 0,
+      "GF": 6,
+      "GA": 1,
+      "possession": 60,
+      "cleanSheets": 1,
+      "form": [
+        {
+          "o": "AUS",
+          "r": "2-0",
+          "w": true
+        },
+        {
+          "o": "POL",
+          "r": "1-1",
+          "w": false
+        }
+      ],
+      "squad": [],
+      "verdict": "in"
+    },
+    "AUS": {
+      "code": "AUS",
+      "name": "Australia",
+      "group": "D",
+      "rank": 13,
+      "coach": "—",
+      "P": 2,
+      "W": 1,
+      "D": 0,
+      "L": 1,
+      "GF": 2,
+      "GA": 2,
+      "possession": 50,
+      "cleanSheets": 0,
+      "form": [
+        {
+          "o": "POL",
+          "r": "2-0",
+          "w": true
+        },
+        {
+          "o": "RSA",
+          "r": "1-1",
+          "w": false
+        }
+      ],
+      "squad": [],
+      "verdict": "in"
+    },
+    "POL": {
+      "code": "POL",
+      "name": "Poland",
+      "group": "D",
+      "rank": 14,
+      "coach": "—",
+      "P": 2,
+      "W": 0,
+      "D": 1,
+      "L": 1,
+      "GF": 2,
+      "GA": 3,
+      "possession": 48,
+      "cleanSheets": 0,
+      "form": [
+        {
+          "o": "RSA",
+          "r": "2-0",
+          "w": false
+        },
+        {
+          "o": "ARG",
+          "r": "1-1",
+          "w": null
+        }
+      ],
+      "squad": [],
+      "verdict": "sweating"
+    },
+    "RSA": {
+      "code": "RSA",
+      "name": "South Africa",
+      "group": "D",
+      "rank": 15,
+      "coach": "—",
+      "P": 2,
+      "W": 0,
+      "D": 1,
+      "L": 1,
+      "GF": 1,
+      "GA": 5,
+      "possession": 42,
+      "cleanSheets": 0,
+      "form": [
+        {
+          "o": "ARG",
+          "r": "1-0",
+          "w": false
+        },
+        {
+          "o": "AUS",
+          "r": "1-1",
+          "w": null
+        }
+      ],
+      "squad": [],
+      "verdict": "out"
+    },
+    "FRA": {
+      "code": "FRA",
+      "name": "France",
+      "group": "E",
+      "rank": 12,
+      "coach": "—",
+      "P": 2,
+      "W": 2,
+      "D": 0,
+      "L": 0,
+      "GF": 5,
+      "GA": 1,
+      "possession": 58,
+      "cleanSheets": 1,
+      "form": [
+        {
+          "o": "SUI",
+          "r": "2-0",
+          "w": true
+        },
+        {
+          "o": "KOR",
+          "r": "1-1",
+          "w": false
+        }
+      ],
+      "squad": [],
+      "verdict": "in"
+    },
+    "SUI": {
+      "code": "SUI",
+      "name": "Switzerland",
+      "group": "E",
+      "rank": 13,
+      "coach": "—",
+      "P": 2,
+      "W": 1,
+      "D": 0,
+      "L": 1,
+      "GF": 3,
+      "GA": 2,
+      "possession": 52,
+      "cleanSheets": 0,
+      "form": [
+        {
+          "o": "KOR",
+          "r": "2-0",
+          "w": true
+        },
+        {
+          "o": "GHA",
+          "r": "1-1",
+          "w": false
+        }
+      ],
+      "squad": [],
+      "verdict": "in"
+    },
+    "KOR": {
+      "code": "KOR",
+      "name": "South Korea",
+      "group": "E",
+      "rank": 14,
+      "coach": "—",
+      "P": 2,
+      "W": 1,
+      "D": 0,
+      "L": 1,
+      "GF": 2,
+      "GA": 2,
+      "possession": 50,
+      "cleanSheets": 0,
+      "form": [
+        {
+          "o": "GHA",
+          "r": "2-0",
+          "w": true
+        },
+        {
+          "o": "FRA",
+          "r": "1-1",
+          "w": false
+        }
+      ],
+      "squad": [],
+      "verdict": "in"
+    },
+    "GHA": {
+      "code": "GHA",
+      "name": "Ghana",
+      "group": "E",
+      "rank": 15,
+      "coach": "—",
+      "P": 2,
+      "W": 0,
+      "D": 0,
+      "L": 2,
+      "GF": 2,
+      "GA": 7,
+      "possession": 40,
+      "cleanSheets": 0,
+      "form": [
+        {
+          "o": "FRA",
+          "r": "2-0",
+          "w": false
+        },
+        {
+          "o": "SUI",
+          "r": "1-1",
+          "w": false
+        }
+      ],
+      "squad": [],
+      "verdict": "out"
+    },
+    "BRA": {
+      "code": "BRA",
+      "name": "Brazil",
+      "group": "F",
+      "rank": 12,
+      "coach": "—",
+      "P": 2,
+      "W": 2,
+      "D": 0,
+      "L": 0,
+      "GF": 4,
+      "GA": 0,
+      "possession": 58,
+      "cleanSheets": 2,
+      "form": [
+        {
+          "o": "SRB",
+          "r": "2-0",
+          "w": true
+        },
+        {
+          "o": "ECU",
+          "r": "1-1",
+          "w": false
+        }
+      ],
+      "squad": [],
+      "verdict": "in"
+    },
+    "SRB": {
+      "code": "SRB",
+      "name": "Serbia",
+      "group": "F",
+      "rank": 13,
+      "coach": "—",
+      "P": 2,
+      "W": 0,
+      "D": 1,
+      "L": 1,
+      "GF": 2,
+      "GA": 3,
+      "possession": 48,
+      "cleanSheets": 0,
+      "form": [
+        {
+          "o": "ECU",
+          "r": "2-0",
+          "w": false
+        },
+        {
+          "o": "TUN",
+          "r": "1-1",
+          "w": null
+        }
+      ],
+      "squad": [],
+      "verdict": "sweating"
+    },
+    "ECU": {
+      "code": "ECU",
+      "name": "Ecuador",
+      "group": "F",
+      "rank": 14,
+      "coach": "—",
+      "P": 2,
+      "W": 1,
+      "D": 1,
+      "L": 0,
+      "GF": 3,
+      "GA": 1,
+      "possession": 54,
+      "cleanSheets": 0,
+      "form": [
+        {
+          "o": "TUN",
+          "r": "2-0",
+          "w": true
+        },
+        {
+          "o": "BRA",
+          "r": "1-1",
+          "w": null
+        }
+      ],
+      "squad": [],
+      "verdict": "in"
+    },
+    "TUN": {
+      "code": "TUN",
+      "name": "Tunisia",
+      "group": "F",
+      "rank": 15,
+      "coach": "—",
+      "P": 2,
+      "W": 0,
+      "D": 0,
+      "L": 2,
+      "GF": 1,
+      "GA": 6,
+      "possession": 40,
+      "cleanSheets": 0,
+      "form": [
+        {
+          "o": "BRA",
+          "r": "1-0",
+          "w": false
+        },
+        {
+          "o": "SRB",
+          "r": "1-1",
+          "w": false
+        }
+      ],
+      "squad": [],
+      "verdict": "out"
+    },
+    "ESP": {
+      "code": "ESP",
+      "name": "Spain",
+      "group": "G",
+      "rank": 12,
+      "coach": "—",
+      "P": 2,
+      "W": 1,
+      "D": 1,
+      "L": 0,
+      "GF": 4,
+      "GA": 2,
+      "possession": 54,
+      "cleanSheets": 0,
+      "form": [
+        {
+          "o": "URU",
+          "r": "2-0",
+          "w": true
+        },
+        {
+          "o": "EGY",
+          "r": "1-1",
+          "w": null
+        }
+      ],
+      "squad": [],
+      "verdict": "in"
+    },
+    "URU": {
+      "code": "URU",
+      "name": "Uruguay",
+      "group": "G",
+      "rank": 13,
+      "coach": "—",
+      "P": 2,
+      "W": 1,
+      "D": 1,
+      "L": 0,
+      "GF": 3,
+      "GA": 2,
+      "possession": 52,
+      "cleanSheets": 0,
+      "form": [
+        {
+          "o": "EGY",
+          "r": "2-0",
+          "w": true
+        },
+        {
+          "o": "QAT",
+          "r": "1-1",
+          "w": null
+        }
+      ],
+      "squad": [],
+      "verdict": "in"
+    },
+    "EGY": {
+      "code": "EGY",
+      "name": "Egypt",
+      "group": "G",
+      "rank": 14,
+      "coach": "—",
+      "P": 2,
+      "W": 0,
+      "D": 1,
+      "L": 1,
+      "GF": 2,
+      "GA": 3,
+      "possession": 48,
+      "cleanSheets": 0,
+      "form": [
+        {
+          "o": "QAT",
+          "r": "2-0",
+          "w": false
+        },
+        {
+          "o": "ESP",
+          "r": "1-1",
+          "w": null
+        }
+      ],
+      "squad": [],
+      "verdict": "sweating"
+    },
+    "QAT": {
+      "code": "QAT",
+      "name": "Qatar",
+      "group": "G",
+      "rank": 15,
+      "coach": "—",
+      "P": 2,
+      "W": 0,
+      "D": 0,
+      "L": 2,
+      "GF": 1,
+      "GA": 5,
+      "possession": 42,
+      "cleanSheets": 0,
+      "form": [
+        {
+          "o": "ESP",
+          "r": "1-0",
+          "w": false
+        },
+        {
+          "o": "URU",
+          "r": "1-1",
+          "w": false
+        }
+      ],
+      "squad": [],
+      "verdict": "out"
+    },
+    "GER": {
+      "code": "GER",
+      "name": "Germany",
+      "group": "H",
+      "rank": 12,
+      "coach": "—",
+      "P": 2,
+      "W": 2,
+      "D": 0,
+      "L": 0,
+      "GF": 5,
+      "GA": 2,
+      "possession": 56,
+      "cleanSheets": 1,
+      "form": [
+        {
+          "o": "COL",
+          "r": "2-0",
+          "w": true
+        },
+        {
+          "o": "CRC",
+          "r": "1-1",
+          "w": false
+        }
+      ],
+      "squad": [],
+      "verdict": "in"
+    },
+    "COL": {
+      "code": "COL",
+      "name": "Colombia",
+      "group": "H",
+      "rank": 13,
+      "coach": "—",
+      "P": 2,
+      "W": 1,
+      "D": 0,
+      "L": 1,
+      "GF": 3,
+      "GA": 2,
+      "possession": 52,
+      "cleanSheets": 0,
+      "form": [
+        {
+          "o": "CRC",
+          "r": "2-0",
+          "w": true
+        },
+        {
+          "o": "UZB",
+          "r": "1-1",
+          "w": false
+        }
+      ],
+      "squad": [],
+      "verdict": "in"
+    },
+    "CRC": {
+      "code": "CRC",
+      "name": "Costa Rica",
+      "group": "H",
+      "rank": 14,
+      "coach": "—",
+      "P": 2,
+      "W": 0,
+      "D": 1,
+      "L": 1,
+      "GF": 2,
+      "GA": 4,
+      "possession": 46,
+      "cleanSheets": 0,
+      "form": [
+        {
+          "o": "UZB",
+          "r": "2-0",
+          "w": false
+        },
+        {
+          "o": "GER",
+          "r": "1-1",
+          "w": null
+        }
+      ],
+      "squad": [],
+      "verdict": "sweating"
+    },
+    "UZB": {
+      "code": "UZB",
+      "name": "Uzbekistan",
+      "group": "H",
+      "rank": 15,
+      "coach": "—",
+      "P": 2,
+      "W": 0,
+      "D": 1,
+      "L": 1,
+      "GF": 2,
+      "GA": 4,
+      "possession": 46,
+      "cleanSheets": 0,
+      "form": [
+        {
+          "o": "GER",
+          "r": "2-0",
+          "w": false
+        },
+        {
+          "o": "COL",
+          "r": "1-1",
+          "w": null
+        }
+      ],
+      "squad": [],
+      "verdict": "out"
+    },
+    "POR": {
+      "code": "POR",
+      "name": "Portugal",
+      "group": "I",
+      "rank": 12,
+      "coach": "—",
+      "P": 2,
+      "W": 2,
+      "D": 0,
+      "L": 0,
+      "GF": 4,
+      "GA": 1,
+      "possession": 56,
+      "cleanSheets": 1,
+      "form": [
+        {
+          "o": "CIV",
+          "r": "2-0",
+          "w": true
+        },
+        {
+          "o": "JOR",
+          "r": "1-1",
+          "w": false
+        }
+      ],
+      "squad": [],
+      "verdict": "in"
+    },
+    "CIV": {
+      "code": "CIV",
+      "name": "Ivory Coast",
+      "group": "I",
+      "rank": 13,
+      "coach": "—",
+      "P": 2,
+      "W": 1,
+      "D": 0,
+      "L": 1,
+      "GF": 3,
+      "GA": 3,
+      "possession": 50,
+      "cleanSheets": 0,
+      "form": [
+        {
+          "o": "JOR",
+          "r": "2-0",
+          "w": true
+        },
+        {
+          "o": "PAN",
+          "r": "1-1",
+          "w": false
+        }
+      ],
+      "squad": [],
+      "verdict": "in"
+    },
+    "JOR": {
+      "code": "JOR",
+      "name": "Jordan",
+      "group": "I",
+      "rank": 14,
+      "coach": "—",
+      "P": 2,
+      "W": 0,
+      "D": 1,
+      "L": 1,
+      "GF": 2,
+      "GA": 3,
+      "possession": 48,
+      "cleanSheets": 0,
+      "form": [
+        {
+          "o": "PAN",
+          "r": "2-0",
+          "w": false
+        },
+        {
+          "o": "POR",
+          "r": "1-1",
+          "w": null
+        }
+      ],
+      "squad": [],
+      "verdict": "sweating"
+    },
+    "PAN": {
+      "code": "PAN",
+      "name": "Panama",
+      "group": "I",
+      "rank": 15,
+      "coach": "—",
+      "P": 2,
+      "W": 0,
+      "D": 1,
+      "L": 1,
+      "GF": 1,
+      "GA": 3,
+      "possession": 46,
+      "cleanSheets": 0,
+      "form": [
+        {
+          "o": "POR",
+          "r": "1-0",
+          "w": false
+        },
+        {
+          "o": "CIV",
+          "r": "1-1",
+          "w": null
+        }
+      ],
+      "squad": [],
+      "verdict": "out"
+    },
+    "ITA": {
+      "code": "ITA",
+      "name": "Italy",
+      "group": "J",
+      "rank": 12,
+      "coach": "—",
+      "P": 2,
+      "W": 1,
+      "D": 1,
+      "L": 0,
+      "GF": 3,
+      "GA": 1,
+      "possession": 54,
+      "cleanSheets": 0,
+      "form": [
+        {
+          "o": "DEN",
+          "r": "2-0",
+          "w": true
+        },
+        {
+          "o": "PAR",
+          "r": "1-1",
+          "w": null
+        }
+      ],
+      "squad": [],
+      "verdict": "in"
+    },
+    "DEN": {
+      "code": "DEN",
+      "name": "Denmark",
+      "group": "J",
+      "rank": 13,
+      "coach": "—",
+      "P": 2,
+      "W": 1,
+      "D": 1,
+      "L": 0,
+      "GF": 3,
+      "GA": 2,
+      "possession": 52,
+      "cleanSheets": 0,
+      "form": [
+        {
+          "o": "PAR",
+          "r": "2-0",
+          "w": true
+        },
+        {
+          "o": "CPV",
+          "r": "1-1",
+          "w": null
+        }
+      ],
+      "squad": [],
+      "verdict": "in"
+    },
+    "PAR": {
+      "code": "PAR",
+      "name": "Paraguay",
+      "group": "J",
+      "rank": 14,
+      "coach": "—",
+      "P": 2,
+      "W": 0,
+      "D": 1,
+      "L": 1,
+      "GF": 1,
+      "GA": 2,
+      "possession": 48,
+      "cleanSheets": 0,
+      "form": [
+        {
+          "o": "CPV",
+          "r": "1-0",
+          "w": false
+        },
+        {
+          "o": "ITA",
+          "r": "1-1",
+          "w": null
+        }
+      ],
+      "squad": [],
+      "verdict": "sweating"
+    },
+    "CPV": {
+      "code": "CPV",
+      "name": "Cape Verde",
+      "group": "J",
+      "rank": 15,
+      "coach": "—",
+      "P": 2,
+      "W": 0,
+      "D": 1,
+      "L": 1,
+      "GF": 2,
+      "GA": 4,
+      "possession": 46,
+      "cleanSheets": 0,
+      "form": [
+        {
+          "o": "ITA",
+          "r": "2-0",
+          "w": false
+        },
+        {
+          "o": "DEN",
+          "r": "1-1",
+          "w": null
+        }
+      ],
+      "squad": [],
+      "verdict": "out"
+    },
+    "NED": {
+      "code": "NED",
+      "name": "Netherlands",
+      "group": "K",
+      "rank": 12,
+      "coach": "—",
+      "P": 2,
+      "W": 2,
+      "D": 0,
+      "L": 0,
+      "GF": 4,
+      "GA": 1,
+      "possession": 56,
+      "cleanSheets": 1,
+      "form": [
+        {
+          "o": "MLI",
+          "r": "2-0",
+          "w": true
+        },
+        {
+          "o": "NZL",
+          "r": "1-1",
+          "w": false
+        }
+      ],
+      "squad": [],
+      "verdict": "in"
+    },
+    "MLI": {
+      "code": "MLI",
+      "name": "Mali",
+      "group": "K",
+      "rank": 13,
+      "coach": "—",
+      "P": 2,
+      "W": 1,
+      "D": 0,
+      "L": 1,
+      "GF": 2,
+      "GA": 2,
+      "possession": 50,
+      "cleanSheets": 0,
+      "form": [
+        {
+          "o": "NZL",
+          "r": "2-0",
+          "w": true
+        },
+        {
+          "o": "HON",
+          "r": "1-1",
+          "w": false
+        }
+      ],
+      "squad": [],
+      "verdict": "in"
+    },
+    "NZL": {
+      "code": "NZL",
+      "name": "New Zealand",
+      "group": "K",
+      "rank": 14,
+      "coach": "—",
+      "P": 2,
+      "W": 0,
+      "D": 1,
+      "L": 1,
+      "GF": 1,
+      "GA": 3,
+      "possession": 46,
+      "cleanSheets": 0,
+      "form": [
+        {
+          "o": "HON",
+          "r": "1-0",
+          "w": false
+        },
+        {
+          "o": "NED",
+          "r": "1-1",
+          "w": null
+        }
+      ],
+      "squad": [],
+      "verdict": "out"
+    },
+    "HON": {
+      "code": "HON",
+      "name": "Honduras",
+      "group": "K",
+      "rank": 15,
+      "coach": "—",
+      "P": 2,
+      "W": 0,
+      "D": 1,
+      "L": 1,
+      "GF": 2,
+      "GA": 3,
+      "possession": 48,
+      "cleanSheets": 0,
+      "form": [
+        {
+          "o": "NED",
+          "r": "2-0",
+          "w": false
+        },
+        {
+          "o": "MLI",
+          "r": "1-1",
+          "w": null
+        }
+      ],
+      "squad": [],
+      "verdict": "sweating"
+    },
+    "NGA": {
+      "code": "NGA",
+      "name": "Nigeria",
+      "group": "L",
+      "rank": 12,
+      "coach": "—",
+      "P": 2,
+      "W": 1,
+      "D": 1,
+      "L": 0,
+      "GF": 4,
+      "GA": 2,
+      "possession": 54,
+      "cleanSheets": 0,
+      "form": [
+        {
+          "o": "SCO",
+          "r": "2-0",
+          "w": true
+        },
+        {
+          "o": "AUT",
+          "r": "1-1",
+          "w": null
+        }
+      ],
+      "squad": [],
+      "verdict": "in"
+    },
+    "SCO": {
+      "code": "SCO",
+      "name": "Scotland",
+      "group": "L",
+      "rank": 13,
+      "coach": "—",
+      "P": 2,
+      "W": 1,
+      "D": 0,
+      "L": 1,
+      "GF": 2,
+      "GA": 2,
+      "possession": 50,
+      "cleanSheets": 0,
+      "form": [
+        {
+          "o": "AUT",
+          "r": "2-0",
+          "w": true
+        },
+        {
+          "o": "CUW",
+          "r": "1-1",
+          "w": false
+        }
+      ],
+      "squad": [],
+      "verdict": "in"
+    },
+    "AUT": {
+      "code": "AUT",
+      "name": "Austria",
+      "group": "L",
+      "rank": 14,
+      "coach": "—",
+      "P": 2,
+      "W": 1,
+      "D": 0,
+      "L": 1,
+      "GF": 3,
+      "GA": 3,
+      "possession": 50,
+      "cleanSheets": 0,
+      "form": [
+        {
+          "o": "CUW",
+          "r": "2-0",
+          "w": true
+        },
+        {
+          "o": "NGA",
+          "r": "1-1",
+          "w": false
+        }
+      ],
+      "squad": [],
+      "verdict": "in"
+    },
+    "CUW": {
+      "code": "CUW",
+      "name": "Curaçao",
+      "group": "L",
+      "rank": 15,
+      "coach": "—",
+      "P": 2,
+      "W": 0,
+      "D": 1,
+      "L": 1,
+      "GF": 2,
+      "GA": 4,
+      "possession": 46,
+      "cleanSheets": 0,
+      "form": [
+        {
+          "o": "NGA",
+          "r": "2-0",
+          "w": false
+        },
+        {
+          "o": "SCO",
+          "r": "1-1",
+          "w": null
+        }
+      ],
+      "squad": [],
+      "verdict": "out"
+    }
+  },
+  "players": {
+    "123": {
+      "name": "Santiago Giménez",
+      "code": "MEX",
+      "pos": "Striker",
+      "age": 25,
+      "num": 9,
+      "club": "AC Milan",
+      "league": "Serie A",
+      "tournament": {
+        "apps": 3,
+        "min": 248,
+        "g": 3,
+        "a": 1,
+        "shots": 13,
+        "keyPasses": 4,
+        "yellow": 1,
+        "red": 0,
+        "rating": 7.9
+      },
+      "season": [
+        {
+          "comp": "Serie A",
+          "apps": 31,
+          "g": 14,
+          "a": 3,
+          "yellow": 5,
+          "red": 0,
+          "min": 2510,
+          "shots": 78,
+          "keyPasses": 21,
+          "rating": 7.1
+        }
+      ],
+      "career": [
+        {
+          "from": "Cruz Azul",
+          "to": "Feyenoord",
+          "year": 2022
+        },
+        {
+          "from": "Feyenoord",
+          "to": "AC Milan",
+          "year": 2025
+        }
+      ],
+      "honours": [
+        {
+          "title": "Eredivisie",
+          "year": 2023
+        },
+        {
+          "title": "KNVB Cup",
+          "year": 2024
+        }
+      ]
+    },
+    "150": {
+      "name": "Jude Bellingham",
+      "code": "ENG",
+      "pos": "Midfielder",
+      "age": 22,
+      "num": 8,
+      "club": "Real Madrid",
+      "league": "La Liga",
+      "tournament": {
+        "apps": 3,
+        "min": 270,
+        "g": 2,
+        "a": 2,
+        "shots": 9,
+        "keyPasses": 7,
+        "yellow": 1,
+        "red": 0,
+        "rating": 8
+      },
+      "season": [
+        {
+          "comp": "La Liga",
+          "apps": 33,
+          "g": 18,
+          "a": 9,
+          "yellow": 6,
+          "red": 1,
+          "min": 2820,
+          "shots": 92,
+          "keyPasses": 55,
+          "rating": 7.8
+        },
+        {
+          "comp": "Champions League",
+          "apps": 11,
+          "g": 5,
+          "a": 3,
+          "yellow": 2,
+          "red": 0,
+          "min": 980,
+          "rating": 7.9
+        }
+      ],
+      "career": [
+        {
+          "from": "Birmingham City",
+          "to": "Borussia Dortmund",
+          "year": 2020
+        },
+        {
+          "from": "Borussia Dortmund",
+          "to": "Real Madrid",
+          "year": 2023
+        }
+      ],
+      "honours": [
+        {
+          "title": "La Liga",
+          "year": 2024
+        },
+        {
+          "title": "Champions League",
+          "year": 2024
+        }
+      ]
+    },
+    "151": {
+      "name": "Bukayo Saka",
+      "code": "ENG",
+      "pos": "Winger",
+      "age": 24,
+      "num": 7,
+      "club": "Arsenal",
+      "league": "Premier League",
+      "tournament": {
+        "apps": 3,
+        "min": 255,
+        "g": 1,
+        "a": 2,
+        "shots": 8,
+        "keyPasses": 9,
+        "yellow": 0,
+        "red": 0,
+        "rating": 7.6
+      },
+      "season": [
+        {
+          "comp": "Premier League",
+          "apps": 34,
+          "g": 13,
+          "a": 11,
+          "yellow": 4,
+          "red": 0,
+          "min": 2890,
+          "rating": 7.7
+        }
+      ],
+      "career": [],
+      "honours": [
+        {
+          "title": "FA Cup",
+          "year": 2020
+        }
+      ]
+    },
+    "153": {
+      "name": "Harry Kane",
+      "code": "ENG",
+      "pos": "Striker",
+      "age": 32,
+      "num": 9,
+      "club": "Bayern Munich",
+      "league": "Bundesliga",
+      "tournament": {
+        "apps": 3,
+        "min": 270,
+        "g": 4,
+        "a": 1,
+        "shots": 14,
+        "keyPasses": 5,
+        "yellow": 0,
+        "red": 0,
+        "rating": 8.2
+      },
+      "season": [
+        {
+          "comp": "Bundesliga",
+          "apps": 32,
+          "g": 31,
+          "a": 8,
+          "yellow": 3,
+          "red": 0,
+          "min": 2810,
+          "rating": 8.1
+        }
+      ],
+      "career": [
+        {
+          "from": "Tottenham Hotspur",
+          "to": "Bayern Munich",
+          "year": 2023
+        }
+      ],
+      "honours": [
+        {
+          "title": "Bundesliga",
+          "year": 2025
+        }
+      ]
+    },
+    "201": {
+      "name": "Salem Al-Dawsari",
+      "code": "KSA",
+      "pos": "Winger",
+      "age": 34,
+      "num": 10,
+      "club": "Al-Hilal",
+      "league": "Saudi Pro League",
+      "tournament": {
+        "apps": 3,
+        "min": 270,
+        "g": 1,
+        "a": 1,
+        "shots": 7,
+        "keyPasses": 5,
+        "yellow": 1,
+        "red": 0,
+        "rating": 7.2
+      },
+      "season": [
+        {
+          "comp": "Saudi Pro League",
+          "apps": 28,
+          "g": 10,
+          "a": 7,
+          "yellow": 3,
+          "red": 0,
+          "min": 2400,
+          "rating": 7.4
+        }
+      ],
+      "career": [],
+      "honours": [
+        {
+          "title": "AFC Champions League",
+          "year": 2021
+        }
+      ]
+    },
+    "300": {
+      "name": "Kylian Mbappé",
+      "code": "FRA",
+      "pos": "Forward",
+      "age": 27,
+      "num": 10,
+      "club": "Real Madrid",
+      "league": "La Liga",
+      "tournament": {
+        "apps": 3,
+        "min": 265,
+        "g": 3,
+        "a": 2,
+        "shots": 15,
+        "keyPasses": 6,
+        "yellow": 0,
+        "red": 0,
+        "rating": 8.3
+      },
+      "season": [
+        {
+          "comp": "La Liga",
+          "apps": 32,
+          "g": 27,
+          "a": 6,
+          "yellow": 2,
+          "red": 0,
+          "min": 2700,
+          "rating": 8
+        }
+      ],
+      "career": [
+        {
+          "from": "Monaco",
+          "to": "Paris Saint-Germain",
+          "year": 2018
+        },
+        {
+          "from": "Paris Saint-Germain",
+          "to": "Real Madrid",
+          "year": 2024
+        }
+      ],
+      "honours": [
+        {
+          "title": "World Cup",
+          "year": 2018
+        },
+        {
+          "title": "La Liga",
+          "year": 2025
+        }
+      ]
+    },
+    "400": {
+      "name": "Bruno Fernandes",
+      "code": "POR",
+      "pos": "Midfielder",
+      "age": 31,
+      "num": 8,
+      "club": "Manchester United",
+      "league": "Premier League",
+      "tournament": {
+        "apps": 3,
+        "min": 270,
+        "g": 1,
+        "a": 2,
+        "shots": 10,
+        "keyPasses": 11,
+        "yellow": 1,
+        "red": 0,
+        "rating": 7.5
+      },
+      "season": [
+        {
+          "comp": "Premier League",
+          "apps": 35,
+          "g": 9,
+          "a": 13,
+          "yellow": 8,
+          "red": 1,
+          "min": 3050,
+          "rating": 7.5
+        }
+      ],
+      "career": [
+        {
+          "from": "Sporting CP",
+          "to": "Manchester United",
+          "year": 2020
+        }
+      ],
+      "honours": [
+        {
+          "title": "FA Cup",
+          "year": 2024
+        }
+      ]
+    },
+    "401": {
+      "name": "Casemiro",
+      "code": "BRA",
+      "pos": "Midfielder",
+      "age": 34,
+      "num": 5,
+      "club": "Manchester United",
+      "league": "Premier League",
+      "tournament": {
+        "apps": 2,
+        "min": 180,
+        "g": 0,
+        "a": 0,
+        "shots": 2,
+        "keyPasses": 1,
+        "yellow": 1,
+        "red": 0,
+        "rating": 6.9
+      },
+      "season": [
+        {
+          "comp": "Premier League",
+          "apps": 24,
+          "g": 3,
+          "a": 1,
+          "yellow": 9,
+          "red": 1,
+          "min": 1980,
+          "rating": 6.8
+        }
+      ],
+      "career": [
+        {
+          "from": "Real Madrid",
+          "to": "Manchester United",
+          "year": 2022
+        }
+      ],
+      "honours": [
+        {
+          "title": "Champions League",
+          "year": 2022
+        }
+      ]
+    },
+    "402": {
+      "name": "Virgil van Dijk",
+      "code": "NED",
+      "pos": "Defender",
+      "age": 34,
+      "num": 4,
+      "club": "Liverpool",
+      "league": "Premier League",
+      "tournament": {
+        "apps": 2,
+        "min": 180,
+        "g": 1,
+        "a": 0,
+        "shots": 3,
+        "keyPasses": 1,
+        "yellow": 0,
+        "red": 0,
+        "rating": 7.6
+      },
+      "season": [
+        {
+          "comp": "Premier League",
+          "apps": 36,
+          "g": 4,
+          "a": 1,
+          "yellow": 3,
+          "red": 0,
+          "min": 3240,
+          "rating": 7.6
+        }
+      ],
+      "career": [
+        {
+          "from": "Southampton",
+          "to": "Liverpool",
+          "year": 2018
+        }
+      ],
+      "honours": [
+        {
+          "title": "Premier League",
+          "year": 2025
+        }
+      ]
+    },
+    "403": {
+      "name": "Alexis Mac Allister",
+      "code": "ARG",
+      "pos": "Midfielder",
+      "age": 27,
+      "num": 20,
+      "club": "Liverpool",
+      "league": "Premier League",
+      "tournament": {
+        "apps": 2,
+        "min": 190,
+        "g": 1,
+        "a": 1,
+        "shots": 4,
+        "keyPasses": 6,
+        "yellow": 1,
+        "red": 0,
+        "rating": 7.7
+      },
+      "season": [
+        {
+          "comp": "Premier League",
+          "apps": 33,
+          "g": 6,
+          "a": 7,
+          "yellow": 5,
+          "red": 0,
+          "min": 2700,
+          "rating": 7.5
+        }
+      ],
+      "career": [
+        {
+          "from": "Brighton",
+          "to": "Liverpool",
+          "year": 2023
+        }
+      ],
+      "honours": [
+        {
+          "title": "World Cup",
+          "year": 2022
+        }
+      ]
+    },
+    "404": {
+      "name": "Cristian Romero",
+      "code": "ARG",
+      "pos": "Defender",
+      "age": 28,
+      "num": 13,
+      "club": "Tottenham Hotspur",
+      "league": "Premier League",
+      "tournament": {
+        "apps": 2,
+        "min": 180,
+        "g": 0,
+        "a": 0,
+        "shots": 1,
+        "keyPasses": 0,
+        "yellow": 2,
+        "red": 0,
+        "rating": 7.1
+      },
+      "season": [
+        {
+          "comp": "Premier League",
+          "apps": 30,
+          "g": 3,
+          "a": 1,
+          "yellow": 10,
+          "red": 1,
+          "min": 2640,
+          "rating": 7.2
+        }
+      ],
+      "career": [
+        {
+          "from": "Atalanta",
+          "to": "Tottenham Hotspur",
+          "year": 2022
+        }
+      ],
+      "honours": [
+        {
+          "title": "World Cup",
+          "year": 2022
+        }
+      ]
+    },
+    "405": {
+      "name": "Heung-min Son",
+      "code": "KOR",
+      "pos": "Forward",
+      "age": 33,
+      "num": 7,
+      "club": "Tottenham Hotspur",
+      "league": "Premier League",
+      "tournament": {
+        "apps": 2,
+        "min": 180,
+        "g": 1,
+        "a": 1,
+        "shots": 6,
+        "keyPasses": 4,
+        "yellow": 0,
+        "red": 0,
+        "rating": 7.4
+      },
+      "season": [
+        {
+          "comp": "Premier League",
+          "apps": 34,
+          "g": 11,
+          "a": 9,
+          "yellow": 2,
+          "red": 0,
+          "min": 2900,
+          "rating": 7.4
+        }
+      ],
+      "career": [
+        {
+          "from": "Bayer Leverkusen",
+          "to": "Tottenham Hotspur",
+          "year": 2015
+        }
+      ],
+      "honours": []
+    },
+    "406": {
+      "name": "Dušan Vlahović",
+      "code": "SRB",
+      "pos": "Striker",
+      "age": 26,
+      "num": 9,
+      "club": "Juventus",
+      "league": "Serie A",
+      "tournament": {
+        "apps": 2,
+        "min": 165,
+        "g": 1,
+        "a": 0,
+        "shots": 7,
+        "keyPasses": 2,
+        "yellow": 1,
+        "red": 0,
+        "rating": 6.8
+      },
+      "season": [
+        {
+          "comp": "Serie A",
+          "apps": 31,
+          "g": 16,
+          "a": 3,
+          "yellow": 6,
+          "red": 0,
+          "min": 2500,
+          "rating": 7
+        }
+      ],
+      "career": [
+        {
+          "from": "Fiorentina",
+          "to": "Juventus",
+          "year": 2022
+        }
+      ],
+      "honours": [
+        {
+          "title": "Coppa Italia",
+          "year": 2024
+        }
+      ]
+    }
+  },
+  "clubWatch": {
+    "manchester-united": {
+      "name": "Manchester United",
+      "crest": "",
+      "nextAction": {
+        "playerId": "401",
+        "nation": "BRA",
+        "opponent": "TUN",
+        "kickoff": "2026-06-26T22:00:00.000Z"
+      },
+      "players": [
+        {
+          "playerId": "400",
+          "nation": "POR",
+          "pos": "Midfielder",
+          "num": 8,
+          "nextFixture": {
+            "opponent": "PAN",
+            "kickoff": "2026-06-27T16:00:00.000Z"
+          },
+          "tournament": {
+            "apps": 3,
+            "min": 270,
+            "g": 1,
+            "a": 2,
+            "yellow": 1,
+            "red": 0
+          },
+          "nationVerdict": "in"
+        },
+        {
+          "playerId": "401",
+          "nation": "BRA",
+          "pos": "Midfielder",
+          "num": 5,
+          "nextFixture": {
+            "opponent": "TUN",
+            "kickoff": "2026-06-26T22:00:00.000Z"
+          },
+          "tournament": {
+            "apps": 2,
+            "min": 180,
+            "g": 0,
+            "a": 0,
+            "yellow": 1,
+            "red": 0
+          },
+          "nationVerdict": "in"
+        }
+      ]
+    },
+    "liverpool": {
+      "name": "Liverpool",
+      "crest": "",
+      "nextAction": {
+        "playerId": "403",
+        "nation": "ARG",
+        "opponent": "RSA",
+        "kickoff": "2026-06-26T10:00:00.000Z"
+      },
+      "players": [
+        {
+          "playerId": "402",
+          "nation": "NED",
+          "pos": "Defender",
+          "num": 4,
+          "nextFixture": {
+            "opponent": "HON",
+            "kickoff": "2026-06-28T04:00:00.000Z"
+          },
+          "tournament": {
+            "apps": 2,
+            "min": 180,
+            "g": 1,
+            "a": 0,
+            "yellow": 0,
+            "red": 0
+          },
+          "nationVerdict": "in"
+        },
+        {
+          "playerId": "403",
+          "nation": "ARG",
+          "pos": "Midfielder",
+          "num": 20,
+          "nextFixture": {
+            "opponent": "RSA",
+            "kickoff": "2026-06-26T10:00:00.000Z"
+          },
+          "tournament": {
+            "apps": 2,
+            "min": 190,
+            "g": 1,
+            "a": 1,
+            "yellow": 1,
+            "red": 0
+          },
+          "nationVerdict": "in"
+        }
+      ]
+    },
+    "arsenal": {
+      "name": "Arsenal",
+      "crest": "",
+      "nextAction": {
+        "playerId": "151",
+        "nation": "ENG",
+        "opponent": "IRN",
+        "kickoff": "2026-06-26T04:00:00.000Z"
+      },
+      "players": [
+        {
+          "playerId": "151",
+          "nation": "ENG",
+          "pos": "Winger",
+          "num": 7,
+          "nextFixture": {
+            "opponent": "IRN",
+            "kickoff": "2026-06-26T04:00:00.000Z"
+          },
+          "tournament": {
+            "apps": 3,
+            "min": 255,
+            "g": 1,
+            "a": 2,
+            "yellow": 0,
+            "red": 0
+          },
+          "nationVerdict": "in"
+        }
+      ]
+    },
+    "tottenham": {
+      "name": "Tottenham Hotspur",
+      "crest": "",
+      "nextAction": {
+        "playerId": "404",
+        "nation": "ARG",
+        "opponent": "RSA",
+        "kickoff": "2026-06-26T10:00:00.000Z"
+      },
+      "players": [
+        {
+          "playerId": "404",
+          "nation": "ARG",
+          "pos": "Defender",
+          "num": 13,
+          "nextFixture": {
+            "opponent": "RSA",
+            "kickoff": "2026-06-26T10:00:00.000Z"
+          },
+          "tournament": {
+            "apps": 2,
+            "min": 180,
+            "g": 0,
+            "a": 0,
+            "yellow": 2,
+            "red": 0
+          },
+          "nationVerdict": "in"
+        },
+        {
+          "playerId": "405",
+          "nation": "KOR",
+          "pos": "Forward",
+          "num": 7,
+          "nextFixture": {
+            "opponent": "SUI",
+            "kickoff": "2026-06-26T19:00:00.000Z"
+          },
+          "tournament": {
+            "apps": 2,
+            "min": 180,
+            "g": 1,
+            "a": 1,
+            "yellow": 0,
+            "red": 0
+          },
+          "nationVerdict": "in"
+        }
+      ]
+    },
+    "cardiff-city": {
+      "name": "Cardiff City",
+      "crest": "",
+      "players": []
+    },
+    "juventus": {
+      "name": "Juventus",
+      "crest": "",
+      "nextAction": {
+        "playerId": "406",
+        "nation": "SRB",
+        "opponent": "ECU",
+        "kickoff": "2026-06-27T01:00:00.000Z"
+      },
+      "players": [
+        {
+          "playerId": "406",
+          "nation": "SRB",
+          "pos": "Striker",
+          "num": 9,
+          "nextFixture": {
+            "opponent": "ECU",
+            "kickoff": "2026-06-27T01:00:00.000Z"
+          },
+          "tournament": {
+            "apps": 2,
+            "min": 165,
+            "g": 1,
+            "a": 0,
+            "yellow": 1,
+            "red": 0
+          },
+          "nationVerdict": "sweating"
+        }
+      ]
+    }
+  }
+}
