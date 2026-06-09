@@ -10,7 +10,7 @@ compatibility_date = "2024-11-01"
 # then paste the returned id below.
 [[kv_namespaces]]
 binding = "SNAPSHOT"
-id = "REPLACE_WITH_KV_NAMESPACE_ID"
+id = "616c8be67b784ed7ba4285d426a6762a"
 
 # --- Cron: poll cadence (brief §3) ---
 # Baseline every 6h; the Worker self-tightens to ~60-90s when a fixture is live by

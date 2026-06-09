@@ -73,10 +73,21 @@ offline against `web/data/latest.json`.
 - The Worker's API-Football league id / season / team ids are marked `VERIFY` — they
   must be confirmed against the live API before deploying (brief §3, §7a).
 
-## Deploy (outline)
+## Deploy (no CLI — Cloudflare dashboard + Git)
 
-1. Create a KV namespace, put its id in `wrangler.toml`.
-2. Set the `APIFOOTBALL_KEY` secret: `wrangler secret put APIFOOTBALL_KEY`.
-3. `wrangler deploy` (Worker + Cron).
-4. Create a Pages project pointing at `/web` as the output dir; add the
-   `/data/latest.json` route so it reads the KV snapshot (Pages Function included).
+1. **KV namespace:** Storage & Databases → KV → Create `SNAPSHOT`. Its id is already in
+   `wrangler.toml`.
+2. **Create the Worker from this repo:** Workers & Pages → Create → Workers → Import a
+   repository → pick this repo. Cloudflare reads `wrangler.toml`, builds, and redeploys
+   on every push (Cron + KV binding included).
+3. **Secret:** the Worker → Settings → Variables and Secrets → Add → Type `Secret`,
+   name `APIFOOTBALL_KEY`. (Optional `FOOTBALLDATA_KEY` for the fallback; optional
+   `DEBUG_TOKEN` to guard the endpoints below.)
+4. **Verify the ids** (league/season + the 6 club team ids are guesses until confirmed):
+   open `https://<worker>/debug` — it probes the live API and reports the correct ids
+   without echoing the key. Paste the findings back and the config gets locked in.
+5. **Seed KV immediately:** open `https://<worker>/admin/refresh` to force the first
+   poll (otherwise the snapshot appears on the next Cron tick). Both `/debug` and
+   `/admin/refresh` are temporary and get removed once the ids are confirmed.
+6. **Pages:** create a Pages project for `/web`; route `/data/latest.json` to the
+   Worker (or KV) so the frontend reads the live snapshot.

@@ -275,6 +275,57 @@ async function fallbackSnapshot(env, prev) {
   } catch { return null; }
 }
 
+// ── debug/admin helpers (temporary — used to verify ids, then removed) ──
+function jsonResp(obj, status = 200) {
+  return new Response(JSON.stringify(obj, null, 2), {
+    status, headers: { "content-type": "application/json", "access-control-allow-origin": "*" },
+  });
+}
+// Optional guard: if DEBUG_TOKEN is set, require ?t=<token>. Never exposes the API key.
+function guarded(env, url) {
+  if (!env.DEBUG_TOKEN) return true;
+  return url.searchParams.get("t") === env.DEBUG_TOKEN;
+}
+
+// Probes the live API to confirm the World Cup league id + 2026 season and the six
+// club team ids, WITHOUT trusting the configured guesses. Returns only public
+// metadata (ids, names, seasons) — the key is never echoed.
+async function debugProbe(env) {
+  if (!env.APIFOOTBALL_KEY) return jsonResp({ error: "APIFOOTBALL_KEY secret not set on this Worker" }, 400);
+  const cfg = CFG(env);
+  const out = { configured: { league: cfg.league, season: cfg.season, clubs: cfg.clubs }, findings: {} };
+
+  // 1) World Cup league + which seasons it covers
+  try {
+    const leagues = await apiGet(env, "/leagues", { search: "World Cup" });
+    out.findings.worldCupLeagues = leagues
+      .filter((l) => /world cup/i.test(l.league?.name) && /world|international/i.test(l.country?.name || "World"))
+      .slice(0, 8)
+      .map((l) => ({ id: l.league?.id, name: l.league?.name, type: l.league?.type,
+        country: l.country?.name, seasons: (l.seasons || []).map((s) => s.year) }));
+    const wc = out.findings.worldCupLeagues.find((l) => /^fifa world cup$/i.test(l.name)) || out.findings.worldCupLeagues[0];
+    out.findings.suggestedLeagueId = wc?.id ?? null;
+    out.findings.seasonAvailable = wc ? wc.seasons.includes(Number(cfg.season)) : null;
+  } catch (e) { out.findings.leaguesError = e.message; }
+
+  // 2) confirm each configured club id, and suggest the id if the name doesn't match
+  out.findings.clubs = {};
+  for (const [slug, club] of Object.entries(cfg.clubs)) {
+    const entry = { configuredId: club.id, expectedName: club.name };
+    try {
+      const byId = await apiGet(env, "/teams", { id: club.id });
+      entry.idResolvesTo = byId?.[0]?.team?.name ?? null;
+      entry.match = entry.idResolvesTo && entry.idResolvesTo.toLowerCase().includes(club.name.split(" ")[0].toLowerCase());
+      if (!entry.match) {
+        const byName = await apiGet(env, "/teams", { search: club.name });
+        entry.suggestions = (byName || []).slice(0, 4).map((t) => ({ id: t.team?.id, name: t.team?.name, country: t.team?.country }));
+      }
+    } catch (e) { entry.error = e.message; }
+    out.findings.clubs[slug] = entry;
+  }
+  return jsonResp(out);
+}
+
 async function readSnapshot(env) { return (await env.SNAPSHOT.get(KV_KEY, "json")) || null; }
 async function writeSnapshot(env, snap) { await env.SNAPSHOT.put(KV_KEY, JSON.stringify(snap)); }
 
@@ -321,6 +372,25 @@ export default {
       });
     }
     if (url.pathname === "/healthz") return new Response("ok");
+
+    // TEMPORARY id-verification endpoint (remove after ids are locked in).
+    if (url.pathname === "/debug") {
+      if (!guarded(env, url)) return jsonResp({ error: "forbidden (set ?t=<DEBUG_TOKEN>)" }, 403);
+      return debugProbe(env);
+    }
+    // Force a full poll now (don't wait for cron / live-gate) to seed KV. Guarded.
+    if (url.pathname === "/admin/refresh") {
+      if (!guarded(env, url)) return jsonResp({ error: "forbidden (set ?t=<DEBUG_TOKEN>)" }, 403);
+      try {
+        const snap = await buildSnapshot(env, await readSnapshot(env), false);
+        await writeSnapshot(env, snap);
+        await env.SNAPSHOT.put(META_KEY, JSON.stringify({ lastFull: Date.now(), lastLive: Date.now() }));
+        return jsonResp({ ok: true, updated: snap.meta.updated, groups: Object.keys(snap.groups).length,
+          matches: snap.matches.length, remaining: snap.remainingFixtures.length,
+          thirdPlaceRace: snap.thirdPlaceRace.map((t) => `${t.code}:${t.status}`) });
+      } catch (e) { return jsonResp({ ok: false, error: e.message }, 500); }
+    }
+
     return new Response("WC26 Worker", { status: 200 });
   },
 };
