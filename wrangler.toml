@@ -1,13 +1,21 @@
-# Cloudflare Worker: Cron poller + normaliser → Workers KV (latest.json)
-# The Pages frontend reads the snapshot; it never calls the data API directly.
+# Cloudflare Worker: Cron poller + normaliser → Workers KV, AND serves the frontend.
+# The single Worker serves the static /web app via Static Assets and intercepts
+# GET /data/latest.json to return the KV snapshot — one deployment, same origin,
+# no CORS, no separate Pages project. The frontend only ever reads the snapshot.
 
 name = "worldcuptracker"
 main = "worker/index.js"
 compatibility_date = "2024-11-01"
 
+# --- Static Assets: serve the /web frontend from this Worker ---
+# run_worker_first = true so the Worker runs on every request and can intercept
+# /data/latest.json (KV) before the static mock at web/data/latest.json is served.
+[assets]
+directory = "./web"
+binding = "ASSETS"
+run_worker_first = true
+
 # --- Workers KV: holds the single normalised snapshot (latest.json) ---
-# Create with:  wrangler kv namespace create SNAPSHOT
-# then paste the returned id below.
 [[kv_namespaces]]
 binding = "SNAPSHOT"
 id = "616c8be67b784ed7ba4285d426a6762a"

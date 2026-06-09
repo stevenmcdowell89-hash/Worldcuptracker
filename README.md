@@ -75,19 +75,20 @@ offline against `web/data/latest.json`.
 
 ## Deploy (no CLI — Cloudflare dashboard + Git)
 
+One Worker serves everything: the static `/web` app (Static Assets) **and** the
+`/data/latest.json` snapshot from KV. No separate Pages project, same origin, no CORS.
+Verified live: league `1`, season `2026`, and all six club team ids are correct.
+
 1. **KV namespace:** Storage & Databases → KV → Create `SNAPSHOT`. Its id is already in
    `wrangler.toml`.
 2. **Create the Worker from this repo:** Workers & Pages → Create → Workers → Import a
    repository → pick this repo. Cloudflare reads `wrangler.toml`, builds, and redeploys
-   on every push (Cron + KV binding included).
+   on every push (Cron + KV binding + Static Assets included). Point the build's
+   **production branch** at the branch you deploy from.
 3. **Secret:** the Worker → Settings → Variables and Secrets → Add → Type `Secret`,
-   name `APIFOOTBALL_KEY`. (Optional `FOOTBALLDATA_KEY` for the fallback; optional
-   `DEBUG_TOKEN` to guard the endpoints below.)
-4. **Verify the ids** (league/season + the 6 club team ids are guesses until confirmed):
-   open `https://<worker>/debug` — it probes the live API and reports the correct ids
-   without echoing the key. Paste the findings back and the config gets locked in.
-5. **Seed KV immediately:** open `https://<worker>/admin/refresh` to force the first
-   poll (otherwise the snapshot appears on the next Cron tick). Both `/debug` and
-   `/admin/refresh` are temporary and get removed once the ids are confirmed.
-6. **Pages:** create a Pages project for `/web`; route `/data/latest.json` to the
-   Worker (or KV) so the frontend reads the live snapshot.
+   name `APIFOOTBALL_KEY`. (Optional `FOOTBALLDATA_KEY` for the fallback.)
+4. The Cron poller fills KV (baseline every 6h; ~75s while a fixture is live). The
+   Worker URL then serves the app, which reads `/data/latest.json` from KV.
+
+The `/web/data/latest.json` mock is shadowed in production (the Worker intercepts that
+path and returns KV) but still powers local dev (`npm run dev:web`).

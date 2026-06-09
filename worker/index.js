@@ -512,109 +512,6 @@ async function fallbackSnapshot(env, prev) {
   } catch { return null; }
 }
 
-// ── debug/admin helpers (temporary — used to verify ids, then removed) ──
-function jsonResp(obj, status = 200) {
-  return new Response(JSON.stringify(obj, null, 2), {
-    status, headers: { "content-type": "application/json", "access-control-allow-origin": "*" },
-  });
-}
-// Optional guard: if DEBUG_TOKEN is set, require ?t=<token>. Never exposes the API key.
-function guarded(env, url) {
-  if (!env.DEBUG_TOKEN) return true;
-  return url.searchParams.get("t") === env.DEBUG_TOKEN;
-}
-
-// Probes the live API to confirm the World Cup league id + 2026 season and the six
-// club team ids, WITHOUT trusting the configured guesses. Returns only public
-// metadata (ids, names, seasons) — the key is never echoed.
-async function debugProbe(env) {
-  if (!env.APIFOOTBALL_KEY) return jsonResp({ error: "APIFOOTBALL_KEY secret not set on this Worker" }, 400);
-  const cfg = CFG(env);
-  const out = { configured: { league: cfg.league, season: cfg.season, clubs: cfg.clubs }, findings: {} };
-
-  // 0) account subscription — the definitive source for plan + daily/per-minute limits
-  try {
-    const status = await apiGet(env, "/status", {});
-    const s = Array.isArray(status) ? status[0] : status; // /status returns an object
-    out.findings.subscription = {
-      plan: s?.subscription?.plan, active: s?.subscription?.active,
-      requestsToday: s?.requests?.current, dailyLimit: s?.requests?.limit_day,
-    };
-  } catch (e) { out.findings.statusError = e.message; }
-  await sleep(400);
-
-  // 1) World Cup league + which seasons it covers
-  try {
-    const leagues = await apiGet(env, "/leagues", { search: "World Cup" });
-    out.findings.worldCupLeagues = leagues
-      .filter((l) => /world cup/i.test(l.league?.name) && /world|international/i.test(l.country?.name || "World"))
-      .slice(0, 8)
-      .map((l) => ({ id: l.league?.id, name: l.league?.name, type: l.league?.type,
-        country: l.country?.name, seasons: (l.seasons || []).map((s) => s.year) }));
-    const wc = out.findings.worldCupLeagues.find((l) => /^fifa world cup$/i.test(l.name)) || out.findings.worldCupLeagues[0];
-    out.findings.suggestedLeagueId = wc?.id ?? null;
-    out.findings.seasonAvailable = wc ? wc.seasons.includes(Number(cfg.season)) : null;
-  } catch (e) { out.findings.leaguesError = e.message; }
-
-  // 2) confirm each configured club id, and suggest the id if the name doesn't match
-  out.findings.clubs = {};
-  for (const [slug, club] of Object.entries(cfg.clubs)) {
-    const entry = { configuredId: club.id, expectedName: club.name };
-    try {
-      const byId = await apiGet(env, "/teams", { id: club.id });
-      entry.idResolvesTo = byId?.[0]?.team?.name ?? null;
-      entry.match = entry.idResolvesTo && entry.idResolvesTo.toLowerCase().includes(club.name.split(" ")[0].toLowerCase());
-      if (!entry.match) {
-        await sleep(400);
-        const byName = await apiGet(env, "/teams", { search: club.name });
-        entry.suggestions = (byName || []).slice(0, 4).map((t) => ({ id: t.team?.id, name: t.team?.name, country: t.team?.country }));
-      }
-    } catch (e) { entry.error = e.message; }
-    out.findings.clubs[slug] = entry;
-    await sleep(400);   // pace to stay under the per-minute cap
-  }
-  return jsonResp(out);
-}
-
-// Dumps trimmed RAW API shapes so the normalisers can be fixed against reality
-// (codes, group labels, round format). Returns only football metadata.
-async function debugRaw(env) {
-  if (!env.APIFOOTBALL_KEY) return jsonResp({ error: "APIFOOTBALL_KEY secret not set" }, 400);
-  const base = { league: CFG(env).league, season: CFG(env).season };
-  const out = {};
-
-  try {
-    const st = await apiGet(env, "/standings", base);
-    out.standings = { stages: st.length, leagueStandingsBlocks: st?.[0]?.league?.standings?.length };
-    const tables = st?.[0]?.league?.standings || [];
-    out.standings.groupLabels = tables.map((g) => g?.[0]?.group);
-    out.standings.sampleTeamObject = tables?.[0]?.[0]?.team;        // does it have `code`?
-    out.standings.sampleRow = tables?.[0]?.[0];
-  } catch (e) { out.standingsError = e.message; }
-  await sleep(400);
-
-  try {
-    const fx = await apiGet(env, "/fixtures", base);
-    out.fixtures = { total: fx.length };
-    const byStatus = {}; const rounds = new Set();
-    for (const f of fx) { const s = f.fixture?.status?.short; byStatus[s] = (byStatus[s] || 0) + 1; rounds.add(f.league?.round); }
-    out.fixtures.byStatus = byStatus;
-    out.fixtures.distinctRounds = [...rounds].slice(0, 20);
-    out.fixtures.sample = fx.slice(0, 2).map((f) => ({
-      round: f.league?.round, status: f.fixture?.status?.short,
-      home: f.teams?.home, away: f.teams?.away,                     // do these have `code`?
-    }));
-  } catch (e) { out.fixturesError = e.message; }
-  await sleep(400);
-
-  try {
-    const teams = await apiGet(env, "/teams", base);
-    out.teams = { count: teams.length, sample: teams.slice(0, 3).map((t) => t.team) }; // `code` populated here?
-  } catch (e) { out.teamsError = e.message; }
-
-  return jsonResp(out);
-}
-
 async function readSnapshot(env) { return (await env.SNAPSHOT.get(KV_KEY, "json")) || null; }
 async function writeSnapshot(env, snap) { await env.SNAPSHOT.put(KV_KEY, JSON.stringify(snap)); }
 
@@ -650,7 +547,9 @@ export default {
     ctx.waitUntil(work);
   },
 
-  // Serve the snapshot (Pages can proxy /data/latest.json here).
+  // Serves the snapshot from KV and the static frontend (Static Assets binding).
+  // run_worker_first=true means every request lands here, so /data/latest.json is
+  // returned from KV (not the static mock) before falling through to the app.
   async fetch(request, env) {
     const url = new URL(request.url);
     const path = url.pathname.replace(/\/+$/, "") || "/";   // tolerate trailing slashes
@@ -658,34 +557,11 @@ export default {
       const snap = await env.SNAPSHOT.get(KV_KEY);
       if (!snap) return new Response(JSON.stringify({ error: "no snapshot yet" }), { status: 503, headers: { "content-type": "application/json" } });
       return new Response(snap, {
-        headers: { "content-type": "application/json", "cache-control": "public, max-age=30", "access-control-allow-origin": "*" },
+        headers: { "content-type": "application/json", "cache-control": "public, max-age=30" },
       });
     }
     if (path === "/healthz") return new Response("ok");
-
-    // TEMPORARY id-verification endpoints (remove after ids are locked in).
-    if (path === "/debug") {
-      if (!guarded(env, url)) return jsonResp({ error: "forbidden (set ?t=<DEBUG_TOKEN>)" }, 403);
-      return debugProbe(env);
-    }
-    if (path === "/debug/raw") {
-      if (!guarded(env, url)) return jsonResp({ error: "forbidden (set ?t=<DEBUG_TOKEN>)" }, 403);
-      return debugRaw(env);
-    }
-    // Force a full poll now (don't wait for cron / live-gate) to seed KV. Guarded.
-    if (path === "/admin/refresh") {
-      if (!guarded(env, url)) return jsonResp({ error: "forbidden (set ?t=<DEBUG_TOKEN>)" }, 403);
-      try {
-        const snap = await buildSnapshot(env, await readSnapshot(env), false);
-        await writeSnapshot(env, snap);
-        await env.SNAPSHOT.put(META_KEY, JSON.stringify({ lastFull: Date.now(), lastLive: Date.now() }));
-        return jsonResp({ ok: true, updated: snap.meta.updated, groups: Object.keys(snap.groups).length,
-          matches: snap.matches.length, remaining: snap.remainingFixtures.length,
-          thirdPlaceRace: snap.thirdPlaceRace.map((t) => `${t.code}:${t.status}`) });
-      } catch (e) { return jsonResp({ ok: false, error: e.message }, 500); }
-    }
-
-    // Catch-all: list the routes so a wrong path is obvious (and shows the build is live).
-    return jsonResp({ worker: "WC26", routes: ["/data/latest.json", "/debug", "/debug/raw", "/admin/refresh", "/healthz"], build: "932d8d4+" });
+    // Everything else: the static /web app.
+    return env.ASSETS.fetch(request);
   },
 };
