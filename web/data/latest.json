@@ -1,7 +1,7 @@
 {
   "meta": {
     "stage": "Group Stage",
-    "updated": "2026-06-09T19:59:06.209Z",
+    "updated": "2026-06-09T20:41:55.016Z",
     "groupStageComplete": false,
     "dataSource": "mock"
   },
@@ -1966,6 +1966,7 @@
     "matches": [
       {
         "id": "73",
+        "rd": "R32",
         "a": {
           "code": "CRO",
           "label": "Runner-up Group A",
@@ -1976,11 +1977,11 @@
           "label": "Runner-up Group B",
           "pos": "2B"
         },
-        "rd": "R32",
         "next": "90"
       },
       {
         "id": "74",
+        "rd": "R32",
         "a": {
           "code": "FRA",
           "label": "Winner Group E",
@@ -1997,11 +1998,11 @@
             "F"
           ]
         },
-        "rd": "R32",
         "next": "89"
       },
       {
         "id": "75",
+        "rd": "R32",
         "a": {
           "code": "BRA",
           "label": "Winner Group F",
@@ -2012,26 +2013,26 @@
           "label": "Runner-up Group C",
           "pos": "2C"
         },
-        "rd": "R32",
         "next": "90"
       },
       {
         "id": "76",
+        "rd": "R32",
         "a": {
           "code": "ENG",
           "label": "Winner Group C",
           "pos": "1C"
         },
         "b": {
-          "code": "SRB",
+          "code": "ECU",
           "label": "Runner-up Group F",
           "pos": "2F"
         },
-        "rd": "R32",
         "next": "93"
       },
       {
         "id": "77",
+        "rd": "R32",
         "a": {
           "code": "POR",
           "label": "Winner Group I",
@@ -2048,11 +2049,11 @@
             "H"
           ]
         },
-        "rd": "R32",
         "next": "89"
       },
       {
         "id": "78",
+        "rd": "R32",
         "a": {
           "code": "SUI",
           "label": "Runner-up Group E",
@@ -2063,11 +2064,11 @@
           "label": "Runner-up Group I",
           "pos": "2I"
         },
-        "rd": "R32",
         "next": "93"
       },
       {
         "id": "79",
+        "rd": "R32",
         "a": {
           "code": "MEX",
           "label": "Winner Group A",
@@ -2084,11 +2085,11 @@
             "I"
           ]
         },
-        "rd": "R32",
         "next": "94"
       },
       {
         "id": "80",
+        "rd": "R32",
         "a": {
           "code": "NGA",
           "label": "Winner Group L",
@@ -2105,11 +2106,11 @@
             "K"
           ]
         },
-        "rd": "R32",
         "next": "94"
       },
       {
         "id": "81",
+        "rd": "R32",
         "a": {
           "code": "ARG",
           "label": "Winner Group D",
@@ -2126,11 +2127,11 @@
             "J"
           ]
         },
-        "rd": "R32",
         "next": "92"
       },
       {
         "id": "82",
+        "rd": "R32",
         "a": {
           "code": "ESP",
           "label": "Winner Group G",
@@ -2147,26 +2148,26 @@
             "J"
           ]
         },
-        "rd": "R32",
         "next": "92"
       },
       {
         "id": "83",
+        "rd": "R32",
         "a": {
           "code": "MLI",
           "label": "Runner-up Group K",
           "pos": "2K"
         },
         "b": {
-          "code": "SCO",
+          "code": "AUT",
           "label": "Runner-up Group L",
           "pos": "2L"
         },
-        "rd": "R32",
         "next": "91"
       },
       {
         "id": "84",
+        "rd": "R32",
         "a": {
           "code": "GER",
           "label": "Winner Group H",
@@ -2177,11 +2178,11 @@
           "label": "Runner-up Group J",
           "pos": "2J"
         },
-        "rd": "R32",
         "next": "91"
       },
       {
         "id": "85",
+        "rd": "R32",
         "a": {
           "code": "BEL",
           "label": "Winner Group B",
@@ -2198,11 +2199,11 @@
             "J"
           ]
         },
-        "rd": "R32",
         "next": "96"
       },
       {
         "id": "86",
+        "rd": "R32",
         "a": {
           "code": "ITA",
           "label": "Winner Group J",
@@ -2213,11 +2214,11 @@
           "label": "Runner-up Group H",
           "pos": "2H"
         },
-        "rd": "R32",
         "next": "95"
       },
       {
         "id": "87",
+        "rd": "R32",
         "a": {
           "code": "NED",
           "label": "Winner Group K",
@@ -2234,11 +2235,11 @@
             "L"
           ]
         },
-        "rd": "R32",
         "next": "96"
       },
       {
         "id": "88",
+        "rd": "R32",
         "a": {
           "code": "AUS",
           "label": "Runner-up Group D",
@@ -2249,7 +2250,6 @@
           "label": "Runner-up Group G",
           "pos": "2G"
         },
-        "rd": "R32",
         "next": "95"
       },
       {

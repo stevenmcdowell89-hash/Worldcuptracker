@@ -13,7 +13,9 @@
 // The shared engine pre-derives the third-place race & verdicts so the snapshot is
 // engine-ready and the frontend renders instantly.
 
-import { thirdPlaceTable, recompute, verdicts } from "../web/js/engine.js";
+import { thirdPlaceTable, recompute, verdicts, compareGroupRows, plainEnglish } from "../web/js/engine.js";
+import { buildBracket } from "../web/js/bracket.js";
+import ANNEXC from "../web/js/annexC.data.js";
 
 const API = "https://v3.football.api-sports.io";
 const KV_KEY = "latest.json";
@@ -83,10 +85,11 @@ function normStandings(resp) {
       const row = {
         code: r.team?.code || String(r.team?.id),
         name: r.team?.name,
+        _id: r.team?.id,     // internal: API team id (for squad/stats lookups)
         P: r.all?.played ?? 0, W: r.all?.win ?? 0, D: r.all?.draw ?? 0, L: r.all?.lose ?? 0,
         GF: r.all?.goals?.for ?? 0, GA: r.all?.goals?.against ?? 0,
         GD: r.goalsDiff ?? 0, Pts: r.points ?? 0,
-        yellow: 0, red: 0,   // filled from discipline aggregation if available
+        yellow: 0, red: 0,   // filled from /teams/statistics (fair-play tiebreak)
       };
       row.GD = row.GF - row.GA;
       (groups[letter] = groups[letter] || []).push(row);
@@ -191,29 +194,42 @@ async function buildClubWatch(env, cfg, teams, players, remainingFixtures) {
 }
 
 // ── orchestrate one full poll ──
-async function buildSnapshot(env, prev, liveOnly) {
+// liveOnly = true → only the cheap live path (events/stats for in-play fixtures);
+// reuses everything else from the previous snapshot. Heavy enrichment runs only on
+// the baseline (full) poll, and finalised data is persisted so we fetch it once.
+export async function buildSnapshot(env, prev, liveOnly) {
   const cfg = CFG(env);
   const base = { league: cfg.league, season: cfg.season };
 
-  // Standings + all fixtures (cheap, run every poll).
+  // Standings + all fixtures (cheap, every poll).
   const groups = normStandings(await apiGet(env, "/standings", base));
-  for (const g of Object.keys(groups)) groups[g].sort((a, b) => b.Pts - a.Pts || b.GD - a.GD || b.GF - a.GF);
   const { matches, remainingFixtures } = normFixtures(await apiGet(env, "/fixtures", base));
 
-  // Live detail only for in-play fixtures (events/stats/lineups).
-  for (const m of matches.filter((x) => x.status === "live" || x.status === "ht")) {
+  // Carry over finalised match detail (events/stats/lineups/ratings never change once
+  // FT) so each finished match is fetched exactly once.
+  const prevMatch = Object.fromEntries((prev?.matches || []).map((m) => [m.id, m]));
+  for (const m of matches) {
+    const p = prevMatch[m.id];
+    if (m.status === "ft" && p?.lineups) {
+      m.events = p.events; m.stats = p.stats; m.lineups = p.lineups; m.progressionLine = p.progressionLine; m._final = true;
+    }
+  }
+  // Fetch detail: live/HT every poll; newly-finished matches once (incl FT ratings).
+  for (const m of matches.filter((x) => x.status === "live" || x.status === "ht" || (x.status === "ft" && !x._final))) {
     try { m.events = normEvents(await apiGet(env, "/fixtures/events", { fixture: m.id }), m._homeId); } catch {}
     try { m.stats = normStats(await apiGet(env, "/fixtures/statistics", { fixture: m.id })); } catch {}
     try {
       const lu = await apiGet(env, "/fixtures/lineups", { fixture: m.id });
       if (lu?.length) m.lineups = normLineups(lu, m._homeId, m._awayId);
     } catch {}
+    if (m.status === "ft") {  // player ratings + per-match stats land at full time
+      try { mergePlayerRatings(m, await apiGet(env, "/fixtures/players", { fixture: m.id })); } catch {}
+    }
   }
-  for (const m of matches) { delete m._homeId; delete m._awayId; }  // strip internals
 
-  // Leaderboards + teams/players only on a full (baseline) poll — reuse prev when liveOnly.
+  // Baseline-only enrichment (reuse prev when liveOnly).
   let scorers = prev?.scorers || [], assists = prev?.assists || [], discipline = prev?.discipline || [];
-  let teams = prev?.teams || {}, players = prev?.players || {};
+  let teams = prev?.teams || {}, players = prev?.players || {}, clubWatch = prev?.clubWatch || {};
   if (!liveOnly) {
     try { scorers = (await apiGet(env, "/players/topscorers", base)).map(normScorer); } catch {}
     try { assists = (await apiGet(env, "/players/topassists", base)).map(normAssist); } catch {}
@@ -225,27 +241,38 @@ async function buildSnapshot(env, prev, liveOnly) {
       discipline = normDiscipline(y, r);
     } catch {}
     ({ teams, players } = buildTeamsAndPlayers(groups, prev));
+    try { await enrichTeamStats(env, base, teams, groups); } catch {}   // aggregates + fair-play cards
+    try { await ensureNationSquads(env, base, teams, players); } catch {}  // squads (once) → clubWatch + team squad
+    try { await enrichPlayers(env, base, curatedPlayerIds({ scorers, assists, discipline, prev, matches }), players, cfg); } catch {}
   }
 
-  // Engine pre-derivation (engine-ready snapshot).
-  const snapForEngine = { groups, remainingFixtures, teams };
-  const race = verdicts(snapForEngine);
+  // Sort groups with the full rules (now card-aware) so positions + third place are exact.
+  for (const g of Object.keys(groups)) groups[g].sort(compareGroupRows);
 
-  // Player Watch precompute (no per-user calls).
-  let clubWatch = prev?.clubWatch || {};
+  // Engine pre-derivation.
+  const race = verdicts({ groups, remainingFixtures, teams });
+  applyTeamVerdicts(teams, groups, race);
+  annotateProgression(matches, groups, remainingFixtures, teams, race);
+
   if (!liveOnly) {
     try { clubWatch = await buildClubWatch(env, cfg, teams, players, remainingFixtures); } catch {}
   }
+  for (const m of matches) { delete m._homeId; delete m._awayId; delete m._final; }  // strip internals
+  for (const g of Object.keys(groups)) groups[g].forEach((r) => delete r._id);
+  for (const t of Object.values(teams)) delete t._id;
 
   const groupStageComplete = remainingFixtures.length === 0;
+  let bracket = prev?.bracket || buildBracket(groups, ANNEXC, { groupStageComplete: false });
+  try { bracket = buildBracket(groups, ANNEXC, { groupStageComplete }); } catch {}
+
   return {
-    meta: { stage: matches.find((m) => m.status === "live") ? "Group Stage" : (prev?.meta?.stage || "Group Stage"),
+    meta: { stage: matches.some((m) => m.status === "live") ? "Group Stage" : (prev?.meta?.stage || "Group Stage"),
             updated: new Date().toISOString(), groupStageComplete, dataSource: "api-football" },
     groups,
     thirdPlaceRace: race,
     remainingFixtures,
     matches,
-    bracket: prev?.bracket || { rounds: ["R32", "R16", "QF", "SF", "Final"], matches: [] },
+    bracket,
     scorers, assists, discipline,
     teams, players, clubWatch,
   };
@@ -287,14 +314,165 @@ function buildTeamsAndPlayers(groups, prev) {
   const teams = {}, players = prev?.players || {};
   for (const [g, rows] of Object.entries(groups)) {
     rows.forEach((r) => {
+      const p = prev?.teams?.[r.code];
       teams[r.code] = {
-        code: r.code, name: r.name, group: g, P: r.P, W: r.W, D: r.D, L: r.L, GF: r.GF, GA: r.GA,
-        form: prev?.teams?.[r.code]?.form || [], squad: prev?.teams?.[r.code]?.squad || [],
-        verdict: prev?.teams?.[r.code]?.verdict,
+        code: r.code, name: r.name, _id: r._id, group: g, P: r.P, W: r.W, D: r.D, L: r.L, GF: r.GF, GA: r.GA,
+        coach: p?.coach || "—", possession: p?.possession, cleanSheets: p?.cleanSheets,
+        form: p?.form || [], squad: p?.squad || [], verdict: p?.verdict,
       };
     });
   }
   return { teams, players };
+}
+
+// ── FT player ratings → merge into that match's lineup (brief §8: ratings at FT) ──
+function mergePlayerRatings(m, resp) {
+  if (!m.lineups || !resp?.length) return;
+  const ratingById = {};
+  for (const team of resp) for (const p of team.players || []) {
+    const st = p.statistics?.[0];
+    if (p.player?.id != null && st?.games?.rating != null) ratingById[p.player.id] = parseFloat(st.games.rating);
+  }
+  for (const sideKey of ["h", "a"]) {
+    const L = m.lineups[sideKey]; if (!L) continue;
+    [...(L.xi || []), ...(L.subs || [])].forEach((pl) => {
+      if (pl.playerId != null && ratingById[pl.playerId] != null) pl.rating = ratingById[pl.playerId];
+    });
+  }
+}
+
+// ── /teams/statistics per nation → aggregates + fair-play cards on group rows ──
+function sumCardBuckets(obj) {
+  return Object.values(obj || {}).reduce((s, b) => s + (b?.total || 0), 0);
+}
+async function enrichTeamStats(env, base, teams, groups) {
+  const rowByCode = {};
+  for (const rows of Object.values(groups)) for (const r of rows) rowByCode[r.code] = r;
+  for (const t of Object.values(teams)) {
+    if (!t._id) continue;
+    try {
+      const s = await apiGet(env, "/teams/statistics", { ...base, team: t._id });
+      const st = Array.isArray(s) ? s[0] : s;     // /teams/statistics returns an object
+      if (!st) continue;
+      const y = sumCardBuckets(st.cards?.yellow), r = sumCardBuckets(st.cards?.red);
+      t.cleanSheets = st.clean_sheet?.total ?? t.cleanSheets;
+      t.formStr = st.form || t.formStr;
+      if (rowByCode[t.code]) { rowByCode[t.code].yellow = y; rowByCode[t.code].red = r; }
+    } catch { /* leave defaults */ }
+  }
+}
+
+// ── nation squads (fetched once, then persisted) → teams[].squad + clubWatch join ──
+async function ensureNationSquads(env, base, teams, players) {
+  for (const t of Object.values(teams)) {
+    if (!t._id || (t.squad && t.squad.length)) continue;   // already have it
+    try {
+      const resp = await apiGet(env, "/players/squads", { team: t._id });
+      const squad = resp?.[0]?.players || [];
+      t.squad = squad.map((p) => p.id);
+      // seed a light player record so Player Watch + pages have a name even before deep enrichment
+      for (const p of squad) {
+        const id = String(p.id);
+        players[id] = players[id] || {
+          name: p.name, code: t.code, pos: p.position || "", num: p.number,
+          tournament: { apps: 0, min: 0, g: 0, a: 0, shots: 0, keyPasses: 0, yellow: 0, red: 0 },
+          season: [], career: [], honours: [],
+        };
+        if (!players[id].code) players[id].code = t.code;
+      }
+    } catch { /* nation squad not published yet — fine */ }
+  }
+}
+
+// Which players are worth a deep drill-in? Leaderboards + Player-Watch + recent XIs.
+function curatedPlayerIds({ scorers, assists, discipline, prev, matches }) {
+  const ids = new Set();
+  (scorers || []).forEach((s) => s.playerId && ids.add(String(s.playerId)));
+  (assists || []).forEach((s) => s.playerId && ids.add(String(s.playerId)));
+  for (const club of Object.values(prev?.clubWatch || {})) for (const p of club.players || []) ids.add(String(p.playerId));
+  for (const m of matches || []) for (const sideKey of ["h", "a"]) {
+    const L = m.lineups?.[sideKey];
+    (L?.xi || []).forEach((p) => p.playerId && ids.add(String(p.playerId)));
+  }
+  return ids;
+}
+
+// ── deep player drill-in: stats per competition + bio + transfers + trophies ──
+// Profiles/transfers/trophies are static-ish → fetched once per player and persisted.
+// Capped per poll so cost stays bounded; the set fills in over successive polls.
+async function enrichPlayers(env, base, ids, players, cfg, cap = 25) {
+  let budget = cap;
+  for (const id of ids) {
+    if (budget <= 0) break;
+    const existing = players[id];
+    if (existing?._enriched) continue;       // done already (persisted)
+    budget--;
+    try {
+      const statsResp = await apiGet(env, "/players", { id, season: base.season });
+      const rec = normPlayer(statsResp, cfg.league) || {};
+      let career = existing?.career || [], honours = existing?.honours || [];
+      try {
+        const tr = await apiGet(env, "/transfers", { player: id });
+        const list = tr?.[0]?.transfers || [];
+        career = list.map((x) => ({ from: x.teams?.out?.name, to: x.teams?.in?.name, year: new Date(x.date).getFullYear() })).filter((c) => c.to);
+      } catch {}
+      try {
+        const tro = await apiGet(env, "/trophies", { player: id });
+        honours = (tro || []).filter((x) => /winner/i.test(x.place || "")).map((x) => ({ title: x.league, year: x.season }));
+      } catch {}
+      players[id] = { ...(existing || {}), ...rec, career, honours, _enriched: true };
+    } catch { /* skip this player this round */ }
+  }
+}
+function normPlayer(resp, leagueId) {
+  const p = resp?.[0]; if (!p) return null;
+  const stats = p.statistics || [];
+  const wc = stats.find((s) => String(s.league?.id) === String(leagueId)) || stats[0] || {};
+  const club = stats.find((s) => String(s.league?.id) !== String(leagueId));
+  const season = stats.filter((s) => String(s.league?.id) !== String(leagueId)).map((s) => ({
+    comp: s.league?.name, apps: s.games?.appearences ?? 0, g: s.goals?.total ?? 0, a: s.goals?.assists ?? 0,
+    yellow: s.cards?.yellow ?? 0, red: s.cards?.red ?? 0, min: s.games?.minutes ?? 0, rating: s.games?.rating ? parseFloat(s.games.rating) : undefined,
+  }));
+  return {
+    name: p.player?.name, code: wc.team?.code || "", pos: wc.games?.position || p.player?.position,
+    age: p.player?.age, club: club?.team?.name, league: club?.league?.name,
+    tournament: {
+      apps: wc.games?.appearences ?? 0, min: wc.games?.minutes ?? 0, g: wc.goals?.total ?? 0, a: wc.goals?.assists ?? 0,
+      shots: wc.shots?.total ?? 0, keyPasses: wc.passes?.key ?? 0, yellow: wc.cards?.yellow ?? 0, red: wc.cards?.red ?? 0,
+      rating: wc.games?.rating ? parseFloat(wc.games.rating) : undefined,
+    },
+    season,
+  };
+}
+
+// ── verdict chips: 3rd-place contenders from the engine; top-2 / 4th by position ──
+function applyTeamVerdicts(teams, groups, race) {
+  const byCode = Object.fromEntries(race.map((t) => [t.code, t.status]));
+  for (const [g, rows] of Object.entries(groups)) {
+    rows.forEach((r, i) => {
+      const t = teams[r.code]; if (!t) return;
+      t.rank = i + 1;
+      t.verdict = byCode[r.code] || (i <= 1 ? "in" : "out");
+    });
+  }
+}
+
+// ── woven-in progression: mark group matches that move the last-8 race + one-liner ──
+function annotateProgression(matches, groups, remainingFixtures, teams, race) {
+  const contender = new Set(race.map((t) => t.code));
+  const posByCode = {};
+  for (const rows of Object.values(groups)) rows.forEach((r, i) => (posByCode[r.code] = i + 1));
+  const engineSnap = { groups, remainingFixtures, teams };
+  for (const m of matches) {
+    if (m.stage !== "Group Stage") continue;
+    const codes = [m.home.code, m.away.code];
+    const affects = codes.some((c) => contender.has(c) || posByCode[c] >= 3 || posByCode[c] === 2);
+    m.affectsCut = affects;
+    if (affects && (m.status === "live" || m.status === "ht")) {
+      const focus = codes.find((c) => contender.has(c)) || codes.find((c) => posByCode[c] >= 3) || codes[0];
+      try { m.progressionLine = plainEnglish(engineSnap, focus, ANNEXC); } catch {}
+    }
+  }
 }
 
 // ── football-data.org fallback (fixtures/standings only — resilience, never primary) ──

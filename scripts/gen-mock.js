@@ -7,10 +7,11 @@
 // Scenario: group stage, final matchday in progress. Each team has played 2, has 1
 // left, so the third-place race is live and the scenario board has real input.
 
-import { writeFileSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname, resolve as pathResolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { verdicts, thirdPlaceTable, recompute } from "../web/js/engine.js";
+import { verdicts, thirdPlaceTable, recompute, compareGroupRows } from "../web/js/engine.js";
+import { buildBracket } from "../web/js/bracket.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUT = pathResolve(__dirname, "../web/data/latest.json");
@@ -207,58 +208,14 @@ for (const f of remainingFixtures) {
   });
 }
 
-// ── bracket: the REAL 2026 structure (matches 73–104), wired from the official
-// schedule. Group-position sides resolve to the current group leader/runner-up
-// ("as it stands"); third-place slots show their FIFA candidate set and resolve
-// via Annex C once the group stage completes. See scripts/gen-annexc.js. ──
-const leader = (g, pos) => groups[g][pos].code; // pos 0 = winner, 1 = runner-up
-const win = (g) => ({ code: leader(g, 0), label: `Winner Group ${g}`, pos: `1${g}` });
-const run = (g) => ({ code: leader(g, 1), label: `Runner-up Group ${g}`, pos: `2${g}` });
-const tp = (cands) => ({ code: null, label: `3rd ${cands.join("/")}`, thirdPlaceSlot: cands });
-
-const R32 = [
-  { id: "73", a: run("A"), b: run("B") },
-  { id: "74", a: win("E"), b: tp(["A", "B", "C", "D", "F"]) },
-  { id: "75", a: win("F"), b: run("C") },
-  { id: "76", a: win("C"), b: run("F") },
-  { id: "77", a: win("I"), b: tp(["C", "D", "F", "G", "H"]) },
-  { id: "78", a: run("E"), b: run("I") },
-  { id: "79", a: win("A"), b: tp(["C", "E", "F", "H", "I"]) },
-  { id: "80", a: win("L"), b: tp(["E", "H", "I", "J", "K"]) },
-  { id: "81", a: win("D"), b: tp(["B", "E", "F", "I", "J"]) },
-  { id: "82", a: win("G"), b: tp(["A", "E", "H", "I", "J"]) },
-  { id: "83", a: run("K"), b: run("L") },
-  { id: "84", a: win("H"), b: run("J") },
-  { id: "85", a: win("B"), b: tp(["E", "F", "G", "I", "J"]) },
-  { id: "86", a: win("J"), b: run("H") },
-  { id: "87", a: win("K"), b: tp(["D", "E", "I", "J", "L"]) },
-  { id: "88", a: run("D"), b: run("G") },
-];
-// later-round pairings (winner of match X meets winner of match Y)
-const PAIRS = {
-  R16: [[74, 77], [73, 75], [83, 84], [81, 82], [76, 78], [79, 80], [86, 88], [85, 87]], // → 89..96
-  QF:  [[89, 90], [93, 94], [91, 92], [95, 96]],                                          // → 97..100
-  SF:  [[97, 98], [99, 100]],                                                             // → 101,102
-  Final: [[101, 102]],                                                                    // → 104
-};
-const startId = { R16: 89, QF: 97, SF: 101, Final: 104 };
-const bracket = { rounds: ["R32", "R16", "QF", "SF", "Final"], matches: [] };
-R32.forEach((m) => bracket.matches.push({ ...m, rd: "R32" }));
-for (const rd of ["R16", "QF", "SF", "Final"]) {
-  PAIRS[rd].forEach((pair, i) => {
-    bracket.matches.push({
-      id: String(startId[rd] + i), rd,
-      a: { code: null, label: `Winner Match ${pair[0]}` },
-      b: { code: null, label: `Winner Match ${pair[1]}` },
-    });
-  });
-}
-// wire "next" pointers from the pairings
-const nextOf = {};
-for (const rd of ["R16", "QF", "SF", "Final"]) PAIRS[rd].forEach((pair, i) => {
-  pair.forEach((src) => (nextOf[src] = String(startId[rd] + i)));
-});
-bracket.matches.forEach((m) => { if (nextOf[+m.id]) m.next = nextOf[+m.id]; });
+// ── bracket: the real 2026 structure, from the shared module (web/js/bracket.js),
+// so the demo and the Worker can't drift. Group-position sides resolve to the
+// current leader/runner-up; third-place slots show their FIFA candidate set (they
+// resolve via Annex C once the group stage completes). ──
+const annexC = JSON.parse(readFileSync(pathResolve(__dirname, "../web/data/annexC.json"), "utf8"));
+const sortedGroups = {};
+for (const g of Object.keys(groups)) sortedGroups[g] = groups[g].slice().sort(compareGroupRows);
+const bracket = buildBracket(sortedGroups, annexC, { groupStageComplete: false });
 
 // ── leaderboards ──
 const scorers = [
@@ -406,10 +363,7 @@ const clubWatch = {
 
 const snapshot = {
   meta: { stage: "Group Stage", updated: new Date().toISOString(), groupStageComplete: false, dataSource: "mock" },
-  groups: Object.fromEntries(Object.entries(groups).map(([g, rows]) => [g, rows.slice().sort((a,b)=>{
-    if (b.Pts!==a.Pts) return b.Pts-a.Pts; if (b.GD!==a.GD) return b.GD-a.GD; if (b.GF!==a.GF) return b.GF-a.GF;
-    return a.code<b.code?-1:1;
-  })])),
+  groups: sortedGroups,
   thirdPlaceRace: race,
   remainingFixtures,
   matches,
