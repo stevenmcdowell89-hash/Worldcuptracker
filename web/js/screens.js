@@ -9,17 +9,17 @@ const S = () => state.snap;
 // ── shared bits ──
 function compactRaceCard() {
   const race = S().thirdPlaceRace || [];
-  const window = race.slice(4, 9); // ranks 5–9, straddling the cut at 8
+  const window = race.slice(5, 9); // ranks 6–9, straddling the cut at 8 (compact)
   const rows = window.map((t) => {
     const below = t.rank > 8;
-    return `<div class="cutrow ${below ? "below" : ""}">
+    return `<div class="cutrow ${below ? "below" : ""} clickable" data-nav="team/${t.code}">
       <span class="pos">${t.rank}</span>${flag(t.code)}
       <span class="nm">${teamName(t.code)} <span class="grp">${t.group}</span></span>
       <span class="pts">${t.Pts}</span><span class="gd">${gd(t.GD)}</span>
     </div>${t.rank === 8 ? cutLineHTML() : ""}`;
   }).join("");
   return `<div class="racecard">
-    <div class="head"><h3>Race for the last 8</h3><span class="go" data-nav="race">Open ›</span></div>
+    <div class="head"><h3>Race for the last 8</h3><span class="go" data-nav="race">Full table ›</span></div>
     <div class="cutlist">${rows}</div>
   </div>`;
 }
@@ -49,19 +49,28 @@ export function renderMatches() {
   const matches = S().matches || [];
   const live = matches.filter((m) => m.status === "live" || m.status === "ht");
   const upcoming = matches.filter((m) => m.status === "scheduled").sort((a, b) => (a.kickoff || "").localeCompare(b.kickoff || ""));
-  const finished = matches.filter((m) => m.status === "ft");
+  const finished = matches.filter((m) => m.status === "ft").sort((a, b) => (b.kickoff || "").localeCompare(a.kickoff || ""));
 
   const stale = S().meta?.stale ? `<div class="banner">⚠️ Showing the last good update — live data is briefly unavailable.</div>` : "";
-
   const sec = (label, list) => list.length
     ? `<div class="day-label">${label}</div><div class="section">${list.map(matchRow).join("")}</div>` : "";
 
+  // upcoming grouped by day so the long pre-tournament list stays navigable
+  const byDay = Object.entries(upcoming.reduce((acc, m) => {
+    const d = fmtDay(m.kickoff); (acc[d] = acc[d] || []).push(m); return acc;
+  }, {}));
+  const daySec = ([day, list]) => `<div class="day-label">${day}</div><div class="section">${list.map(matchRow).join("")}</div>`;
+  // fixtures front and centre: the soonest day first, then the race hook, then the rest
+  const firstDay = byDay.slice(0, 1).map(daySec).join("");
+  const restDays = byDay.slice(1, 8).map(daySec).join("");
+
   return `
     ${stale}
-    ${compactRaceCard()}
     ${sec(live.length ? "● Live" : "", live)}
-    ${sec("Upcoming", upcoming.slice(0, 14))}
-    ${sec("Finished", finished)}
+    ${finished.length ? sec("Latest results", finished.slice(0, 8)) : ""}
+    ${firstDay}
+    ${compactRaceCard()}
+    ${restDays}
     <div class="updated">Updated ${fmtTime(S().meta?.updated)} · ${S().meta?.stage}</div>`;
 }
 
@@ -69,8 +78,8 @@ export function renderMatches() {
 export function renderMore() {
   return `
     <div class="block">
-      <div class="lrow clickable" data-nav="groups"><span class="nm">Groups</span><span class="chev">›</span></div>
-      <div class="lrow clickable" data-nav="stats"><span class="nm">Stats — scorers, assists, discipline</span><span class="chev">›</span></div>
+      <div class="lrow clickable" data-nav="bracket"><span class="nm">🏆 Bracket</span><span class="chev">›</span></div>
+      <div class="lrow clickable" data-nav="stats"><span class="nm">📈 Stats — scorers, assists, discipline</span><span class="chev">›</span></div>
     </div>
     <div class="sec-head"><h2>About</h2></div>
     <div class="block">
@@ -109,7 +118,7 @@ export function renderStats(ctx) {
   const tab = ctx.query.get("t") || "scorers";
   const tabBar = `<div class="tabs">
     ${["scorers", "assists", "discipline"].map((t) =>
-      `<button data-nav="stats?t=${t}" class="${t === tab ? "active" : ""}">${t[0].toUpperCase() + t.slice(1)}</button>`).join("")}</div>`;
+      `<button data-nav="stats?t=${t}" data-replace class="${t === tab ? "active" : ""}">${t[0].toUpperCase() + t.slice(1)}</button>`).join("")}</div>`;
   let list = "";
   if (tab === "scorers") {
     list = (S().scorers || []).map((p, i) => `<div class="lrow clickable" data-nav="player/${p.playerId}">
@@ -135,13 +144,13 @@ export function renderBracket(ctx) {
   const done = S().meta?.groupStageComplete;
   const tab = ctx.query.get("r") || "R32";
   const tabBar = `<div class="tabs">${b.rounds.map((r) =>
-    `<button data-nav="bracket?r=${r}" class="${r === tab ? "active" : ""}">${r}</button>`).join("")}</div>`;
+    `<button data-nav="bracket?r=${r}" data-replace class="${r === tab ? "active" : ""}">${r}</button>`).join("")}</div>`;
   const banner = !done
     ? `<div class="banner">🔒 Third-place slots lock after the final group games. ${state.annexC?.placeholder ? "Annex C mapping is a placeholder until FIFA's official chart is loaded." : ""}</div>` : "";
   const ms = b.matches.filter((m) => m.rd === tab);
   const side = (s) => {
     if (!s) return `<div class="bteam"><span class="nm ph">—</span></div>`;
-    if (s.code) return `<div class="bteam">${flag(s.code)}<span class="nm">${teamName(s.code)} <span class="grp faint">${s.pos || ""}</span></span><span class="sc">${s.score ?? ""}</span></div>`;
+    if (s.code) return `<div class="bteam clickable" data-nav="team/${s.code}">${flag(s.code)}<span class="nm">${teamName(s.code)} <span class="grp faint">${s.pos || ""}</span></span><span class="sc">${s.score ?? ""}</span></div>`;
     return `<div class="bteam"><span class="nm ph">${s.label || "TBD"}</span></div>`;
   };
   const hasMatch = (id) => (S().matches || []).some((x) => x.id === id);
@@ -153,17 +162,22 @@ export function renderBracket(ctx) {
 // ── Watch (club tracker) ──
 export function renderWatch() {
   const cw = S().clubWatch || {};
+  const total = Object.values(cw).reduce((s, c) => s + c.players.length, 0);
+  const squadsLoaded = (S().meta?.squadCount ?? 0) > 0;
+  // If no nation squads are loaded yet, it's a pre-tournament data state, not "no players".
+  const banner = (!total && !squadsLoaded)
+    ? `<div class="banner">📋 World Cup squads are confirmed just before kickoff. Your clubs' players will appear here automatically once nations submit their 26-man lists.</div>`
+    : "";
   const cards = Object.entries(cw).map(([id, club]) => {
     const n = club.players.length;
-    const c = colour(club.players[0]?.nation || "");
     return `<button class="clubbtn" data-nav="club/${id}">
       <span class="badge ${n ? "" : "zero"}">${n}</span>
       <span class="crest">${club.name.split(" ").map((w) => w[0]).slice(0, 2).join("")}</span>
       <span class="name">${club.name}</span>
-      <span class="sub">${n ? `${n} at the World Cup` : "No players at this World Cup"}</span>
+      <span class="sub">${n ? `${n} at the World Cup` : (squadsLoaded ? "None at this World Cup" : "Squad pending")}</span>
     </button>`;
   }).join("");
-  return `<div class="sec-head"><h2>Your clubs</h2></div><div class="clubgrid">${cards}</div>
+  return `${banner}<div class="sec-head"><h2>Your clubs</h2></div><div class="clubgrid">${cards}</div>
     <div class="updated">Players who made a 2026 squad, across every nation.</div>`;
 }
 
@@ -171,7 +185,10 @@ export function renderClub(ctx) {
   const club = S().clubWatch?.[ctx.arg];
   if (!club) return { title: "Club", html: emptyState("Club not found", "Pick a club from Watch.") };
   if (!club.players.length) {
-    return { title: club.name, html: emptyState("⚽", `No ${club.name} players at this World Cup`, "When their squad has players selected, they'll appear here.") };
+    const squadsLoaded = (S().meta?.squadCount ?? 0) > 0;
+    return { title: club.name, html: squadsLoaded
+      ? emptyState("⚽", `No ${club.name} players at this World Cup`, "None of their players made a 2026 squad.")
+      : emptyState("📋", "Squads not confirmed yet", `${club.name}'s World Cup players will appear once nations submit their squads, just before kickoff.`) };
   }
   const na = club.nextAction;
   const next = na ? `<div class="nextaction"><span class="clock">⏱</span>
@@ -213,7 +230,7 @@ export function renderMatch(ctx) {
     ? `<div class="oneliner"><span class="tick"></span><p>${m.progressionLine}</p></div>` : "";
 
   const tabBar = `<div class="tabs">${["facts", "lineup", "stats"].map((t) =>
-    `<button data-nav="match/${m.id}?t=${t}" class="${t === tab ? "active" : ""}">${t[0].toUpperCase() + t.slice(1)}</button>`).join("")}</div>`;
+    `<button data-nav="match/${m.id}?t=${t}" data-replace class="${t === tab ? "active" : ""}">${t[0].toUpperCase() + t.slice(1)}</button>`).join("")}</div>`;
 
   let body = "";
   if (tab === "facts") body = matchFacts(m);
@@ -291,7 +308,7 @@ export function renderTeam(ctx) {
     </div></div>`;
 
   const tabBar = `<div class="tabs">${["overview", "matches", "squad"].map((tb) =>
-    `<button data-nav="team/${code}?t=${tb}" class="${tb === tab ? "active" : ""}">${tb[0].toUpperCase() + tb.slice(1)}</button>`).join("")}</div>`;
+    `<button data-nav="team/${code}?t=${tb}" data-replace class="${tb === tab ? "active" : ""}">${tb[0].toUpperCase() + tb.slice(1)}</button>`).join("")}</div>`;
 
   let body = "";
   if (tab === "overview") {

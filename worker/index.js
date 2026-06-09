@@ -287,9 +287,11 @@ export async function buildSnapshot(env, prev, liveOnly) {
   let bracket = prev?.bracket || buildBracket(groups, ANNEXC, { groupStageComplete: false });
   try { bracket = buildBracket(groups, ANNEXC, { groupStageComplete }); } catch {}
 
+  const squadCount = Object.values(teams).reduce((n, t) => n + (t.squad?.length || 0), 0);
   return {
     meta: { stage: matches.some((m) => m.status === "live") ? "Group Stage" : (prev?.meta?.stage || "Group Stage"),
-            updated: new Date().toISOString(), groupStageComplete, dataSource: "api-football" },
+            updated: new Date().toISOString(), groupStageComplete, dataSource: "api-football",
+            squadCount },   // 0 ⇒ nation squads not published yet (pre-tournament), not a bug
     groups,
     thirdPlaceRace: race,
     remainingFixtures,

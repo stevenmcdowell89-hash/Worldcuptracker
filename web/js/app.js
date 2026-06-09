@@ -7,23 +7,24 @@ import { renderRace } from "./race.js";
 
 const TABS = [
   { id: "matches", label: "Matches", ico: "⚽" },
+  { id: "groups", label: "Groups", ico: "▦" },
   { id: "race", label: "Race", ico: "📊" },
   { id: "watch", label: "Watch", ico: "★" },
-  { id: "bracket", label: "Bracket", ico: "🏆" },
   { id: "more", label: "More", ico: "≡" },
 ];
 
-// route key -> { render, title, tab, detail }
+// route key -> { render, title, tab, top }
+// top:true → primary tab (logo app bar). Otherwise a pushed detail page (back arrow).
 const ROUTES = {
   matches: { render: S.renderMatches, tab: "matches", top: true },
+  groups: { render: S.renderGroups, tab: "groups", top: true },
   race: { render: renderRace, tab: "race", top: true },
   watch: { render: S.renderWatch, tab: "watch", top: true },
-  bracket: { render: S.renderBracket, tab: "bracket", top: true },
   more: { render: S.renderMore, tab: "more", top: true },
-  groups: { render: S.renderGroups, tab: "more", title: "Groups" },
+  bracket: { render: S.renderBracket, tab: "more", title: "Bracket" },
   stats: { render: S.renderStats, tab: "more", title: "Stats" },
   match: { render: S.renderMatch, tab: "matches", title: "Match" },
-  team: { render: S.renderTeam, tab: "matches", title: "" },
+  team: { render: S.renderTeam, tab: "groups", title: "" },
   player: { render: S.renderPlayer, tab: "watch", title: "" },
   club: { render: S.renderClub, tab: "watch", title: "" },
 };
@@ -35,7 +36,14 @@ function parseHash() {
   return { key: seg[0] || "matches", arg: seg[1] || null, query: new URLSearchParams(query || "") };
 }
 
-export function navigate(to) { location.hash = "#/" + to; }
+// replace:true swaps the current history entry instead of pushing — used for sub-tab
+// switches inside a detail page so Back exits the page rather than cycling its tabs.
+export function navigate(to, replace = false) {
+  const url = "#/" + to;
+  if (replace) { history.replaceState(null, "", url); render(); }
+  else if (("#/" + to) === location.hash) { render(); }
+  else { location.hash = url; }   // triggers hashchange → render
+}
 
 const $screen = document.getElementById("screen");
 const $appbar = document.getElementById("appbar");
@@ -46,7 +54,6 @@ function renderAppbar(route, ctx) {
     $appbar.innerHTML = `
       <span class="logo">WC<span class="dot">26</span></span>
       <span class="spacer"></span>
-      <button class="iconbtn" data-nav="groups" aria-label="Groups">▦</button>
       <button class="iconbtn" data-nav="stats" aria-label="Stats">📈</button>`;
   } else {
     $appbar.innerHTML = `
@@ -87,7 +94,7 @@ document.addEventListener("click", (e) => {
   const back = e.target.closest("[data-back]");
   if (back) { history.length > 1 ? history.back() : navigate("matches"); return; }
   const nav = e.target.closest("[data-nav]");
-  if (nav) { navigate(nav.dataset.nav); return; }
+  if (nav) { navigate(nav.dataset.nav, nav.hasAttribute("data-replace")); return; }
 });
 
 window.addEventListener("hashchange", render);
