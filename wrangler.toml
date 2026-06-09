@@ -35,9 +35,9 @@ WC_SEASON = "2026"          # VERIFY: season value for WC 2026
 BASELINE_INTERVAL_MIN = "360"   # 6h baseline refresh
 LIVE_INTERVAL_SEC = "75"        # ~60-90s while live
 # Max API subrequests per poll. Keep under the Workers plan cap (Free=50, Paid=1000).
-# Heavy enrichment (squads/team-stats/players) spreads across polls; squads persist
-# once fetched. On Workers Paid you can raise this to ~900 to fill in one poll.
-SUBREQUEST_BUDGET = "45"
+# On Workers Paid: a full poll (~110 calls) fits comfortably, so everything fills in
+# a single poll. (On Free, set this to ~45 so heavy enrichment spreads across polls.)
+SUBREQUEST_BUDGET = "900"
 
 # APIFOOTBALL_KEY is a secret:  wrangler secret put APIFOOTBALL_KEY
 # FOOTBALLDATA_KEY (fallback, optional):  wrangler secret put FOOTBALLDATA_KEY
