@@ -552,6 +552,45 @@ async function debugProbe(env) {
   return jsonResp(out);
 }
 
+// Dumps trimmed RAW API shapes so the normalisers can be fixed against reality
+// (codes, group labels, round format). Returns only football metadata.
+async function debugRaw(env) {
+  if (!env.APIFOOTBALL_KEY) return jsonResp({ error: "APIFOOTBALL_KEY secret not set" }, 400);
+  const base = { league: CFG(env).league, season: CFG(env).season };
+  const out = {};
+
+  try {
+    const st = await apiGet(env, "/standings", base);
+    out.standings = { stages: st.length, leagueStandingsBlocks: st?.[0]?.league?.standings?.length };
+    const tables = st?.[0]?.league?.standings || [];
+    out.standings.groupLabels = tables.map((g) => g?.[0]?.group);
+    out.standings.sampleTeamObject = tables?.[0]?.[0]?.team;        // does it have `code`?
+    out.standings.sampleRow = tables?.[0]?.[0];
+  } catch (e) { out.standingsError = e.message; }
+  await sleep(400);
+
+  try {
+    const fx = await apiGet(env, "/fixtures", base);
+    out.fixtures = { total: fx.length };
+    const byStatus = {}; const rounds = new Set();
+    for (const f of fx) { const s = f.fixture?.status?.short; byStatus[s] = (byStatus[s] || 0) + 1; rounds.add(f.league?.round); }
+    out.fixtures.byStatus = byStatus;
+    out.fixtures.distinctRounds = [...rounds].slice(0, 20);
+    out.fixtures.sample = fx.slice(0, 2).map((f) => ({
+      round: f.league?.round, status: f.fixture?.status?.short,
+      home: f.teams?.home, away: f.teams?.away,                     // do these have `code`?
+    }));
+  } catch (e) { out.fixturesError = e.message; }
+  await sleep(400);
+
+  try {
+    const teams = await apiGet(env, "/teams", base);
+    out.teams = { count: teams.length, sample: teams.slice(0, 3).map((t) => t.team) }; // `code` populated here?
+  } catch (e) { out.teamsError = e.message; }
+
+  return jsonResp(out);
+}
+
 async function readSnapshot(env) { return (await env.SNAPSHOT.get(KV_KEY, "json")) || null; }
 async function writeSnapshot(env, snap) { await env.SNAPSHOT.put(KV_KEY, JSON.stringify(snap)); }
 
@@ -603,6 +642,10 @@ export default {
     if (url.pathname === "/debug") {
       if (!guarded(env, url)) return jsonResp({ error: "forbidden (set ?t=<DEBUG_TOKEN>)" }, 403);
       return debugProbe(env);
+    }
+    if (url.pathname === "/debug/raw") {
+      if (!guarded(env, url)) return jsonResp({ error: "forbidden (set ?t=<DEBUG_TOKEN>)" }, 403);
+      return debugRaw(env);
     }
     // Force a full poll now (don't wait for cron / live-gate) to seed KV. Guarded.
     if (url.pathname === "/admin/refresh") {
