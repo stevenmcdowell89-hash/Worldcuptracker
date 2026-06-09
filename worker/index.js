@@ -629,26 +629,27 @@ export default {
   // Serve the snapshot (Pages can proxy /data/latest.json here).
   async fetch(request, env) {
     const url = new URL(request.url);
-    if (url.pathname === "/data/latest.json") {
+    const path = url.pathname.replace(/\/+$/, "") || "/";   // tolerate trailing slashes
+    if (path === "/data/latest.json") {
       const snap = await env.SNAPSHOT.get(KV_KEY);
       if (!snap) return new Response(JSON.stringify({ error: "no snapshot yet" }), { status: 503, headers: { "content-type": "application/json" } });
       return new Response(snap, {
         headers: { "content-type": "application/json", "cache-control": "public, max-age=30", "access-control-allow-origin": "*" },
       });
     }
-    if (url.pathname === "/healthz") return new Response("ok");
+    if (path === "/healthz") return new Response("ok");
 
-    // TEMPORARY id-verification endpoint (remove after ids are locked in).
-    if (url.pathname === "/debug") {
+    // TEMPORARY id-verification endpoints (remove after ids are locked in).
+    if (path === "/debug") {
       if (!guarded(env, url)) return jsonResp({ error: "forbidden (set ?t=<DEBUG_TOKEN>)" }, 403);
       return debugProbe(env);
     }
-    if (url.pathname === "/debug/raw") {
+    if (path === "/debug/raw") {
       if (!guarded(env, url)) return jsonResp({ error: "forbidden (set ?t=<DEBUG_TOKEN>)" }, 403);
       return debugRaw(env);
     }
     // Force a full poll now (don't wait for cron / live-gate) to seed KV. Guarded.
-    if (url.pathname === "/admin/refresh") {
+    if (path === "/admin/refresh") {
       if (!guarded(env, url)) return jsonResp({ error: "forbidden (set ?t=<DEBUG_TOKEN>)" }, 403);
       try {
         const snap = await buildSnapshot(env, await readSnapshot(env), false);
@@ -660,6 +661,7 @@ export default {
       } catch (e) { return jsonResp({ ok: false, error: e.message }, 500); }
     }
 
-    return new Response("WC26 Worker", { status: 200 });
+    // Catch-all: list the routes so a wrong path is obvious (and shows the build is live).
+    return jsonResp({ worker: "WC26", routes: ["/data/latest.json", "/debug", "/debug/raw", "/admin/refresh", "/healthz"], build: "932d8d4+" });
   },
 };
