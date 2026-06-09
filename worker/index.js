@@ -32,7 +32,7 @@ const budgetLeft = () => SUBREQ_CAP - SUBREQ;
 
 // Run an async fn over items with bounded concurrency (keeps wall-clock low without
 // firing all subrequests at once). Used for the heavy per-team / per-player loops.
-async function pmap(items, fn, concurrency = 8) {
+async function pmap(items, fn, concurrency = 5) {
   let i = 0;
   const workers = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
     while (i < items.length) { const idx = i++; await fn(items[idx]); }
@@ -226,7 +226,7 @@ async function buildClubWatch(env, cfg, teams, players, remainingFixtures, prevC
     for (const p of ps) if (p.nextFixture && (!nextAction || p.nextFixture.kickoff < nextAction.kickoff))
       nextAction = { playerId: p.playerId, nation: p.nation, ...p.nextFixture };
     clubWatch[slug] = { name: club.name, players: ps, nextAction };
-  }, 6);
+  }, 5);
   return clubWatch;
 }
 
@@ -472,7 +472,7 @@ async function enrichPlayers(env, base, ids, players, cfg, dir, cap = 60) {
       } catch {}
       players[id] = { ...(existing || {}), ...rec, career, honours, _enriched: true };
     } catch { /* skip this player this round */ }
-  }, 8);
+  }, 5);
 }
 function normPlayer(resp, leagueId, dir) {
   const p = resp?.[0]; if (!p) return null;
@@ -541,6 +541,25 @@ async function fallbackSnapshot(env, prev) {
 async function readSnapshot(env) { return (await env.SNAPSHOT.get(KV_KEY, "json")) || null; }
 async function writeSnapshot(env, snap) { await env.SNAPSHOT.put(KV_KEY, JSON.stringify(snap)); }
 
+// Background full poll (used by /admin/refresh). Writes the snapshot + a small
+// "refresh-status" summary so the next request can report what happened.
+async function runRefresh(env) {
+  try {
+    const snap = await buildSnapshot(env, await readSnapshot(env), false);
+    await writeSnapshot(env, snap);
+    await env.SNAPSHOT.put(META_KEY, JSON.stringify({ lastFull: Date.now(), lastLive: Date.now() }));
+    const clubWatch = Object.fromEntries(Object.entries(snap.clubWatch || {}).map(([k, c]) => [k, c.players.length]));
+    await env.SNAPSHOT.put("refresh-status", JSON.stringify({
+      ok: true, finished: new Date().toISOString(), groups: Object.keys(snap.groups).length,
+      matches: snap.matches.length, remaining: snap.remainingFixtures.length,
+      squadCount: snap.meta.squadCount, players: Object.keys(snap.players || {}).length,
+      subrequests: SUBREQ, budget: SUBREQ_CAP, clubWatch,
+    }));
+  } catch (e) {
+    await env.SNAPSHOT.put("refresh-status", JSON.stringify({ ok: false, finished: new Date().toISOString(), error: e.message }));
+  }
+}
+
 export default {
   // Cron entrypoint.
   async scheduled(event, env, ctx) {
@@ -576,7 +595,7 @@ export default {
   // Serves the snapshot from KV and the static frontend (Static Assets binding).
   // run_worker_first=true means every request lands here, so /data/latest.json is
   // returned from KV (not the static mock) before falling through to the app.
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const path = url.pathname.replace(/\/+$/, "") || "/";   // tolerate trailing slashes
     if (path === "/data/latest.json") {
@@ -618,26 +637,20 @@ export default {
       return new Response(JSON.stringify(out, null, 2), { headers: { "content-type": "application/json" } });
     }
 
-    // Force a full poll now (don't wait for the cron baseline). Useful for ops + to
-    // seed KV after a deploy. Guarded by DEBUG_TOKEN when that var is set.
+    // Trigger a full poll in the BACKGROUND and return immediately (the build makes
+    // ~110 API calls and can ride out per-minute rate limits without timing out the
+    // request). Returns the previous run's summary; re-hit after ~30s for fresh data.
     if (path === "/admin/refresh") {
       if (env.DEBUG_TOKEN && url.searchParams.get("t") !== env.DEBUG_TOKEN) {
         return new Response(JSON.stringify({ error: "forbidden" }), { status: 403, headers: { "content-type": "application/json" } });
       }
-      try {
-        const snap = await buildSnapshot(env, await readSnapshot(env), false);
-        await writeSnapshot(env, snap);
-        await env.SNAPSHOT.put(META_KEY, JSON.stringify({ lastFull: Date.now(), lastLive: Date.now() }));
-        const clubWatch = Object.fromEntries(Object.entries(snap.clubWatch || {}).map(([k, c]) => [k, c.players.length]));
-        return new Response(JSON.stringify({
-          ok: true, updated: snap.meta.updated, groups: Object.keys(snap.groups).length,
-          matches: snap.matches.length, remaining: snap.remainingFixtures.length,
-          squadCount: snap.meta.squadCount, players: Object.keys(snap.players || {}).length,
-          subrequests: SUBREQ, budget: SUBREQ_CAP, clubWatch,
-        }, null, 2), { headers: { "content-type": "application/json" } });
-      } catch (e) {
-        return new Response(JSON.stringify({ ok: false, error: e.message }), { status: 500, headers: { "content-type": "application/json" } });
-      }
+      ctx.waitUntil(runRefresh(env));
+      const last = await env.SNAPSHOT.get("refresh-status");
+      return new Response(JSON.stringify({
+        started: true,
+        note: "Refresh running in the background. Re-open this URL (or /data/latest.json) in ~30s.",
+        lastRun: last ? JSON.parse(last) : null,
+      }, null, 2), { headers: { "content-type": "application/json" } });
     }
 
     // Everything else: the static /web app.
