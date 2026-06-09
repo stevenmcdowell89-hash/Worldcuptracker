@@ -68,7 +68,7 @@ function renderNav(activeTab) {
        <span class="ico">${t.ico}</span><span>${t.label}</span></a>`).join("");
 }
 
-function render() {
+function render(opts = {}) {
   const { key, arg, query } = parseHash();
   const route = ROUTES[key] || ROUTES.matches;
   const ctx = { arg, query, title: route.title };
@@ -84,8 +84,12 @@ function render() {
   renderAppbar(route, ctx);
   renderNav(route.tab);
   $screen.innerHTML = result.html;
-  $screen.scrollTop = 0;
-  window.scrollTo(0, 0);
+  $screen.scrollTop = 0;                 // scroll the content area only (not the window)
+  if (opts.animate !== false) {          // subtle enter transition
+    $screen.classList.remove("entering");
+    void $screen.offsetWidth;            // reflow to retrigger
+    $screen.classList.add("entering");
+  }
   if (result.mount) result.mount($screen);
 }
 
@@ -116,11 +120,15 @@ async function boot() {
     return;
   }
   render();
-  // light live tick: re-render Matches/Race minute counters & countdowns
-  setInterval(() => {
+  // Auto-refresh only while something is live: re-fetch the snapshot and re-render
+  // the data screens (so the score/minute update). Idle browsing isn't disturbed.
+  setInterval(async () => {
+    const live = (state.snap?.matches || []).some((m) => m.status === "live" || m.status === "ht");
+    if (!live) return;
+    try { await loadAll(); } catch { return; }
     const { key } = parseHash();
-    if (["matches", "watch"].includes(key)) render();
-  }, 30000);
+    if (["matches", "race", "watch", "match"].includes(key)) render({ animate: false });
+  }, 45000);
 }
 
 boot();

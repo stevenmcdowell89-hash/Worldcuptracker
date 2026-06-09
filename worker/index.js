@@ -271,6 +271,10 @@ export async function buildSnapshot(env, prev, liveOnly) {
     }
   }
 
+  // Has the tournament actually started? (any match played or in play)
+  const anyPlayed = matches.some((m) => m.status === "ft" || m.status === "live" || m.status === "ht")
+    || Object.values(groups).some((rows) => rows.some((r) => r.P > 0));
+
   // Baseline-only enrichment (reuse prev when liveOnly).
   let scorers = prev?.scorers || [], assists = prev?.assists || [], discipline = prev?.discipline || [];
   let teams = prev?.teams || {}, players = prev?.players || {}, clubWatch = prev?.clubWatch || {};
@@ -288,7 +292,7 @@ export async function buildSnapshot(env, prev, liveOnly) {
     // Priority order under the subrequest budget: squads (Watch + team rosters) first
     // — they persist once fetched — then team aggregates, then deep player drill-in.
     try { await ensureNationSquads(env, base, teams, players); } catch {}
-    try { await enrichTeamStats(env, base, teams, groups); } catch {}   // aggregates + fair-play cards
+    if (anyPlayed) { try { await enrichTeamStats(env, base, teams, groups); } catch {} }   // skip pre-tournament (all zeros)
     try { await enrichPlayers(env, base, curatedPlayerIds({ scorers, assists, discipline, prev, matches }), players, cfg, dir); } catch {}
   }
 
@@ -298,7 +302,7 @@ export async function buildSnapshot(env, prev, liveOnly) {
   // Engine pre-derivation.
   const race = verdicts({ groups, remainingFixtures, teams });
   applyTeamVerdicts(teams, groups, race);
-  annotateProgression(matches, groups, remainingFixtures, teams, race);
+  annotateProgression(matches, groups, remainingFixtures, teams, race, anyPlayed);
 
   if (!liveOnly) {
     try { clubWatch = await buildClubWatch(env, cfg, teams, players, remainingFixtures, prev?.clubWatch || {}); } catch {}
@@ -315,6 +319,7 @@ export async function buildSnapshot(env, prev, liveOnly) {
   return {
     meta: { stage: matches.some((m) => m.status === "live") ? "Group Stage" : (prev?.meta?.stage || "Group Stage"),
             updated: new Date().toISOString(), groupStageComplete, dataSource: "api-football",
+            started: anyPlayed,   // false ⇒ tournament not under way; suppress definitive narratives
             squadCount },   // 0 ⇒ nation squads not published yet (pre-tournament), not a bug
     groups,
     thirdPlaceRace: race,
@@ -507,19 +512,23 @@ function applyTeamVerdicts(teams, groups, race) {
   }
 }
 
-// ── woven-in progression: mark group matches that move the last-8 race + one-liner ──
-function annotateProgression(matches, groups, remainingFixtures, teams, race) {
+// ── woven-in progression: flag only matches that genuinely bear on qualification,
+// and only once the tournament is under way (pre-tournament nothing is decided). ──
+function annotateProgression(matches, groups, remainingFixtures, teams, race, anyPlayed) {
   const contender = new Set(race.map((t) => t.code));
   const posByCode = {};
   for (const rows of Object.values(groups)) rows.forEach((r, i) => (posByCode[r.code] = i + 1));
   const engineSnap = { groups, remainingFixtures, teams };
   for (const m of matches) {
-    if (m.stage !== "Group Stage") continue;
+    m.affectsCut = false;
+    if (!anyPlayed || m.stage !== "Group Stage") continue;
+    // A match bears on the third-place cut only if a side is currently 3rd/4th (the
+    // bubble) AND it's a third-place contender's group — not "every group game".
     const codes = [m.home.code, m.away.code];
-    const affects = codes.some((c) => contender.has(c) || posByCode[c] >= 3 || posByCode[c] === 2);
-    m.affectsCut = affects;
-    if (affects && (m.status === "live" || m.status === "ht")) {
-      const focus = codes.find((c) => contender.has(c)) || codes.find((c) => posByCode[c] >= 3) || codes[0];
+    const onBubble = codes.some((c) => contender.has(c) && (posByCode[c] === 3 || posByCode[c] === 4));
+    m.affectsCut = onBubble;
+    if (onBubble && (m.status === "live" || m.status === "ht")) {
+      const focus = codes.find((c) => contender.has(c)) || codes[0];
       try { m.progressionLine = plainEnglish(engineSnap, focus, ANNEXC); } catch {}
     }
   }
@@ -544,6 +553,9 @@ async function writeSnapshot(env, snap) { await env.SNAPSHOT.put(KV_KEY, JSON.st
 // Background full poll (used by /admin/refresh). Writes the snapshot + a small
 // "refresh-status" summary so the next request can report what happened.
 async function runRefresh(env) {
+  const lock = await env.SNAPSHOT.get("refresh-lock");
+  if (lock && Date.now() - +lock < 120000) return;   // a run is already in progress — don't stack
+  await env.SNAPSHOT.put("refresh-lock", String(Date.now()), { expirationTtl: 120 });
   try {
     const snap = await buildSnapshot(env, await readSnapshot(env), false);
     await writeSnapshot(env, snap);
@@ -557,6 +569,8 @@ async function runRefresh(env) {
     }));
   } catch (e) {
     await env.SNAPSHOT.put("refresh-status", JSON.stringify({ ok: false, finished: new Date().toISOString(), error: e.message }));
+  } finally {
+    await env.SNAPSHOT.delete("refresh-lock");
   }
 }
 

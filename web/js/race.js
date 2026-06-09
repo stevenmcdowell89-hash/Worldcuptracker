@@ -35,9 +35,13 @@ function annexCHandoff(out) {
 }
 
 export function renderRace() {
+  const started = S().meta?.started !== false && S().thirdPlaceRace?.some((t) => t.Pts > 0);
   const out = resolve(S(), [], state.annexC);
   const byStatus = Object.fromEntries(verdicts(S()).map((t) => [t.code, t.status]));
   const table = out.thirdPlaceTable;
+
+  const preBanner = !started
+    ? `<div class="banner">⚽ The group stage hasn't kicked off yet — all 12 third-placed spots are wide open. This race updates live once games begin.</div>` : "";
 
   // full 12-team third-place table with the dashed cut line after 8th (clickable rows)
   const rows = table.map((t) => {
@@ -52,14 +56,15 @@ export function renderRace() {
   const cutCard = `<div class="racecard"><div class="head"><h3>Race for the last 8</h3>
       <span class="go" style="color:var(--muted)">best 8 of 12 advance</span></div>
       <div class="cutlist">${rows}</div></div>
-      <div class="updated">The 12 group third-placed teams, ranked. The dashed line is the cut.</div>`;
+      <div class="updated">${started ? "The 12 group third-placed teams, ranked. The dashed line is the cut." : "Provisional order — no games played yet."}</div>`;
 
-  // plain-English: teams on the bubble first, else the teams nearest the line
+  // plain-English: teams on the bubble first, else the teams nearest the line. The
+  // status chip is only meaningful once games are played.
   const focus = table.filter((t) => byStatus[t.code] === "sweating").slice(0, 6);
   const peList = (focus.length ? focus : table.slice(5, 9)).map((t) => `
-    <div class="pe"><div class="who clickable" data-nav="team/${t.code}">${flag(t.code)}<span class="nm">${teamName(t.code)}</span>${statusChip(byStatus[t.code] || "in")}</div>
+    <div class="pe"><div class="who clickable" data-nav="team/${t.code}">${flag(t.code)}<span class="nm">${teamName(t.code)}</span>${started ? statusChip(byStatus[t.code] || "in") : ""}</div>
       <p>${plainEnglish(S(), t.code, state.annexC)}</p></div>`).join("");
   const peCard = `<div class="sec-head"><h2>What does my team need?</h2></div><div class="block">${peList}</div>`;
 
-  return { title: "Race", html: cutCard + peCard + annexCHandoff(out) };
+  return { title: "Race", html: preBanner + cutCard + peCard + annexCHandoff(out) };
 }

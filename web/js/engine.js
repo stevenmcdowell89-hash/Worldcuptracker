@@ -266,6 +266,10 @@ function qualifiesWith(snapshot, fixture, outcome, annexC) {
  */
 export function plainEnglish(snapshot, code, annexC = null) {
   const name = NAME(snapshot, code);
+  // Nothing is decided until games are played — don't fabricate certainties.
+  const played = GROUP_LETTERS.reduce((s, g) => s + (snapshot.groups[g] || []).reduce((a, r) => a + (r.P || 0), 0), 0);
+  if (played === 0) return `Group games haven't started — ${name}'s route to the last 8 is still wide open.`;
+
   const fx = snapshot.remainingFixtures.find((f) => f.home === code || f.away === code);
   const v = verdicts(snapshot).find((t) => t.code === code);
 
@@ -284,13 +288,15 @@ export function plainEnglish(snapshot, code, annexC = null) {
   const draw = qualifiesWith(snapshot, ctx, "D", annexC);
   const loss = qualifiesWith(snapshot, ctx, "L", annexC);
 
-  if (win && draw && loss) return `${name} are already through whatever happens against ${oppName}.`;
-  if (win && draw && !loss) return `${name} go through with a draw against ${oppName}; defeat could send them home.`;
-  if (win && !draw && !loss) return `${name} must beat ${oppName} to go through.`;
-  if (!win && !draw && !loss) return `${name} are out — even beating ${oppName} would not be enough on these results.`;
-  if (win && !draw && loss) return `${name} control their fate against ${oppName}, but it is tight on goal difference.`;
-  if (!win && draw && loss) return `${name} are better off not winning — an odd one, watch the goal-difference swing.`;
-  return `${name}: result against ${oppName} is decisive — every outcome changes the picture.`;
+  // "As it stands" framing: this projects the other group games as draws, so it's a
+  // guide to what their own result needs to do, not a locked-in guarantee.
+  if (win && draw && loss) return `As it stands, ${name} are through against ${oppName} whatever the result.`;
+  if (win && draw && !loss) return `As it stands, a draw against ${oppName} would be enough for ${name}; a defeat could open the door to others.`;
+  if (win && !draw && !loss) return `As it stands, ${name} would need to beat ${oppName} to make the last 8.`;
+  if (!win && !draw && !loss) return `As it stands, ${name} need other results to go their way — even beating ${oppName} may not be enough.`;
+  if (win && !draw && loss) return `${name} largely control it against ${oppName}, but goal difference is tight.`;
+  if (!win && draw && loss) return `${name}'s goal difference is on a knife-edge against ${oppName} — the margin matters.`;
+  return `${name}'s game against ${oppName} is pivotal — the result swings their place in the race.`;
 }
 
 export default { resolve, verdicts, plainEnglish, recompute, thirdPlaceTable, qualifiersFrom, annexCSlots, resultFromWDL, GROUP_LETTERS, QUALIFY_COUNT };

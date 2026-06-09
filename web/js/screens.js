@@ -34,14 +34,17 @@ function matchRow(m) {
   if (live) mid = `<span class="score">${m.home.score}–${m.away.score}</span><span class="min">${m.minute || "LIVE"}</span>`;
   else if (ft) mid = `<span class="score">${m.home.score}–${m.away.score}</span><span class="ko">FT</span>`;
   else mid = `<span class="ko">${fmtTime(m.kickoff)}</span>`;
-  const row = `<div class="match clickable" data-nav="match/${m.id}">
+  const stageLabel = m.group ? `Group ${m.group}` : (m.stage && m.stage !== "Group Stage" ? m.stage : "");
+  const meta = `<div class="match-meta">
+      ${stageLabel ? `<span class="grp-pill">${stageLabel}</span>` : ""}
+      ${m.affectsCut ? `<span class="race-tag">● could shape the last-8 race</span>` : ""}
+    </div>`;
+  return `<div class="match-card">
+    <div class="match clickable" data-nav="match/${m.id}">
       <span class="side home"><span class="nm">${teamName(m.home.code)}</span>${flag(m.home.code)}</span>
       <span class="mid">${mid}</span>
       <span class="side away">${flag(m.away.code)}<span class="nm">${teamName(m.away.code)}</span></span>
-    </div>`;
-  const marker = m.affectsCut
-    ? `<div class="affects"><span class="tick"></span><span>Affects the last-8 race</span></div>` : "";
-  return row + marker;
+    </div>${meta}</div>`;
 }
 
 // ── Matches (home spine) ──
@@ -139,6 +142,10 @@ export function renderStats(ctx) {
 }
 
 // ── Bracket ──
+const ROUND_DESC = {
+  R32: "Round of 32 — group winners & runners-up + the 8 best third-placed teams",
+  R16: "Round of 16", QF: "Quarter-finals", SF: "Semi-finals", Final: "Final",
+};
 export function renderBracket(ctx) {
   const b = S().bracket;
   const done = S().meta?.groupStageComplete;
@@ -146,17 +153,27 @@ export function renderBracket(ctx) {
   const tabBar = `<div class="tabs">${b.rounds.map((r) =>
     `<button data-nav="bracket?r=${r}" data-replace class="${r === tab ? "active" : ""}">${r}</button>`).join("")}</div>`;
   const banner = !done
-    ? `<div class="banner">🔒 Third-place slots lock after the final group games. ${state.annexC?.placeholder ? "Annex C mapping is a placeholder until FIFA's official chart is loaded." : ""}</div>` : "";
-  const ms = b.matches.filter((m) => m.rd === tab);
-  const side = (s) => {
-    if (!s) return `<div class="bteam"><span class="nm ph">—</span></div>`;
-    if (s.code) return `<div class="bteam clickable" data-nav="team/${s.code}">${flag(s.code)}<span class="nm">${teamName(s.code)} <span class="grp faint">${s.pos || ""}</span></span><span class="sc">${s.score ?? ""}</span></div>`;
-    return `<div class="bteam"><span class="nm ph">${s.label || "TBD"}</span></div>`;
+    ? `<div class="banner">🔒 Teams are placeholders until the group stage finishes. Third-place slots then resolve via FIFA's Annex C allocation.</div>` : "";
+
+  const teamSide = (s) => {
+    if (!s) return `<div class="bx-team ph"><span class="nm">TBD</span></div>`;
+    if (s.code) return `<div class="bx-team clickable" data-nav="team/${s.code}">${flag(s.code)}
+        <span class="nm">${teamName(s.code)}</span>${s.pos ? `<span class="bx-pos">${s.pos}</span>` : ""}
+        <span class="sc">${s.score ?? ""}</span></div>`;
+    const third = !!s.thirdPlaceSlot;
+    return `<div class="bx-team ph ${third ? "third" : ""}">
+        <span class="nm">${third ? "3rd place" : (s.label || "TBD")}</span>
+        <span class="bx-pos">${third ? s.thirdPlaceSlot.join("/") : (s.pos || "")}</span></div>`;
   };
   const hasMatch = (id) => (S().matches || []).some((x) => x.id === id);
-  const list = ms.map((m) => `<div class="bmatch" ${hasMatch(m.id) ? `data-nav="match/${m.id}"` : ""}>
-    <div class="faint" style="font-size:11px;font-weight:700;padding:0 0 4px">Match ${m.id}</div>${side(m.a)}${side(m.b)}</div>`).join("");
-  return { title: "Bracket", html: tabBar + banner + `<div class="bracket">${list}</div>` };
+  const ms = b.matches.filter((m) => m.rd === tab);
+  const list = ms.map((m) => `<div class="bx" ${hasMatch(m.id) ? `data-nav="match/${m.id}"` : ""}>
+      <div class="bx-head"><span class="bx-no">Match ${m.id}</span></div>
+      ${teamSide(m.a)}<div class="bx-v"><span>vs</span></div>${teamSide(m.b)}
+    </div>`).join("");
+
+  return { title: "Bracket", html: tabBar + banner +
+    `<div class="bx-round">${ROUND_DESC[tab] || tab}</div><div class="bxwrap">${list}</div>` };
 }
 
 // ── Watch (club tracker) ──
@@ -191,14 +208,16 @@ export function renderClub(ctx) {
       : emptyState("📋", "Squads not confirmed yet", `${club.name}'s World Cup players will appear once nations submit their squads, just before kickoff.`) };
   }
   const na = club.nextAction;
+  const naName = na ? (player(na.playerId)?.name || "") : "";
   const next = na ? `<div class="nextaction"><span class="clock">⏱</span>
-    <span class="txt"><div class="t1">Next: ${teamName(na.nation)} vs ${teamName(na.opponent)}</div>
-    <div class="t2">${fmtDay(na.kickoff)} · ${fmtTime(na.kickoff)}</div></span>
+    <span class="txt"><div class="t0">First ${club.name} player in action</div>
+      <div class="t1">${naName ? naName + " — " : ""}${teamName(na.nation)} vs ${teamName(na.opponent)}</div>
+      <div class="t2">${fmtDay(na.kickoff)} · ${fmtTime(na.kickoff)}</div></span>
     <span class="cd">${countdown(na.kickoff)}</span></div>` : "";
 
   const rows = club.players.map((p) => {
-    const elim = p.nationVerdict === "eliminated" || p.nationVerdict === "out";
-    const nf = p.nextFixture ? `Next: vs ${teamName(p.nextFixture.opponent)} · ${countdown(p.nextFixture.kickoff)}` : "Group stage done";
+    const elim = p.nationVerdict === "eliminated";   // only grey out the genuinely eliminated
+    const nf = p.nextFixture ? `Next: ${teamName(p.nation)} vs ${teamName(p.nextFixture.opponent)} · ${countdown(p.nextFixture.kickoff)}` : "Awaiting fixtures";
     const pl = player(p.playerId);
     return `<div class="watchp ${elim ? "elim" : ""} clickable" data-nav="player/${p.playerId}">
       ${flag(p.nation)}
