@@ -106,16 +106,17 @@ function annexCHandoff(out) {
   if (!Object.keys(slots).length) {
     return `<div class="sec-head"><h2>Round of 32 slots</h2></div><div class="banner">🔒 Slots lock after the final group games. Set a full scenario to preview the third-place matchups.</div>`;
   }
-  const bracket = S().bracket;
   const rows = qualifiedGroups.map((g) => {
     const slot = slots[g];
-    const bm = bracket.matches.find((m) => m.id === slot);
     const code = out.thirdPlaceTable.find((t) => t.group === g)?.code;
-    const oppLabel = bm ? (bm.a?.label || bm.b?.label || "winner") : slot;
+    const wg = state.annexC?.slotWinner?.[slot];               // host group winner of that slot
+    const oppCode = wg ? S().groups[wg]?.[0]?.code : null;     // current leader ("as it stands")
+    const opp = wg ? `Winner Group ${wg}${oppCode ? ` · ${teamName(oppCode)}` : ""}` : slot;
     return `<div class="lrow">${flag(code)}<span class="nm">${teamName(code)} <span class="grp faint">3rd ${g}</span></span>
-      <span class="sub">→ ${slot} · would face ${oppLabel}</span></div>`;
+      <span class="sub">→ Match ${slot} · vs ${opp}</span></div>`;
   }).join("");
-  return `${placeholderWarn}<div class="sec-head"><h2>Round of 32 slots (projected)</h2></div><div class="block">${rows}</div>`;
+  const head = done ? "Round of 32 slots" : "Round of 32 slots (projected)";
+  return `${placeholderWarn}<div class="sec-head"><h2>${head}</h2></div><div class="block">${rows}</div>`;
 }
 
 // ── render + mount (handlers + FLIP animation across the cut line) ──

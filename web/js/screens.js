@@ -141,10 +141,12 @@ export function renderBracket(ctx) {
   const ms = b.matches.filter((m) => m.rd === tab);
   const side = (s) => {
     if (!s) return `<div class="bteam"><span class="nm ph">—</span></div>`;
-    if (s.code) return `<div class="bteam">${flag(s.code)}<span class="nm">${teamName(s.code)}</span><span class="sc">${s.score ?? ""}</span></div>`;
+    if (s.code) return `<div class="bteam">${flag(s.code)}<span class="nm">${teamName(s.code)} <span class="grp faint">${s.pos || ""}</span></span><span class="sc">${s.score ?? ""}</span></div>`;
     return `<div class="bteam"><span class="nm ph">${s.label || "TBD"}</span></div>`;
   };
-  const list = ms.map((m) => `<div class="bmatch" ${m.a?.code || m.b?.code ? `data-nav="match/${m.id}"` : ""}>${side(m.a)}${side(m.b)}</div>`).join("");
+  const hasMatch = (id) => (S().matches || []).some((x) => x.id === id);
+  const list = ms.map((m) => `<div class="bmatch" ${hasMatch(m.id) ? `data-nav="match/${m.id}"` : ""}>
+    <div class="faint" style="font-size:11px;font-weight:700;padding:0 0 4px">Match ${m.id}</div>${side(m.a)}${side(m.b)}</div>`).join("");
   return { title: "Bracket", html: tabBar + banner + `<div class="bracket">${list}</div>` };
 }
 

@@ -207,28 +207,58 @@ for (const f of remainingFixtures) {
   });
 }
 
-// ── bracket skeleton (slots resolve when group stage completes) ──
-const ROUNDS = ["R32","R16","QF","SF","Final"];
-const r32seeds = [ // FIFA 48-team bracket pairings (illustrative labels)
-  ["1A","3CDFG"],["1C","2F"],["1E","3ABDG"],["1G","2C"],
-  ["1I","3BEFJ"],["1K","2I"],["2B","2J"],["1D","3BEHL"],
-  ["1F","2A"],["1H","3ACDH"],["2E","2K"],["1B","3EHIJ"],
-  ["1J","2H"],["2D","2G"],["1L","2L"],["2 ... ","..."],
+// ── bracket: the REAL 2026 structure (matches 73–104), wired from the official
+// schedule. Group-position sides resolve to the current group leader/runner-up
+// ("as it stands"); third-place slots show their FIFA candidate set and resolve
+// via Annex C once the group stage completes. See scripts/gen-annexc.js. ──
+const leader = (g, pos) => groups[g][pos].code; // pos 0 = winner, 1 = runner-up
+const win = (g) => ({ code: leader(g, 0), label: `Winner Group ${g}`, pos: `1${g}` });
+const run = (g) => ({ code: leader(g, 1), label: `Runner-up Group ${g}`, pos: `2${g}` });
+const tp = (cands) => ({ code: null, label: `3rd ${cands.join("/")}`, thirdPlaceSlot: cands });
+
+const R32 = [
+  { id: "73", a: run("A"), b: run("B") },
+  { id: "74", a: win("E"), b: tp(["A", "B", "C", "D", "F"]) },
+  { id: "75", a: win("F"), b: run("C") },
+  { id: "76", a: win("C"), b: run("F") },
+  { id: "77", a: win("I"), b: tp(["C", "D", "F", "G", "H"]) },
+  { id: "78", a: run("E"), b: run("I") },
+  { id: "79", a: win("A"), b: tp(["C", "E", "F", "H", "I"]) },
+  { id: "80", a: win("L"), b: tp(["E", "H", "I", "J", "K"]) },
+  { id: "81", a: win("D"), b: tp(["B", "E", "F", "I", "J"]) },
+  { id: "82", a: win("G"), b: tp(["A", "E", "H", "I", "J"]) },
+  { id: "83", a: run("K"), b: run("L") },
+  { id: "84", a: win("H"), b: run("J") },
+  { id: "85", a: win("B"), b: tp(["E", "F", "G", "I", "J"]) },
+  { id: "86", a: win("J"), b: run("H") },
+  { id: "87", a: win("K"), b: tp(["D", "E", "I", "J", "L"]) },
+  { id: "88", a: run("D"), b: run("G") },
 ];
-const bracket = { rounds: ROUNDS, matches: [] };
-for (let i = 0; i < 16; i++) {
-  const [a, b] = r32seeds[i] || ["?","?"];
-  bracket.matches.push({
-    id: `r32-${i+1}`, rd: "R32", slot: `r32-${i+1}`,
-    a: { code: null, label: a }, b: { code: null, label: b },
-    next: `r16-${Math.floor(i/2)+1}`,
-    thirdPlaceSlot: b.length > 3 ? null : null,
+// later-round pairings (winner of match X meets winner of match Y)
+const PAIRS = {
+  R16: [[74, 77], [73, 75], [83, 84], [81, 82], [76, 78], [79, 80], [86, 88], [85, 87]], // → 89..96
+  QF:  [[89, 90], [93, 94], [91, 92], [95, 96]],                                          // → 97..100
+  SF:  [[97, 98], [99, 100]],                                                             // → 101,102
+  Final: [[101, 102]],                                                                    // → 104
+};
+const startId = { R16: 89, QF: 97, SF: 101, Final: 104 };
+const bracket = { rounds: ["R32", "R16", "QF", "SF", "Final"], matches: [] };
+R32.forEach((m) => bracket.matches.push({ ...m, rd: "R32" }));
+for (const rd of ["R16", "QF", "SF", "Final"]) {
+  PAIRS[rd].forEach((pair, i) => {
+    bracket.matches.push({
+      id: String(startId[rd] + i), rd,
+      a: { code: null, label: `Winner Match ${pair[0]}` },
+      b: { code: null, label: `Winner Match ${pair[1]}` },
+    });
   });
 }
-for (let i = 0; i < 8; i++) bracket.matches.push({ id:`r16-${i+1}`, rd:"R16", a:{code:null,label:"W"}, b:{code:null,label:"W"}, next:`qf-${Math.floor(i/2)+1}` });
-for (let i = 0; i < 4; i++) bracket.matches.push({ id:`qf-${i+1}`, rd:"QF", a:{code:null,label:"W"}, b:{code:null,label:"W"}, next:`sf-${Math.floor(i/2)+1}` });
-for (let i = 0; i < 2; i++) bracket.matches.push({ id:`sf-${i+1}`, rd:"SF", a:{code:null,label:"W"}, b:{code:null,label:"W"}, next:"final-1" });
-bracket.matches.push({ id:"final-1", rd:"Final", a:{code:null,label:"W"}, b:{code:null,label:"W"} });
+// wire "next" pointers from the pairings
+const nextOf = {};
+for (const rd of ["R16", "QF", "SF", "Final"]) PAIRS[rd].forEach((pair, i) => {
+  pair.forEach((src) => (nextOf[src] = String(startId[rd] + i)));
+});
+bracket.matches.forEach((m) => { if (nextOf[+m.id]) m.next = nextOf[+m.id]; });
 
 // ── leaderboards ──
 const scorers = [

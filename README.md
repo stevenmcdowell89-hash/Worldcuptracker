@@ -60,9 +60,12 @@ offline against `web/data/latest.json`.
 ## Status / honesty notes (see brief §8)
 
 - **No xG / xA anywhere.** Deliberate.
-- **Annex C** (`web/data/annexC.json`) ships with the full 495-combination *structure*
-  but a **placeholder slot mapping** — it must be replaced with FIFA's official
-  allocation chart before going live. The code flags this.
+- **Annex C** (`web/data/annexC.json`) is **FIFA's real 495-combination allocation**,
+  parsed from the official chart (transcribed in `scripts/data/annexc-source.wiki`,
+  source: Wikipedia's "2026 FIFA World Cup third-place table" template, which
+  reproduces Annex C verbatim) and **validated end-to-end** — every combination is
+  checked against the real R32 candidate sets (matches 73–88) by `gen-annexc.js`
+  and the test suite. Regenerate with `npm run gen:annexc`.
 - Verdict bounds (Qualified/In/Sweating/Out/Eliminated) use a transparent
   best/worst-case method; the interactive scenario board's `resolve()` is exact for
   any concrete set of results. See `web/js/engine.js` header for the precise method

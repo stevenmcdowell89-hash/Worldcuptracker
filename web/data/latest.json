@@ -1,7 +1,7 @@
 {
   "meta": {
     "stage": "Group Stage",
-    "updated": "2026-06-09T19:46:53.735Z",
+    "updated": "2026-06-09T19:59:06.209Z",
     "groupStageComplete": false,
     "dataSource": "mock"
   },
@@ -1965,437 +1965,485 @@
     ],
     "matches": [
       {
-        "id": "r32-1",
-        "rd": "R32",
-        "slot": "r32-1",
+        "id": "73",
         "a": {
-          "code": null,
-          "label": "1A"
+          "code": "CRO",
+          "label": "Runner-up Group A",
+          "pos": "2A"
+        },
+        "b": {
+          "code": "CAN",
+          "label": "Runner-up Group B",
+          "pos": "2B"
+        },
+        "rd": "R32",
+        "next": "90"
+      },
+      {
+        "id": "74",
+        "a": {
+          "code": "FRA",
+          "label": "Winner Group E",
+          "pos": "1E"
         },
         "b": {
           "code": null,
-          "label": "3CDFG"
+          "label": "3rd A/B/C/D/F",
+          "thirdPlaceSlot": [
+            "A",
+            "B",
+            "C",
+            "D",
+            "F"
+          ]
         },
-        "next": "r16-1",
-        "thirdPlaceSlot": null
+        "rd": "R32",
+        "next": "89"
       },
       {
-        "id": "r32-2",
-        "rd": "R32",
-        "slot": "r32-2",
+        "id": "75",
         "a": {
-          "code": null,
-          "label": "1C"
+          "code": "BRA",
+          "label": "Winner Group F",
+          "pos": "1F"
+        },
+        "b": {
+          "code": "USA",
+          "label": "Runner-up Group C",
+          "pos": "2C"
+        },
+        "rd": "R32",
+        "next": "90"
+      },
+      {
+        "id": "76",
+        "a": {
+          "code": "ENG",
+          "label": "Winner Group C",
+          "pos": "1C"
+        },
+        "b": {
+          "code": "SRB",
+          "label": "Runner-up Group F",
+          "pos": "2F"
+        },
+        "rd": "R32",
+        "next": "93"
+      },
+      {
+        "id": "77",
+        "a": {
+          "code": "POR",
+          "label": "Winner Group I",
+          "pos": "1I"
         },
         "b": {
           "code": null,
-          "label": "2F"
+          "label": "3rd C/D/F/G/H",
+          "thirdPlaceSlot": [
+            "C",
+            "D",
+            "F",
+            "G",
+            "H"
+          ]
         },
-        "next": "r16-1",
-        "thirdPlaceSlot": null
+        "rd": "R32",
+        "next": "89"
       },
       {
-        "id": "r32-3",
-        "rd": "R32",
-        "slot": "r32-3",
+        "id": "78",
         "a": {
-          "code": null,
-          "label": "1E"
+          "code": "SUI",
+          "label": "Runner-up Group E",
+          "pos": "2E"
+        },
+        "b": {
+          "code": "CIV",
+          "label": "Runner-up Group I",
+          "pos": "2I"
+        },
+        "rd": "R32",
+        "next": "93"
+      },
+      {
+        "id": "79",
+        "a": {
+          "code": "MEX",
+          "label": "Winner Group A",
+          "pos": "1A"
         },
         "b": {
           "code": null,
-          "label": "3ABDG"
+          "label": "3rd C/E/F/H/I",
+          "thirdPlaceSlot": [
+            "C",
+            "E",
+            "F",
+            "H",
+            "I"
+          ]
         },
-        "next": "r16-2",
-        "thirdPlaceSlot": null
+        "rd": "R32",
+        "next": "94"
       },
       {
-        "id": "r32-4",
-        "rd": "R32",
-        "slot": "r32-4",
+        "id": "80",
         "a": {
-          "code": null,
-          "label": "1G"
+          "code": "NGA",
+          "label": "Winner Group L",
+          "pos": "1L"
         },
         "b": {
           "code": null,
-          "label": "2C"
+          "label": "3rd E/H/I/J/K",
+          "thirdPlaceSlot": [
+            "E",
+            "H",
+            "I",
+            "J",
+            "K"
+          ]
         },
-        "next": "r16-2",
-        "thirdPlaceSlot": null
+        "rd": "R32",
+        "next": "94"
       },
       {
-        "id": "r32-5",
-        "rd": "R32",
-        "slot": "r32-5",
+        "id": "81",
         "a": {
-          "code": null,
-          "label": "1I"
+          "code": "ARG",
+          "label": "Winner Group D",
+          "pos": "1D"
         },
         "b": {
           "code": null,
-          "label": "3BEFJ"
+          "label": "3rd B/E/F/I/J",
+          "thirdPlaceSlot": [
+            "B",
+            "E",
+            "F",
+            "I",
+            "J"
+          ]
         },
-        "next": "r16-3",
-        "thirdPlaceSlot": null
+        "rd": "R32",
+        "next": "92"
       },
       {
-        "id": "r32-6",
-        "rd": "R32",
-        "slot": "r32-6",
+        "id": "82",
         "a": {
-          "code": null,
-          "label": "1K"
+          "code": "ESP",
+          "label": "Winner Group G",
+          "pos": "1G"
         },
         "b": {
           "code": null,
-          "label": "2I"
+          "label": "3rd A/E/H/I/J",
+          "thirdPlaceSlot": [
+            "A",
+            "E",
+            "H",
+            "I",
+            "J"
+          ]
         },
-        "next": "r16-3",
-        "thirdPlaceSlot": null
+        "rd": "R32",
+        "next": "92"
       },
       {
-        "id": "r32-7",
-        "rd": "R32",
-        "slot": "r32-7",
+        "id": "83",
         "a": {
-          "code": null,
-          "label": "2B"
+          "code": "MLI",
+          "label": "Runner-up Group K",
+          "pos": "2K"
+        },
+        "b": {
+          "code": "SCO",
+          "label": "Runner-up Group L",
+          "pos": "2L"
+        },
+        "rd": "R32",
+        "next": "91"
+      },
+      {
+        "id": "84",
+        "a": {
+          "code": "GER",
+          "label": "Winner Group H",
+          "pos": "1H"
+        },
+        "b": {
+          "code": "DEN",
+          "label": "Runner-up Group J",
+          "pos": "2J"
+        },
+        "rd": "R32",
+        "next": "91"
+      },
+      {
+        "id": "85",
+        "a": {
+          "code": "BEL",
+          "label": "Winner Group B",
+          "pos": "1B"
         },
         "b": {
           "code": null,
-          "label": "2J"
+          "label": "3rd E/F/G/I/J",
+          "thirdPlaceSlot": [
+            "E",
+            "F",
+            "G",
+            "I",
+            "J"
+          ]
         },
-        "next": "r16-4",
-        "thirdPlaceSlot": null
+        "rd": "R32",
+        "next": "96"
       },
       {
-        "id": "r32-8",
-        "rd": "R32",
-        "slot": "r32-8",
+        "id": "86",
         "a": {
-          "code": null,
-          "label": "1D"
+          "code": "ITA",
+          "label": "Winner Group J",
+          "pos": "1J"
+        },
+        "b": {
+          "code": "COL",
+          "label": "Runner-up Group H",
+          "pos": "2H"
+        },
+        "rd": "R32",
+        "next": "95"
+      },
+      {
+        "id": "87",
+        "a": {
+          "code": "NED",
+          "label": "Winner Group K",
+          "pos": "1K"
         },
         "b": {
           "code": null,
-          "label": "3BEHL"
+          "label": "3rd D/E/I/J/L",
+          "thirdPlaceSlot": [
+            "D",
+            "E",
+            "I",
+            "J",
+            "L"
+          ]
         },
-        "next": "r16-4",
-        "thirdPlaceSlot": null
+        "rd": "R32",
+        "next": "96"
       },
       {
-        "id": "r32-9",
-        "rd": "R32",
-        "slot": "r32-9",
+        "id": "88",
         "a": {
-          "code": null,
-          "label": "1F"
+          "code": "AUS",
+          "label": "Runner-up Group D",
+          "pos": "2D"
         },
         "b": {
-          "code": null,
-          "label": "2A"
+          "code": "URU",
+          "label": "Runner-up Group G",
+          "pos": "2G"
         },
-        "next": "r16-5",
-        "thirdPlaceSlot": null
-      },
-      {
-        "id": "r32-10",
         "rd": "R32",
-        "slot": "r32-10",
-        "a": {
-          "code": null,
-          "label": "1H"
-        },
-        "b": {
-          "code": null,
-          "label": "3ACDH"
-        },
-        "next": "r16-5",
-        "thirdPlaceSlot": null
+        "next": "95"
       },
       {
-        "id": "r32-11",
-        "rd": "R32",
-        "slot": "r32-11",
-        "a": {
-          "code": null,
-          "label": "2E"
-        },
-        "b": {
-          "code": null,
-          "label": "2K"
-        },
-        "next": "r16-6",
-        "thirdPlaceSlot": null
-      },
-      {
-        "id": "r32-12",
-        "rd": "R32",
-        "slot": "r32-12",
-        "a": {
-          "code": null,
-          "label": "1B"
-        },
-        "b": {
-          "code": null,
-          "label": "3EHIJ"
-        },
-        "next": "r16-6",
-        "thirdPlaceSlot": null
-      },
-      {
-        "id": "r32-13",
-        "rd": "R32",
-        "slot": "r32-13",
-        "a": {
-          "code": null,
-          "label": "1J"
-        },
-        "b": {
-          "code": null,
-          "label": "2H"
-        },
-        "next": "r16-7",
-        "thirdPlaceSlot": null
-      },
-      {
-        "id": "r32-14",
-        "rd": "R32",
-        "slot": "r32-14",
-        "a": {
-          "code": null,
-          "label": "2D"
-        },
-        "b": {
-          "code": null,
-          "label": "2G"
-        },
-        "next": "r16-7",
-        "thirdPlaceSlot": null
-      },
-      {
-        "id": "r32-15",
-        "rd": "R32",
-        "slot": "r32-15",
-        "a": {
-          "code": null,
-          "label": "1L"
-        },
-        "b": {
-          "code": null,
-          "label": "2L"
-        },
-        "next": "r16-8",
-        "thirdPlaceSlot": null
-      },
-      {
-        "id": "r32-16",
-        "rd": "R32",
-        "slot": "r32-16",
-        "a": {
-          "code": null,
-          "label": "2 ... "
-        },
-        "b": {
-          "code": null,
-          "label": "..."
-        },
-        "next": "r16-8",
-        "thirdPlaceSlot": null
-      },
-      {
-        "id": "r16-1",
+        "id": "89",
         "rd": "R16",
         "a": {
           "code": null,
-          "label": "W"
+          "label": "Winner Match 74"
         },
         "b": {
           "code": null,
-          "label": "W"
+          "label": "Winner Match 77"
         },
-        "next": "qf-1"
+        "next": "97"
       },
       {
-        "id": "r16-2",
+        "id": "90",
         "rd": "R16",
         "a": {
           "code": null,
-          "label": "W"
+          "label": "Winner Match 73"
         },
         "b": {
           "code": null,
-          "label": "W"
+          "label": "Winner Match 75"
         },
-        "next": "qf-1"
+        "next": "97"
       },
       {
-        "id": "r16-3",
+        "id": "91",
         "rd": "R16",
         "a": {
           "code": null,
-          "label": "W"
+          "label": "Winner Match 83"
         },
         "b": {
           "code": null,
-          "label": "W"
+          "label": "Winner Match 84"
         },
-        "next": "qf-2"
+        "next": "99"
       },
       {
-        "id": "r16-4",
+        "id": "92",
         "rd": "R16",
         "a": {
           "code": null,
-          "label": "W"
+          "label": "Winner Match 81"
         },
         "b": {
           "code": null,
-          "label": "W"
+          "label": "Winner Match 82"
         },
-        "next": "qf-2"
+        "next": "99"
       },
       {
-        "id": "r16-5",
+        "id": "93",
         "rd": "R16",
         "a": {
           "code": null,
-          "label": "W"
+          "label": "Winner Match 76"
         },
         "b": {
           "code": null,
-          "label": "W"
+          "label": "Winner Match 78"
         },
-        "next": "qf-3"
+        "next": "98"
       },
       {
-        "id": "r16-6",
+        "id": "94",
         "rd": "R16",
         "a": {
           "code": null,
-          "label": "W"
+          "label": "Winner Match 79"
         },
         "b": {
           "code": null,
-          "label": "W"
+          "label": "Winner Match 80"
         },
-        "next": "qf-3"
+        "next": "98"
       },
       {
-        "id": "r16-7",
+        "id": "95",
         "rd": "R16",
         "a": {
           "code": null,
-          "label": "W"
+          "label": "Winner Match 86"
         },
         "b": {
           "code": null,
-          "label": "W"
+          "label": "Winner Match 88"
         },
-        "next": "qf-4"
+        "next": "100"
       },
       {
-        "id": "r16-8",
+        "id": "96",
         "rd": "R16",
         "a": {
           "code": null,
-          "label": "W"
+          "label": "Winner Match 85"
         },
         "b": {
           "code": null,
-          "label": "W"
+          "label": "Winner Match 87"
         },
-        "next": "qf-4"
+        "next": "100"
       },
       {
-        "id": "qf-1",
+        "id": "97",
         "rd": "QF",
         "a": {
           "code": null,
-          "label": "W"
+          "label": "Winner Match 89"
         },
         "b": {
           "code": null,
-          "label": "W"
+          "label": "Winner Match 90"
         },
-        "next": "sf-1"
+        "next": "101"
       },
       {
-        "id": "qf-2",
+        "id": "98",
         "rd": "QF",
         "a": {
           "code": null,
-          "label": "W"
+          "label": "Winner Match 93"
         },
         "b": {
           "code": null,
-          "label": "W"
+          "label": "Winner Match 94"
         },
-        "next": "sf-1"
+        "next": "101"
       },
       {
-        "id": "qf-3",
+        "id": "99",
         "rd": "QF",
         "a": {
           "code": null,
-          "label": "W"
+          "label": "Winner Match 91"
         },
         "b": {
           "code": null,
-          "label": "W"
+          "label": "Winner Match 92"
         },
-        "next": "sf-2"
+        "next": "102"
       },
       {
-        "id": "qf-4",
+        "id": "100",
         "rd": "QF",
         "a": {
           "code": null,
-          "label": "W"
+          "label": "Winner Match 95"
         },
         "b": {
           "code": null,
-          "label": "W"
+          "label": "Winner Match 96"
         },
-        "next": "sf-2"
+        "next": "102"
       },
       {
-        "id": "sf-1",
+        "id": "101",
         "rd": "SF",
         "a": {
           "code": null,
-          "label": "W"
+          "label": "Winner Match 97"
         },
         "b": {
           "code": null,
-          "label": "W"
+          "label": "Winner Match 98"
         },
-        "next": "final-1"
+        "next": "104"
       },
       {
-        "id": "sf-2",
+        "id": "102",
         "rd": "SF",
         "a": {
           "code": null,
-          "label": "W"
+          "label": "Winner Match 99"
         },
         "b": {
           "code": null,
-          "label": "W"
+          "label": "Winner Match 100"
         },
-        "next": "final-1"
+        "next": "104"
       },
       {
-        "id": "final-1",
+        "id": "104",
         "rd": "Final",
         "a": {
           "code": null,
-          "label": "W"
+          "label": "Winner Match 101"
         },
         "b": {
           "code": null,
-          "label": "W"
+          "label": "Winner Match 102"
         }
       }
     ]

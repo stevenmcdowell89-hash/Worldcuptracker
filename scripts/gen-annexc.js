@@ -1,60 +1,97 @@
-// Generates web/data/annexC.json — the Round-of-32 slot allocation for the best 8
-// third-placed teams (brief §6).
+// Generates web/data/annexC.json — FIFA's OFFICIAL Round-of-32 allocation for the
+// eight best third-placed teams (brief §6). NOT invented: parsed from FIFA's
+// published Annex C table (495 combinations), transcribed in
+// scripts/data/annexc-source.wiki (source: the Wikipedia template
+// "2026 FIFA World Cup third-place table", which reproduces Annex C verbatim).
 //
 //   node scripts/gen-annexc.js
 //
-// ⚠️  PLACEHOLDER MAPPING. There are C(12,8) = 495 possible combinations of which
-// eight groups supply the qualifying third-placed teams. FIFA publishes the OFFICIAL
-// allocation chart that maps each combination → which R32 slot each third-placed
-// team fills. That chart MUST be transcribed here before going live — the mapping
-// below is a deterministic placeholder so the engine + bracket wiring can be built
-// and tested. The output file carries `"placeholder": true` and every entry carries
-// `"verified": false` so the UI can warn until real data is loaded.
+// Every row is validated against the real R32 bracket structure (matches 73–88):
+// each of the eight third-place slots may only be filled by a group in its FIFA
+// candidate set, the assigned groups must equal the qualifying set, and it must be
+// a perfect matching. The build FAILS LOUDLY if any row violates this.
 //
-// Structure (consumed by engine.annexCSlots):
-//   {
-//     "placeholder": true,
-//     "thirdPlaceSlots": ["r32-1","r32-5","r32-11","r32-13","r32-2","r32-8","r32-10","r32-16"],
-//     "combinations": {
-//       "ABCDEFGH": { "A": "r32-1", "B": "r32-5", ... }   // group letter -> R32 slot
-//     }
-//   }
+// The eight R32 matches that take a third-placed team, with the group WINNER they
+// host and the five groups eligible to supply the third-placed visitor:
+//   M74  Winner E  ← 3rd of A/B/C/D/F
+//   M77  Winner I  ← 3rd of C/D/F/G/H
+//   M79  Winner A  ← 3rd of C/E/F/H/I
+//   M80  Winner L  ← 3rd of E/H/I/J/K
+//   M81  Winner D  ← 3rd of B/E/F/I/J
+//   M82  Winner G  ← 3rd of A/E/H/I/J
+//   M85  Winner B  ← 3rd of E/F/G/I/J
+//   M87  Winner K  ← 3rd of D/E/I/J/L
 
-import { writeFileSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname, resolve as pathResolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const SRC = pathResolve(__dirname, "data/annexc-source.wiki");
 const OUT = pathResolve(__dirname, "../web/data/annexC.json");
 
-const GROUPS = ["A","B","C","D","E","F","G","H","I","J","K","L"];
+// R32 slots that receive a third-placed team. Slot id === FIFA match number.
+const SLOT_WINNER = { 74: "E", 77: "I", 79: "A", 80: "L", 81: "D", 82: "G", 85: "B", 87: "K" };
+const CANDIDATES = {
+  74: ["A", "B", "C", "D", "F"],
+  77: ["C", "D", "F", "G", "H"],
+  79: ["C", "E", "F", "H", "I"],
+  80: ["E", "H", "I", "J", "K"],
+  81: ["B", "E", "F", "I", "J"],
+  82: ["A", "E", "H", "I", "J"],
+  85: ["E", "F", "G", "I", "J"],
+  87: ["D", "E", "I", "J", "L"],
+};
+// The published table's eight match columns are ordered by winner: 1A,1B,1D,1E,1G,1I,1K,1L.
+const COLUMN_MATCHES = [79, 85, 81, 74, 82, 77, 87, 80];
 
-// The eight R32 match slots that are filled by third-placed teams (the other 24 R32
-// places are group winners/runners-up). These slot ids match scripts/gen-mock.js.
-const THIRD_SLOTS = ["r32-2","r32-3","r32-5","r32-8","r32-10","r32-11","r32-13","r32-16"];
+const wt = readFileSync(SRC, "utf8");
+const blocks = wt.split(/\n\|-\s*\n/).filter((b) => b.includes('scope="row"'));
 
-function combinations(arr, k) {
-  if (k === 0) return [[]];
-  if (k > arr.length) return [];
-  const [head, ...tail] = arr;
-  const withHead = combinations(tail, k - 1).map((c) => [head, ...c]);
-  const withoutHead = combinations(tail, k);
-  return [...withHead, ...withoutHead];
-}
+const out = {
+  source: "FIFA 2026 World Cup regulations, Annex C (495-combination third-place allocation).",
+  provenance: "Parsed from scripts/data/annexc-source.wiki (Wikipedia: Template:2026 FIFA World Cup third-place table).",
+  verified: true,
+  thirdPlaceMatches: Object.keys(SLOT_WINNER),
+  slotWinner: SLOT_WINNER,
+  candidates: CANDIDATES,
+  combinations: {},
+};
 
-const combos = combinations(GROUPS, 8);
-const out = { placeholder: true, verified: false, thirdPlaceSlots: THIRD_SLOTS, combinations: {} };
+let errors = 0;
+const seen = new Set();
+for (const b of blocks) {
+  const no = (b.match(/scope="row"\s*\|\s*(\d+)/) || [])[1];
+  // qualifying groups: the bolded single-letter group cells '''X'''
+  const qualifying = [...b.matchAll(/'''([A-L])'''/g)].map((m) => m[1]);
+  // assignments: the eight "3X" tokens, in published column order
+  const assigns = [...b.matchAll(/\b3([A-L])\b/g)].map((m) => m[1]);
 
-for (const combo of combos) {
-  const sorted = [...combo].sort();
-  const key = sorted.join("");
-  // PLACEHOLDER rule: assign the sorted qualifying groups to the eight third-place
-  // slots in order. Deterministic and reversible, but NOT FIFA's real allocation.
+  const fail = (msg) => { console.error(`row ${no}: ${msg}`); errors++; };
+  if (qualifying.length !== 8) { fail(`expected 8 qualifying groups, got ${qualifying.length} [${qualifying}]`); continue; }
+  if (assigns.length !== 8) { fail(`expected 8 assignments, got ${assigns.length} [${assigns}]`); continue; }
+
+  // group letter -> match slot id (string)
   const mapping = {};
-  sorted.forEach((g, i) => (mapping[g] = THIRD_SLOTS[i]));
-  out.combinations[key] = mapping;
+  COLUMN_MATCHES.forEach((match, i) => {
+    const g = assigns[i];
+    if (!CANDIDATES[match].includes(g)) fail(`3${g} cannot play in match ${match} (candidates ${CANDIDATES[match]})`);
+    mapping[g] = String(match);
+  });
+
+  const qSet = [...qualifying].sort().join("");
+  const aSet = [...assigns].sort().join("");
+  if (qSet !== aSet) fail(`assigned groups {${aSet}} ≠ qualifying groups {${qSet}}`);
+  if (Object.keys(mapping).length !== 8) fail(`not a perfect matching (${Object.keys(mapping).length} distinct groups)`);
+  if (seen.has(qSet)) fail(`duplicate combination ${qSet}`);
+  seen.add(qSet);
+
+  out.combinations[qSet] = mapping;
 }
+
+if (errors) { console.error(`\n✗ ${errors} validation error(s) — NOT writing annexC.json`); process.exit(1); }
+if (seen.size !== 495) { console.error(`✗ expected 495 combinations, parsed ${seen.size}`); process.exit(1); }
 
 mkdirSync(dirname(OUT), { recursive: true });
 writeFileSync(OUT, JSON.stringify(out));
-console.log(`Wrote ${OUT} — ${combos.length} combinations (placeholder mapping).`);
+console.log(`Wrote ${OUT} — ${seen.size} combinations, all validated against the R32 candidate sets.`);
