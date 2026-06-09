@@ -19,15 +19,25 @@ const API = "https://v3.football.api-sports.io";
 const KV_KEY = "latest.json";
 const META_KEY = "poll-meta";
 
-// ── tiny API client ──
-async function apiGet(env, path, params = {}) {
+const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
+
+// ── tiny API client (rate-limit aware) ──
+// API-Football returns HTTP 200 with {errors:{rateLimit:"..."}} when the per-minute
+// cap is exceeded. We back off and retry a few times (the per-minute window resets
+// each minute) so a burst of live calls degrades gracefully instead of throwing.
+async function apiGet(env, path, params = {}, attempt = 0) {
   const url = new URL(API + path);
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
   const r = await fetch(url, { headers: { "x-apisports-key": env.APIFOOTBALL_KEY } });
-  if (!r.ok) throw new Error(`API-Football ${path} → ${r.status}`);
+  if (!r.ok) {
+    if (r.status === 429 && attempt < 3) { await sleep(6500); return apiGet(env, path, params, attempt + 1); }
+    throw new Error(`API-Football ${path} → ${r.status}`);
+  }
   const body = await r.json();
   if (body.errors && Object.keys(body.errors).length) {
-    throw new Error(`API-Football ${path}: ${JSON.stringify(body.errors)}`);
+    const msg = JSON.stringify(body.errors);
+    if (/ratelimit/i.test(msg) && attempt < 3) { await sleep(6500); return apiGet(env, path, params, attempt + 1); }
+    throw new Error(`API-Football ${path}: ${msg}`);
   }
   return body.response || [];
 }
@@ -104,6 +114,7 @@ function normFixtures(resp) {
       kickoff: f.fixture?.date,
       home: { code: home?.code || String(home?.id), score: f.goals?.home },
       away: { code: away?.code || String(away?.id), score: f.goals?.away },
+      _homeId: home?.id, _awayId: away?.id,   // internal: for event home/away mapping
     };
     if (!done && !live && !ht) {
       base.status = "scheduled";
@@ -123,12 +134,12 @@ function normFixtures(resp) {
   return { matches, remainingFixtures };
 }
 
-function normEvents(resp) {
+function normEvents(resp, homeId) {
   return (resp || []).map((e) => ({
     min: `${e.time?.elapsed ?? ""}'`,
-    side: "h", // caller fixes side by comparing team id; left as h by default
-    _teamId: e.team?.id,
-    type: e.type === "Goal" ? "goal" : e.type === "Card" ? (e.detail === "Red Card" ? "red" : "yellow") : e.type === "subst" ? "subst" : "goal",
+    side: e.team?.id === homeId ? "h" : "a",   // map to the correct side
+    type: e.type === "Goal" ? (e.detail === "Penalty" ? "penalty" : e.detail === "Own Goal" ? "owngoal" : "goal")
+      : e.type === "Card" ? (e.detail === "Red Card" ? "red" : "yellow") : e.type === "subst" ? "subst" : "goal",
     player: e.player?.name,
     assist: e.assist?.name || undefined,
     detail: e.detail,
@@ -191,13 +202,14 @@ async function buildSnapshot(env, prev, liveOnly) {
 
   // Live detail only for in-play fixtures (events/stats/lineups).
   for (const m of matches.filter((x) => x.status === "live" || x.status === "ht")) {
-    try { m.events = normEvents(await apiGet(env, "/fixtures/events", { fixture: m.id })); } catch {}
+    try { m.events = normEvents(await apiGet(env, "/fixtures/events", { fixture: m.id }), m._homeId); } catch {}
     try { m.stats = normStats(await apiGet(env, "/fixtures/statistics", { fixture: m.id })); } catch {}
     try {
       const lu = await apiGet(env, "/fixtures/lineups", { fixture: m.id });
-      if (lu?.length) m.lineups = normLineups(lu);
+      if (lu?.length) m.lineups = normLineups(lu, m._homeId, m._awayId);
     } catch {}
   }
+  for (const m of matches) { delete m._homeId; delete m._awayId; }  // strip internals
 
   // Leaderboards + teams/players only on a full (baseline) poll — reuse prev when liveOnly.
   let scorers = prev?.scorers || [], assists = prev?.assists || [], discipline = prev?.discipline || [];
@@ -205,6 +217,13 @@ async function buildSnapshot(env, prev, liveOnly) {
   if (!liveOnly) {
     try { scorers = (await apiGet(env, "/players/topscorers", base)).map(normScorer); } catch {}
     try { assists = (await apiGet(env, "/players/topassists", base)).map(normAssist); } catch {}
+    try {
+      const [y, r] = await Promise.all([
+        apiGet(env, "/players/topyellowcards", base).catch(() => []),
+        apiGet(env, "/players/topredcards", base).catch(() => []),
+      ]);
+      discipline = normDiscipline(y, r);
+    } catch {}
     ({ teams, players } = buildTeamsAndPlayers(groups, prev));
   }
 
@@ -240,13 +259,29 @@ function normAssist(s) {
   const st = s.statistics?.[0];
   return { playerId: s.player?.id, code: st?.team?.code || "", name: s.player?.name, team: st?.team?.name, a: st?.goals?.assists ?? 0, g: st?.goals?.total ?? 0 };
 }
-function normLineups(resp) {
-  const side = (L) => ({
+function normLineups(resp, homeId, awayId) {
+  const side = (L) => L && ({
     formation: L.formation, coach: L.coach?.name,
     xi: (L.startXI || []).map((p) => ({ num: p.player?.number, name: p.player?.name, pos: p.player?.pos, grid: p.player?.grid, playerId: p.player?.id })),
     subs: (L.substitutes || []).map((p) => ({ num: p.player?.number, name: p.player?.name, pos: p.player?.pos, playerId: p.player?.id })),
   });
-  return { h: side(resp[0]), a: resp[1] ? side(resp[1]) : undefined };
+  // map by team id rather than assuming array order
+  const h = (resp || []).find((L) => L.team?.id === homeId) || resp?.[0];
+  const a = (resp || []).find((L) => L.team?.id === awayId) || resp?.[1];
+  return { h: side(h), a: side(a) };
+}
+// Per-team discipline from the top-yellow / top-red leaderboards (for the Stats tab).
+function normDiscipline(yellowResp, redResp) {
+  const byTeam = {};
+  const bump = (st, field) => {
+    const t = st?.team; if (!t) return;
+    const code = t.code || String(t.id);
+    const row = (byTeam[code] = byTeam[code] || { code, team: t.name, y: 0, r: 0 });
+    row[field] += st?.cards?.[field === "y" ? "yellow" : "red"] ?? 0;
+  };
+  (yellowResp || []).forEach((p) => bump(p.statistics?.[0], "y"));
+  (redResp || []).forEach((p) => bump(p.statistics?.[0], "r"));
+  return Object.values(byTeam).sort((a, b) => b.y + b.r * 3 - (a.y + a.r * 3));
 }
 function buildTeamsAndPlayers(groups, prev) {
   const teams = {}, players = prev?.players || {};
@@ -295,6 +330,17 @@ async function debugProbe(env) {
   const cfg = CFG(env);
   const out = { configured: { league: cfg.league, season: cfg.season, clubs: cfg.clubs }, findings: {} };
 
+  // 0) account subscription — the definitive source for plan + daily/per-minute limits
+  try {
+    const status = await apiGet(env, "/status", {});
+    const s = Array.isArray(status) ? status[0] : status; // /status returns an object
+    out.findings.subscription = {
+      plan: s?.subscription?.plan, active: s?.subscription?.active,
+      requestsToday: s?.requests?.current, dailyLimit: s?.requests?.limit_day,
+    };
+  } catch (e) { out.findings.statusError = e.message; }
+  await sleep(400);
+
   // 1) World Cup league + which seasons it covers
   try {
     const leagues = await apiGet(env, "/leagues", { search: "World Cup" });
@@ -317,11 +363,13 @@ async function debugProbe(env) {
       entry.idResolvesTo = byId?.[0]?.team?.name ?? null;
       entry.match = entry.idResolvesTo && entry.idResolvesTo.toLowerCase().includes(club.name.split(" ")[0].toLowerCase());
       if (!entry.match) {
+        await sleep(400);
         const byName = await apiGet(env, "/teams", { search: club.name });
         entry.suggestions = (byName || []).slice(0, 4).map((t) => ({ id: t.team?.id, name: t.team?.name, country: t.team?.country }));
       }
     } catch (e) { entry.error = e.message; }
     out.findings.clubs[slug] = entry;
+    await sleep(400);   // pace to stay under the per-minute cap
   }
   return jsonResp(out);
 }
