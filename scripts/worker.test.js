@@ -10,12 +10,19 @@ const NATIONS = {
   A: [["ENG", 100], ["USA", 101], ["SEN", 102], ["IRN", 103]],
   B: [["ARG", 110], ["AUS", 111], ["POL", 112], ["RSA", 113]],
 };
+const CODES = { 100: "ENG", 101: "USA", 102: "SEN", 103: "IRN", 110: "ARG", 111: "AUS", 112: "POL", 113: "RSA" };
+// /teams (league+season) is the only place codes + logos live (mirrors the real API).
+const teamsLeague = () => Object.entries(CODES).map(([id, code]) =>
+  ({ team: { id: +id, name: code, code, logo: `https://logo/${code}.png`, national: true } }));
 function standings() {
-  const mk = (code, id, pts, gf, ga) => ({ team: { id, name: code, code }, points: pts, goalsDiff: gf - ga,
+  // standings team objects carry NO code — only {id,name,logo} — exactly like the live API
+  const mk = (id, pts, gf, ga) => ({ team: { id, name: CODES[id], logo: `https://logo/${CODES[id]}.png` }, points: pts, goalsDiff: gf - ga,
     all: { played: 2, win: pts >= 4 ? 2 : pts >= 3 ? 1 : 0, draw: pts === 1 ? 1 : 0, lose: pts === 0 ? 2 : 0, goals: { for: gf, against: ga } } });
   const table = [
-    [mk("ENG", 100, 6, 4, 1), mk("USA", 101, 3, 3, 2), mk("SEN", 102, 3, 3, 3), mk("IRN", 103, 0, 1, 5)].map((r, i) => ({ ...r, group: "Group A" })),
-    [mk("ARG", 110, 6, 5, 1), mk("AUS", 111, 3, 2, 2), mk("POL", 112, 1, 2, 3), mk("RSA", 113, 1, 1, 4)].map((r) => ({ ...r, group: "Group B" })),
+    [mk(100, 6, 4, 1), mk(101, 3, 3, 2), mk(102, 3, 3, 3), mk(103, 0, 1, 5)].map((r) => ({ ...r, group: "Group A" })),
+    [mk(110, 6, 5, 1), mk(111, 3, 2, 2), mk(112, 1, 2, 3), mk(113, 1, 1, 4)].map((r) => ({ ...r, group: "Group B" })),
+    // the meta block the live API includes — must be skipped, not treated as a 3rd group
+    [{ team: { id: 102, name: "SEN" }, group: "Ranking of third-placed teams", points: 3, all: { played: 2, goals: { for: 3, against: 3 } } }],
   ];
   return [{ league: { standings: table } }];
 }
@@ -24,10 +31,11 @@ function fixtures() {
     fixture: { id, date, status: { short: st, elapsed: st === "1H" ? 30 : null }, venue: { name: "Stadium" } },
     league: { round }, teams: { home: { id: hId, code: hCode }, away: { id: aId, code: aCode } }, goals: { home: hg, away: ag },
   });
+  // round is "Group Stage - N" with NO group letter — group comes from team membership
   return [
-    f(5001, "Group A - 2", "FT", 100, "ENG", 102, "SEN", 2, 1, "2026-06-20T16:00:00Z"),   // finished, has detail
-    f(5002, "Group B - 3", "1H", 110, "ARG", 111, "AUS", 1, 0, "2026-06-25T16:00:00Z"),   // live
-    f(5003, "Group A - 3", "NS", 100, "ENG", 101, "USA", null, null, "2026-06-26T16:00:00Z"), // scheduled → remaining
+    f(5001, "Group Stage - 2", "FT", 100, "ENG", 102, "SEN", 2, 1, "2026-06-20T16:00:00Z"),   // finished, has detail
+    f(5002, "Group Stage - 3", "1H", 110, "ARG", 111, "AUS", 1, 0, "2026-06-25T16:00:00Z"),   // live
+    f(5003, "Group Stage - 3", "NS", 100, "ENG", 101, "USA", null, null, "2026-06-26T16:00:00Z"), // scheduled → remaining
   ];
 }
 const events = (homeAway) => [
@@ -46,9 +54,9 @@ const fixturePlayers = (hId, aId) => [
   { team: { id: hId }, players: [{ player: { id: 1001, name: "Home Mid" }, statistics: [{ games: { rating: "8.3", minutes: 90 } }] }] },
   { team: { id: aId }, players: [{ player: { id: 2001, name: "Away Striker" }, statistics: [{ games: { rating: "6.9", minutes: 90 } }] }] },
 ];
-const topscorers = [{ player: { id: 1001, name: "Home Mid" }, statistics: [{ team: { name: "England", code: "ENG" }, goals: { total: 4, assists: 1 } }] }];
-const topassists = [{ player: { id: 1001, name: "Home Mid" }, statistics: [{ team: { name: "England", code: "ENG" }, goals: { total: 4, assists: 3 } }] }];
-const topcards = (n) => [{ player: { id: 2001, name: "Away Striker" }, statistics: [{ team: { name: "Senegal", code: "SEN" }, cards: { yellow: n, red: 0 } }] }];
+const topscorers = [{ player: { id: 1001, name: "Home Mid" }, statistics: [{ team: { id: 100, name: "England" }, goals: { total: 4, assists: 1 } }] }];
+const topassists = [{ player: { id: 1001, name: "Home Mid" }, statistics: [{ team: { id: 100, name: "England" }, goals: { total: 4, assists: 3 } }] }];
+const topcards = (n) => [{ player: { id: 2001, name: "Away Striker" }, statistics: [{ team: { id: 102, name: "Senegal" }, cards: { yellow: n, red: 0 } }] }];
 const teamStats = () => ({ form: "WWL", clean_sheet: { total: 1 }, cards: { yellow: { "0-15": { total: 2 }, "46-60": { total: 1 } }, red: { "76-90": { total: 1 } } } });
 function squadFor(teamId) {
   if (teamId === 33) return [{ id: 1001, name: "Home Mid", number: 8, position: "Midfielder" }]; // Man Utd → intersects ENG
@@ -74,6 +82,7 @@ function cannedFetch(url) {
   const data = {
     "/standings": standings(),
     "/fixtures": fixtures(),
+    "/teams": teamsLeague(),
     "/players/topscorers": topscorers,
     "/players/topassists": topassists,
     "/players/topyellowcards": topcards(5),
@@ -99,10 +108,18 @@ test("setup: drive buildSnapshot with a mocked API", async () => {
   assert.ok(snap);
 });
 
-test("groups normalise, sort, and carry fair-play cards", () => {
-  assert.deepEqual(Object.keys(snap.groups).sort(), ["A", "B"]);
+test("groups: 'Ranking of third-placed teams' block is skipped (12-group parse)", () => {
+  assert.deepEqual(Object.keys(snap.groups).sort(), ["A", "B"]);  // the meta block excluded
   assert.equal(snap.groups.A.length, 4);
-  assert.equal(snap.groups.A[0].code, "ENG");            // leader first
+});
+
+test("codes resolved via /teams (standings only had ids), and crests exposed", () => {
+  assert.equal(snap.groups.A[0].code, "ENG");            // leader, code from directory not id
+  Object.values(snap.groups).flat().forEach((r) => assert.match(r.code, /^[A-Z]{3}$/));
+  assert.equal(snap.crests.ENG, "https://logo/ENG.png"); // crest image exposed for the frontend
+});
+
+test("groups sorted and carry fair-play cards", () => {
   const carded = Object.values(snap.groups).flat().filter((r) => r.yellow > 0);
   assert.ok(carded.length > 0, "fair-play cards populated from /teams/statistics");
   Object.values(snap.groups).flat().forEach((r) => assert.equal(r._id, undefined)); // internal stripped

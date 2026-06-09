@@ -75,17 +75,35 @@ function inLiveWindow(snapshot) {
 }
 
 // ── normalisers (API-Football v3 shapes → snapshot schema) ──
-function normStandings(resp) {
-  // resp[0].league.standings = [[row,...] per group]
+// Standings/fixtures team objects carry only {id,name,logo} — no 3-letter code.
+// /teams (league+season) DOES carry `code` + `logo`, so we build a directory and
+// resolve everything through it.
+async function buildTeamDir(env, base) {
+  const byId = {}, crests = {};
+  try {
+    const teams = await apiGet(env, "/teams", base);
+    for (const t of teams) {
+      const tm = t.team; if (!tm?.id) continue;
+      const code = tm.code || String(tm.id);
+      byId[tm.id] = { code, name: tm.name, logo: tm.logo };
+      if (tm.logo) crests[code] = tm.logo;
+    }
+  } catch { /* fall back to ids below */ }
+  return { byId, crests };
+}
+const codeOf = (dir, id) => dir.byId[id]?.code || String(id);
+
+function normStandings(resp, dir) {
+  // resp[0].league.standings = [[row,...] per group] + a "Ranking of third-placed teams" block
   const groups = {};
   const table = resp?.[0]?.league?.standings || [];
   for (const groupRows of table) {
+    const letter = (groupRows?.[0]?.group || "").replace(/^Group\s+/i, "").trim().toUpperCase();
+    if (!/^[A-L]$/.test(letter)) continue;          // skip "Ranking of third-placed teams" etc.
     for (const r of groupRows) {
-      const letter = (r.group || "Group ?").replace(/^Group\s+/i, "").trim().toUpperCase();
+      const id = r.team?.id;
       const row = {
-        code: r.team?.code || String(r.team?.id),
-        name: r.team?.name,
-        _id: r.team?.id,     // internal: API team id (for squad/stats lookups)
+        code: codeOf(dir, id), name: r.team?.name, _id: id, logo: dir.byId[id]?.logo,
         P: r.all?.played ?? 0, W: r.all?.win ?? 0, D: r.all?.draw ?? 0, L: r.all?.lose ?? 0,
         GF: r.all?.goals?.for ?? 0, GA: r.all?.goals?.against ?? 0,
         GD: r.goalsDiff ?? 0, Pts: r.points ?? 0,
@@ -98,35 +116,34 @@ function normStandings(resp) {
   return groups;
 }
 
-function normFixtures(resp) {
-  // Split into played/live matches and not-yet-played remaining group fixtures.
+function normFixtures(resp, dir, idToGroup) {
+  // The WC round is "Group Stage - N" (no letter), so the group comes from each
+  // team's standings membership (idToGroup). Knockout fixtures have no group.
   const matches = [], remainingFixtures = [];
   for (const f of resp || []) {
     const st = f.fixture?.status?.short;
-    const live = ["1H", "2H", "ET", "P", "LIVE"].includes(st);
+    const live = ["1H", "2H", "ET", "P", "LIVE", "BT"].includes(st);
     const ht = st === "HT";
     const done = ["FT", "AET", "PEN"].includes(st);
     const home = f.teams?.home, away = f.teams?.away;
-    const isGroup = (f.league?.round || "").toLowerCase().includes("group");
-    const groupLetter = (f.league?.round?.match(/Group\s+([A-L])/i) || [])[1]?.toUpperCase();
+    const groupLetter = idToGroup[home?.id] || idToGroup[away?.id];
+    const isGroup = !!groupLetter;
+    const hc = codeOf(dir, home?.id), ac = codeOf(dir, away?.id);
     const base = {
       id: String(f.fixture?.id),
-      stage: isGroup ? "Group Stage" : f.league?.round,
+      stage: isGroup ? "Group Stage" : (f.league?.round || "Knockout"),
       group: groupLetter,
       venue: f.fixture?.venue?.name,
       kickoff: f.fixture?.date,
-      home: { code: home?.code || String(home?.id), score: f.goals?.home },
-      away: { code: away?.code || String(away?.id), score: f.goals?.away },
+      home: { code: hc, score: f.goals?.home },
+      away: { code: ac, score: f.goals?.away },
       _homeId: home?.id, _awayId: away?.id,   // internal: for event home/away mapping
     };
     if (!done && !live && !ht) {
       base.status = "scheduled";
-      if (isGroup && groupLetter) {
-        remainingFixtures.push({
-          id: base.id, group: groupLetter, home: base.home.code, away: base.away.code,
-          kickoff: base.kickoff, affectsThird: true,
-        });
-      }
+      if (isGroup) remainingFixtures.push({
+        id: base.id, group: groupLetter, home: hc, away: ac, kickoff: base.kickoff, affectsThird: true,
+      });
       matches.push(base);
     } else {
       base.status = live ? "live" : ht ? "ht" : "ft";
@@ -201,9 +218,14 @@ export async function buildSnapshot(env, prev, liveOnly) {
   const cfg = CFG(env);
   const base = { league: cfg.league, season: cfg.season };
 
+  // Team directory (id → code/name/logo) — standings/fixtures lack the 3-letter code.
+  const dir = await buildTeamDir(env, base);
+
   // Standings + all fixtures (cheap, every poll).
-  const groups = normStandings(await apiGet(env, "/standings", base));
-  const { matches, remainingFixtures } = normFixtures(await apiGet(env, "/fixtures", base));
+  const groups = normStandings(await apiGet(env, "/standings", base), dir);
+  const idToGroup = {};
+  for (const [g, rows] of Object.entries(groups)) rows.forEach((r) => (idToGroup[r._id] = g));
+  const { matches, remainingFixtures } = normFixtures(await apiGet(env, "/fixtures", base), dir, idToGroup);
 
   // Carry over finalised match detail (events/stats/lineups/ratings never change once
   // FT) so each finished match is fetched exactly once.
@@ -231,19 +253,19 @@ export async function buildSnapshot(env, prev, liveOnly) {
   let scorers = prev?.scorers || [], assists = prev?.assists || [], discipline = prev?.discipline || [];
   let teams = prev?.teams || {}, players = prev?.players || {}, clubWatch = prev?.clubWatch || {};
   if (!liveOnly) {
-    try { scorers = (await apiGet(env, "/players/topscorers", base)).map(normScorer); } catch {}
-    try { assists = (await apiGet(env, "/players/topassists", base)).map(normAssist); } catch {}
+    try { scorers = (await apiGet(env, "/players/topscorers", base)).map((s) => normScorer(s, dir)); } catch {}
+    try { assists = (await apiGet(env, "/players/topassists", base)).map((s) => normAssist(s, dir)); } catch {}
     try {
       const [y, r] = await Promise.all([
         apiGet(env, "/players/topyellowcards", base).catch(() => []),
         apiGet(env, "/players/topredcards", base).catch(() => []),
       ]);
-      discipline = normDiscipline(y, r);
+      discipline = normDiscipline(y, r, dir);
     } catch {}
     ({ teams, players } = buildTeamsAndPlayers(groups, prev));
     try { await enrichTeamStats(env, base, teams, groups); } catch {}   // aggregates + fair-play cards
     try { await ensureNationSquads(env, base, teams, players); } catch {}  // squads (once) → clubWatch + team squad
-    try { await enrichPlayers(env, base, curatedPlayerIds({ scorers, assists, discipline, prev, matches }), players, cfg); } catch {}
+    try { await enrichPlayers(env, base, curatedPlayerIds({ scorers, assists, discipline, prev, matches }), players, cfg, dir); } catch {}
   }
 
   // Sort groups with the full rules (now card-aware) so positions + third place are exact.
@@ -275,16 +297,17 @@ export async function buildSnapshot(env, prev, liveOnly) {
     bracket,
     scorers, assists, discipline,
     teams, players, clubWatch,
+    crests: dir.crests,           // code -> official crest/flag image URL
   };
 }
 
-function normScorer(s) {
+function normScorer(s, dir) {
   const st = s.statistics?.[0];
-  return { playerId: s.player?.id, code: st?.team?.code || "", name: s.player?.name, team: st?.team?.name, g: st?.goals?.total ?? 0, a: st?.goals?.assists ?? 0 };
+  return { playerId: s.player?.id, code: codeOf(dir, st?.team?.id), name: s.player?.name, team: st?.team?.name, g: st?.goals?.total ?? 0, a: st?.goals?.assists ?? 0 };
 }
-function normAssist(s) {
+function normAssist(s, dir) {
   const st = s.statistics?.[0];
-  return { playerId: s.player?.id, code: st?.team?.code || "", name: s.player?.name, team: st?.team?.name, a: st?.goals?.assists ?? 0, g: st?.goals?.total ?? 0 };
+  return { playerId: s.player?.id, code: codeOf(dir, st?.team?.id), name: s.player?.name, team: st?.team?.name, a: st?.goals?.assists ?? 0, g: st?.goals?.total ?? 0 };
 }
 function normLineups(resp, homeId, awayId) {
   const side = (L) => L && ({
@@ -298,11 +321,11 @@ function normLineups(resp, homeId, awayId) {
   return { h: side(h), a: side(a) };
 }
 // Per-team discipline from the top-yellow / top-red leaderboards (for the Stats tab).
-function normDiscipline(yellowResp, redResp) {
+function normDiscipline(yellowResp, redResp, dir) {
   const byTeam = {};
   const bump = (st, field) => {
     const t = st?.team; if (!t) return;
-    const code = t.code || String(t.id);
+    const code = codeOf(dir, t.id);
     const row = (byTeam[code] = byTeam[code] || { code, team: t.name, y: 0, r: 0 });
     row[field] += st?.cards?.[field === "y" ? "yellow" : "red"] ?? 0;
   };
@@ -400,7 +423,7 @@ function curatedPlayerIds({ scorers, assists, discipline, prev, matches }) {
 // ── deep player drill-in: stats per competition + bio + transfers + trophies ──
 // Profiles/transfers/trophies are static-ish → fetched once per player and persisted.
 // Capped per poll so cost stays bounded; the set fills in over successive polls.
-async function enrichPlayers(env, base, ids, players, cfg, cap = 25) {
+async function enrichPlayers(env, base, ids, players, cfg, dir, cap = 25) {
   let budget = cap;
   for (const id of ids) {
     if (budget <= 0) break;
@@ -409,7 +432,8 @@ async function enrichPlayers(env, base, ids, players, cfg, cap = 25) {
     budget--;
     try {
       const statsResp = await apiGet(env, "/players", { id, season: base.season });
-      const rec = normPlayer(statsResp, cfg.league) || {};
+      const rec = normPlayer(statsResp, cfg.league, dir) || {};
+      if (!rec.code && existing?.code) rec.code = existing.code;   // keep nation code from squad seed
       let career = existing?.career || [], honours = existing?.honours || [];
       try {
         const tr = await apiGet(env, "/transfers", { player: id });
@@ -424,7 +448,7 @@ async function enrichPlayers(env, base, ids, players, cfg, cap = 25) {
     } catch { /* skip this player this round */ }
   }
 }
-function normPlayer(resp, leagueId) {
+function normPlayer(resp, leagueId, dir) {
   const p = resp?.[0]; if (!p) return null;
   const stats = p.statistics || [];
   const wc = stats.find((s) => String(s.league?.id) === String(leagueId)) || stats[0] || {};
@@ -434,7 +458,7 @@ function normPlayer(resp, leagueId) {
     yellow: s.cards?.yellow ?? 0, red: s.cards?.red ?? 0, min: s.games?.minutes ?? 0, rating: s.games?.rating ? parseFloat(s.games.rating) : undefined,
   }));
   return {
-    name: p.player?.name, code: wc.team?.code || "", pos: wc.games?.position || p.player?.position,
+    name: p.player?.name, code: wc.team?.id ? codeOf(dir, wc.team.id) : "", pos: wc.games?.position || p.player?.position,
     age: p.player?.age, club: club?.team?.name, league: club?.league?.name,
     tournament: {
       apps: wc.games?.appearences ?? 0, min: wc.games?.minutes ?? 0, g: wc.goals?.total ?? 0, a: wc.goals?.assists ?? 0,

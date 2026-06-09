@@ -34,8 +34,12 @@ export function teamName(code) {
 }
 export function player(id) { return state.snap?.players?.[String(id)]; }
 
-/** A dependency-free, offline two-tone "flag" from the nation's kit colours. */
+/** Crest/flag for a team. Prefers the official crest image from the snapshot
+ *  (`crests` map, written by the Worker); falls back to a dependency-free two-tone
+ *  block from the nation's kit colours so it still works offline / on the mock. */
 export function flag(code, cls = "flag") {
+  const url = state.snap?.crests?.[code];
+  if (url) return `<span class="${cls}" style="background-image:url('${url}');background-size:cover;background-position:center" title="${code}" aria-label="${code}"></span>`;
   const c = colour(code);
   const bg = `linear-gradient(135deg, ${c.primary} 0 52%, ${c.secondary} 52% 100%)`;
   return `<span class="${cls}" style="background:${bg}" title="${code}" aria-label="${code}"></span>`;
