@@ -44,12 +44,19 @@ test("verdictFlips is empty with no results and returns an array on the mock", (
 });
 
 // ── feature 1: channel map ──
-test("channelFor: group by fixture id, knockout by slot, else null (never guess)", () => {
-  state.tvUK = { fixtures: { f2: { channel: "ITV4", stream: "ITVX" } }, knockout: { "R32-M73": { channel: "BBC One" } } };
-  assert.equal(channelFor({ id: "f2", group: "A" }).channel, "ITV4");
+test("channelFor: fixture id, then team matchup, knockout by slot, else null", () => {
+  state.tvUK = {
+    fixtures: { f2: { channel: "ITV4", stream: "ITVX" } },
+    byTeams: { "MEX-RSA": { channel: "BBC One", stream: "iPlayer" } },
+    knockout: { "R32-M73": { channel: "BBC One" } },
+  };
+  const team = (id, h, a) => ({ id, group: "A", home: { code: h }, away: { code: a } });
+  assert.equal(channelFor(team("f2", "MEX", "KSA")).channel, "ITV4");   // fixture id wins
+  assert.equal(channelFor(team("1489369", "MEX", "RSA")).channel, "BBC One"); // real id misses → matchup
+  assert.equal(channelFor(team("1489369", "RSA", "MEX")).channel, "BBC One"); // matchup is order-tolerant
+  assert.equal(channelFor(team("zzz", "AAA", "BBB")), null);            // unmapped → nothing (never guess)
   assert.equal(channelFor({ id: "73", stage: "Round of 32" }).channel, "BBC One");
-  assert.equal(channelFor({ id: "zzz", group: "A" }), null);      // unmapped group game → nothing
-  assert.equal(channelFor({ id: "99", stage: "Round of 32" }), null); // unmapped knockout → nothing
+  assert.equal(channelFor({ id: "99", stage: "Round of 32" }), null);  // unmapped knockout → nothing
   assert.equal(slotKey({ id: "73", stage: "Round of 32" }), "R32-M73");
   assert.equal(slotKey({ id: "5", group: "A", stage: "Group Stage" }), null);
 });

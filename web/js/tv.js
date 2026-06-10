@@ -25,11 +25,20 @@ export function slotKey(match) {
   return code ? `${code}-M${match.id}` : null;
 }
 
-/** UK broadcaster for a match → { channel, stream? } or null (no mapping = show nothing). */
+/** UK broadcaster for a match → { channel, stream? } or null (no mapping = show nothing).
+ *  Group games resolve by fixture id first (brief), then fall back to team matchup
+ *  (`HOME-AWAY`) — how a published BBC/ITV schedule is actually written, and stable
+ *  across re-polls when opaque fixture ids change. Knockout ties resolve by slot. */
 export function channelFor(match) {
   const tv = state.tvUK;
   if (!tv || !match) return null;
-  if (match.group) return (tv.fixtures || {})[String(match.id)] || null;
+  if (match.group) {
+    const byTeams = tv.byTeams || {};
+    const h = match.home?.code, a = match.away?.code;
+    return (tv.fixtures || {})[String(match.id)]
+      || (h && a && (byTeams[`${h}-${a}`] || byTeams[`${a}-${h}`]))
+      || null;
+  }
   const key = slotKey(match);
   return key ? (tv.knockout || {})[key] || null : null;
 }
