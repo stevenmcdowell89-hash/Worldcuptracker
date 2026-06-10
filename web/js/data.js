@@ -46,8 +46,10 @@ export function flag(code, cls = "flag") {
 }
 
 // ── status helpers ──
+// "out" = currently below the qualification cut but still mathematically alive;
+// "eliminated" = actually out. Keep these visibly distinct (label + colour).
 export const STATUS_LABEL = {
-  qualified: "Qualified", in: "In", sweating: "Sweating", out: "Out", eliminated: "Out",
+  qualified: "Qualified", in: "In", sweating: "Sweating", out: "Below cut", eliminated: "Out",
 };
 export function statusChip(status, withDot = true) {
   const lbl = STATUS_LABEL[status] || status;

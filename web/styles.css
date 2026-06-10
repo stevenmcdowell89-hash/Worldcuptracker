@@ -92,7 +92,8 @@ a { color:inherit; text-decoration:none; }
 .chip .d { width:7px; height:7px; border-radius:50%; background:currentColor; }
 .st-qualified, .st-in { color:var(--through); background:rgba(21,168,92,.12); }
 .st-sweating { color:var(--sweating); background:rgba(243,155,27,.14); }
-.st-out, .st-eliminated { color:var(--out); background:rgba(226,71,90,.12); }
+.st-out { color:var(--out); background:rgba(226,71,90,.12); }
+.st-eliminated { color:var(--muted); background:var(--raised); }
 .dot { width:8px; height:8px; border-radius:50%; display:inline-block; }
 .dot.qualified,.dot.in { background:var(--through); }
 .dot.sweating { background:var(--sweating); }

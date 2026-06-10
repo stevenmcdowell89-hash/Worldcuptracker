@@ -307,8 +307,11 @@ export function renderClub(ctx) {
       <div class="t2">${fmtDay(na.kickoff)} · ${fmtTime(na.kickoff)}</div></span>
     <span class="cd">${countdown(na.kickoff)}</span></div>` : "";
 
+  // Qualification verdicts are meaningless until games are played — only show the chip
+  // once the tournament is under way, and only grey a player out when truly eliminated.
+  const started = S().meta?.started !== false && S().meta?.phase !== "pre";
   const rows = club.players.map((p) => {
-    const elim = p.nationVerdict === "eliminated";   // only grey out the genuinely eliminated
+    const elim = started && p.nationVerdict === "eliminated";
     const nf = p.nextFixture ? `Next: ${teamName(p.nation)} vs ${teamName(p.nextFixture.opponent)} · ${countdown(p.nextFixture.kickoff)}` : "Awaiting fixtures";
     const pl = player(p.playerId);
     return `<div class="watchp ${elim ? "elim" : ""} clickable" data-nav="player/${p.playerId}">
@@ -316,7 +319,7 @@ export function renderClub(ctx) {
       <div><div class="nm">${pl?.name || p.playerId}</div>
         <div class="meta">${teamName(p.nation)} · ${p.pos}${p.num ? ` · #${p.num}` : ""}</div>
         <div class="stat">${p.tournament.apps} apps · ${p.tournament.g}G ${p.tournament.a}A · ${nf}</div></div>
-      ${statusChip(p.nationVerdict)}</div>`;
+      ${started ? statusChip(p.nationVerdict) : ""}</div>`;
   }).join("");
   return { title: club.name, html: next + `<div class="sec-head"><h2>Contingent</h2></div><div class="section">${rows}</div>` };
 }
