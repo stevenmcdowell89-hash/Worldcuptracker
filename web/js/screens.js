@@ -87,20 +87,15 @@ function matchesToggle(view) {
     </button></div>`;
 }
 
-// Pre-tournament hero: countdown to the opening match + a clubs-at-the-WC nudge (§11).
+// Pre-tournament hero: countdown to the opening match (§11). The club/player-watch
+// piece is deliberately kept out of here — it lives only on the Watch tab (§1a rule 3).
 function preHero(upcoming) {
   const first = upcoming[0];
-  const cw = S().clubWatch || {};
-  const n = Object.values(cw).reduce((s, c) => s + (c.players?.length || 0), 0);
-  const nudge = n > 0
-    ? `<div class="pre-nudge clickable" data-nav="watch">⭐ <b>${n}</b> player${n === 1 ? "" : "s"} from your clubs are at the World Cup ›</div>`
-    : `<div class="pre-nudge clickable" data-nav="watch">⭐ Track your clubs' players across the tournament ›</div>`;
   const cd = first ? `<div class="pre-count">${countdown(first.kickoff)}</div>
       <div class="pre-fix">${teamName(first.home.code)} v ${teamName(first.away.code)} · ${fmtDay(first.kickoff)}</div>` : "";
   return `<div class="prehero">
     <div class="pre-kicker">2026 FIFA World Cup</div>
     ${cd}
-    ${nudge}
   </div>`;
 }
 
@@ -189,7 +184,8 @@ export function renderMore() {
 
 // ── News (BBC Sport World Cup headlines; tap opens the article) ──
 export function renderNews() {
-  const news = S().news || [];
+  // Most-recent first. Items without a parseable date sort to the bottom.
+  const news = (S().news || []).slice().sort((a, b) => (Date.parse(b.published) || 0) - (Date.parse(a.published) || 0));
   if (!news.length) return emptyState("📰", "No headlines yet", "World Cup news from BBC Sport will appear here.");
   const cards = news.map((n) => `<a class="newscard" href="${n.link}" target="_blank" rel="noopener noreferrer">
       ${n.image ? `<span class="newsimg" style="background-image:url('${n.image}')"></span>` : ""}
@@ -373,7 +369,8 @@ export function renderMatch(ctx) {
 
 // Live minute-by-minute commentary (The Guardian). Newest first; key moments flagged.
 function matchCommentary(m) {
-  const blocks = m.commentary || [];
+  // Newest first (defensive — the Worker already sorts, but guarantee it in the view).
+  const blocks = (m.commentary || []).slice().sort((a, b) => (b.at || "").localeCompare(a.at || ""));
   if (!blocks.length) return emptyState("🎙️", "No commentary yet", "Minute-by-minute updates appear here once the match is under way.");
   const rows = blocks.map((b) => `<div class="cmt ${b.key ? "key" : ""}">
       <div class="cmt-head">${b.at ? `<span class="cmt-time">${fmtTime(b.at)}</span>` : ""}${b.title ? `<span class="cmt-title">${b.title}</span>` : ""}</div>
