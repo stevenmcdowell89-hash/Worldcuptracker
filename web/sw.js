@@ -14,8 +14,8 @@ self.addEventListener("push", (e) => {
     body: data.body || "",
     tag: data.tag,                 // same tag collapses a re-sent update
     renotify: !!data.tag,
-    icon: "/icon.svg",
-    badge: "/icon.svg",
+    icon: "/icon-192.png",
+    badge: "/icon-192.png",
     data: { url: data.url || "/#/matches" },
   }));
 });
