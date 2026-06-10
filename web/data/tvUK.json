@@ -1,0 +1,945 @@
+{
+  "updated": "2026-06-10",
+  "source": "https://www.live-footballontv.com/live-world-cup-football-on-tv.html",
+  "note": "UK channels from the BBC/ITV published schedules. The Worker re-checks this source daily and overlays corrections/gap-fills via KV; byFixture (fixture id) and bySlot (e.g. R32-M73) are manual overrides that always win.",
+  "byFixture": {},
+  "bySlot": {},
+  "listings": [
+    {
+      "date": "2026-06-11",
+      "time": "20:00",
+      "home": "Mexico",
+      "away": "South Africa",
+      "round": "Group A",
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    {
+      "date": "2026-06-12",
+      "time": "03:00",
+      "home": "South Korea",
+      "away": "Czech Republic",
+      "round": "Group A",
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    {
+      "date": "2026-06-12",
+      "time": "20:00",
+      "home": "Canada",
+      "away": "Bosnia-Herzegovina",
+      "round": "Group B",
+      "channel": "BBC One",
+      "stream": "BBC iPlayer"
+    },
+    {
+      "date": "2026-06-13",
+      "time": "02:00",
+      "home": "USA",
+      "away": "Paraguay",
+      "round": "Group D",
+      "channel": "BBC One",
+      "stream": "BBC iPlayer"
+    },
+    {
+      "date": "2026-06-13",
+      "time": "20:00",
+      "home": "Qatar",
+      "away": "Switzerland",
+      "round": "Group B",
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    {
+      "date": "2026-06-13",
+      "time": "23:00",
+      "home": "Brazil",
+      "away": "Morocco",
+      "round": "Group C",
+      "channel": "BBC One",
+      "stream": "BBC iPlayer"
+    },
+    {
+      "date": "2026-06-14",
+      "time": "02:00",
+      "home": "Haiti",
+      "away": "Scotland",
+      "round": "Group C",
+      "channel": "BBC One",
+      "stream": "BBC iPlayer"
+    },
+    {
+      "date": "2026-06-14",
+      "time": "05:00",
+      "home": "Australia",
+      "away": "Turkey",
+      "round": "Group D",
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    {
+      "date": "2026-06-14",
+      "time": "18:00",
+      "home": "Germany",
+      "away": "Curacao",
+      "round": "Group E",
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    {
+      "date": "2026-06-14",
+      "time": "21:00",
+      "home": "Netherlands",
+      "away": "Japan",
+      "round": "Group F",
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    {
+      "date": "2026-06-15",
+      "time": "00:00",
+      "home": "Ivory Coast",
+      "away": "Ecuador",
+      "round": "Group E",
+      "channel": "BBC One",
+      "stream": "BBC iPlayer"
+    },
+    {
+      "date": "2026-06-15",
+      "time": "03:00",
+      "home": "Sweden",
+      "away": "Tunisia",
+      "round": "Group F",
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    {
+      "date": "2026-06-15",
+      "time": "17:00",
+      "home": "Spain",
+      "away": "Cape Verde",
+      "round": "Group H",
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    {
+      "date": "2026-06-15",
+      "time": "20:00",
+      "home": "Belgium",
+      "away": "Egypt",
+      "round": "Group G",
+      "channel": "BBC One",
+      "stream": "BBC iPlayer"
+    },
+    {
+      "date": "2026-06-15",
+      "time": "23:00",
+      "home": "Saudi Arabia",
+      "away": "Uruguay",
+      "round": "Group H",
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    {
+      "date": "2026-06-16",
+      "time": "02:00",
+      "home": "Iran",
+      "away": "New Zealand",
+      "round": "Group G",
+      "channel": "BBC One",
+      "stream": "BBC iPlayer"
+    },
+    {
+      "date": "2026-06-16",
+      "time": "20:00",
+      "home": "France",
+      "away": "Senegal",
+      "round": "Group I",
+      "channel": "BBC One",
+      "stream": "BBC iPlayer"
+    },
+    {
+      "date": "2026-06-16",
+      "time": "23:00",
+      "home": "Iraq",
+      "away": "Norway",
+      "round": "Group I",
+      "channel": "BBC One",
+      "stream": "BBC iPlayer"
+    },
+    {
+      "date": "2026-06-17",
+      "time": "02:00",
+      "home": "Argentina",
+      "away": "Algeria",
+      "round": "Group J",
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    {
+      "date": "2026-06-17",
+      "time": "05:00",
+      "home": "Austria",
+      "away": "Jordan",
+      "round": "Group J",
+      "channel": "BBC One",
+      "stream": "BBC iPlayer"
+    },
+    {
+      "date": "2026-06-17",
+      "time": "18:00",
+      "home": "Portugal",
+      "away": "DR Congo",
+      "round": "Group K",
+      "channel": "BBC One",
+      "stream": "BBC iPlayer"
+    },
+    {
+      "date": "2026-06-17",
+      "time": "21:00",
+      "home": "England",
+      "away": "Croatia",
+      "round": "Group L",
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    {
+      "date": "2026-06-18",
+      "time": "00:00",
+      "home": "Ghana",
+      "away": "Panama",
+      "round": "Group L",
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    {
+      "date": "2026-06-18",
+      "time": "03:00",
+      "home": "Uzbekistan",
+      "away": "Colombia",
+      "round": "Group K",
+      "channel": "BBC One",
+      "stream": "BBC iPlayer"
+    },
+    {
+      "date": "2026-06-18",
+      "time": "17:00",
+      "home": "Czech Republic",
+      "away": "South Africa",
+      "round": "Group A",
+      "channel": "BBC One",
+      "stream": "BBC iPlayer"
+    },
+    {
+      "date": "2026-06-18",
+      "time": "20:00",
+      "home": "Switzerland",
+      "away": "Bosnia-Herzegovina",
+      "round": "Group B",
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    {
+      "date": "2026-06-18",
+      "time": "23:00",
+      "home": "Canada",
+      "away": "Qatar",
+      "round": "Group B",
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    {
+      "date": "2026-06-19",
+      "time": "02:00",
+      "home": "Mexico",
+      "away": "South Korea",
+      "round": "Group A",
+      "channel": "BBC Two",
+      "stream": "BBC iPlayer"
+    },
+    {
+      "date": "2026-06-19",
+      "time": "20:00",
+      "home": "USA",
+      "away": "Australia",
+      "round": "Group D",
+      "channel": "BBC One",
+      "stream": "BBC iPlayer"
+    },
+    {
+      "date": "2026-06-19",
+      "time": "23:00",
+      "home": "Scotland",
+      "away": "Morocco",
+      "round": "Group C",
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    {
+      "date": "2026-06-20",
+      "time": "02:00",
+      "home": "Brazil",
+      "away": "Haiti",
+      "round": "Group C",
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    {
+      "date": "2026-06-20",
+      "time": "05:00",
+      "home": "Turkey",
+      "away": "Paraguay",
+      "round": "Group D",
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    {
+      "date": "2026-06-20",
+      "time": "18:00",
+      "home": "Netherlands",
+      "away": "Sweden",
+      "round": "Group F",
+      "channel": "BBC One",
+      "stream": "BBC iPlayer"
+    },
+    {
+      "date": "2026-06-20",
+      "time": "21:00",
+      "home": "Germany",
+      "away": "Ivory Coast",
+      "round": "Group E",
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    {
+      "date": "2026-06-21",
+      "time": "01:00",
+      "home": "Ecuador",
+      "away": "Curacao",
+      "round": "Group E",
+      "channel": "BBC One",
+      "stream": "BBC iPlayer"
+    },
+    {
+      "date": "2026-06-21",
+      "time": "05:00",
+      "home": "Tunisia",
+      "away": "Japan",
+      "round": "Group F",
+      "channel": "BBC One",
+      "stream": "BBC iPlayer"
+    },
+    {
+      "date": "2026-06-21",
+      "time": "17:00",
+      "home": "Spain",
+      "away": "Saudi Arabia",
+      "round": "Group H",
+      "channel": "BBC One",
+      "stream": "BBC iPlayer"
+    },
+    {
+      "date": "2026-06-21",
+      "time": "20:00",
+      "home": "Belgium",
+      "away": "Iran",
+      "round": "Group G",
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    {
+      "date": "2026-06-21",
+      "time": "23:00",
+      "home": "Uruguay",
+      "away": "Cape Verde",
+      "round": "Group H",
+      "channel": "BBC One",
+      "stream": "BBC iPlayer"
+    },
+    {
+      "date": "2026-06-22",
+      "time": "02:00",
+      "home": "New Zealand",
+      "away": "Egypt",
+      "round": "Group G",
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    {
+      "date": "2026-06-22",
+      "time": "18:00",
+      "home": "Argentina",
+      "away": "Austria",
+      "round": "Group J",
+      "channel": "BBC One",
+      "stream": "BBC iPlayer"
+    },
+    {
+      "date": "2026-06-22",
+      "time": "22:00",
+      "home": "France",
+      "away": "Iraq",
+      "round": "Group I",
+      "channel": "BBC One",
+      "stream": "BBC iPlayer"
+    },
+    {
+      "date": "2026-06-23",
+      "time": "01:00",
+      "home": "Norway",
+      "away": "Senegal",
+      "round": "Group I",
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    {
+      "date": "2026-06-23",
+      "time": "04:00",
+      "home": "Jordan",
+      "away": "Algeria",
+      "round": "Group J",
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    {
+      "date": "2026-06-23",
+      "time": "18:00",
+      "home": "Portugal",
+      "away": "Uzbekistan",
+      "round": "Group K",
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    {
+      "date": "2026-06-23",
+      "time": "21:00",
+      "home": "England",
+      "away": "Ghana",
+      "round": "Group L",
+      "channel": "BBC One",
+      "stream": "BBC iPlayer"
+    },
+    {
+      "date": "2026-06-24",
+      "time": "00:00",
+      "home": "Panama",
+      "away": "Croatia",
+      "round": "Group L",
+      "channel": "BBC One",
+      "stream": "BBC iPlayer"
+    },
+    {
+      "date": "2026-06-24",
+      "time": "03:00",
+      "home": "Colombia",
+      "away": "DR Congo",
+      "round": "Group K",
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    {
+      "date": "2026-06-24",
+      "time": "20:00",
+      "home": "Bosnia-Herzegovina",
+      "away": "Qatar",
+      "round": "Group B",
+      "channel": "ITV4",
+      "stream": "ITVX"
+    },
+    {
+      "date": "2026-06-24",
+      "time": "20:00",
+      "home": "Switzerland",
+      "away": "Canada",
+      "round": "Group B",
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    {
+      "date": "2026-06-24",
+      "time": "23:00",
+      "home": "Morocco",
+      "away": "Haiti",
+      "round": "Group C",
+      "channel": "BBC Two",
+      "stream": "BBC iPlayer"
+    },
+    {
+      "date": "2026-06-24",
+      "time": "23:00",
+      "home": "Scotland",
+      "away": "Brazil",
+      "round": "Group C",
+      "channel": "BBC One",
+      "stream": "BBC iPlayer"
+    },
+    {
+      "date": "2026-06-25",
+      "time": "02:00",
+      "home": "Czech Republic",
+      "away": "Mexico",
+      "round": "Group A",
+      "channel": "BBC One",
+      "stream": "BBC iPlayer"
+    },
+    {
+      "date": "2026-06-25",
+      "time": "02:00",
+      "home": "South Africa",
+      "away": "South Korea",
+      "round": "Group A",
+      "channel": "BBC Two",
+      "stream": "BBC iPlayer"
+    },
+    {
+      "date": "2026-06-25",
+      "time": "21:00",
+      "home": "Curacao",
+      "away": "Ivory Coast",
+      "round": "Group E",
+      "channel": "BBC Two",
+      "stream": "BBC iPlayer"
+    },
+    {
+      "date": "2026-06-25",
+      "time": "21:00",
+      "home": "Ecuador",
+      "away": "Germany",
+      "round": "Group E",
+      "channel": "BBC One",
+      "stream": "BBC iPlayer"
+    },
+    {
+      "date": "2026-06-26",
+      "time": "00:00",
+      "home": "Japan",
+      "away": "Sweden",
+      "round": "Group F",
+      "channel": "BBC Two",
+      "stream": "BBC iPlayer"
+    },
+    {
+      "date": "2026-06-26",
+      "time": "00:00",
+      "home": "Tunisia",
+      "away": "Netherlands",
+      "round": "Group F",
+      "channel": "BBC One",
+      "stream": "BBC iPlayer"
+    },
+    {
+      "date": "2026-06-26",
+      "time": "03:00",
+      "home": "Paraguay",
+      "away": "Australia",
+      "round": "Group D",
+      "channel": "ITV4",
+      "stream": "ITVX"
+    },
+    {
+      "date": "2026-06-26",
+      "time": "03:00",
+      "home": "Turkey",
+      "away": "USA",
+      "round": "Group D",
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    {
+      "date": "2026-06-26",
+      "time": "20:00",
+      "home": "Norway",
+      "away": "France",
+      "round": "Group I",
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    {
+      "date": "2026-06-26",
+      "time": "20:00",
+      "home": "Senegal",
+      "away": "Iraq",
+      "round": "Group I",
+      "channel": "ITV4",
+      "stream": "ITVX"
+    },
+    {
+      "date": "2026-06-27",
+      "time": "01:00",
+      "home": "Cape Verde",
+      "away": "Saudi Arabia",
+      "round": "Group H",
+      "channel": "ITV4",
+      "stream": "ITVX"
+    },
+    {
+      "date": "2026-06-27",
+      "time": "01:00",
+      "home": "Uruguay",
+      "away": "Spain",
+      "round": "Group H",
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    {
+      "date": "2026-06-27",
+      "time": "04:00",
+      "home": "Egypt",
+      "away": "Iran",
+      "round": "Group G",
+      "channel": "BBC Two",
+      "stream": "BBC iPlayer"
+    },
+    {
+      "date": "2026-06-27",
+      "time": "04:00",
+      "home": "New Zealand",
+      "away": "Belgium",
+      "round": "Group G",
+      "channel": "BBC One",
+      "stream": "BBC iPlayer"
+    },
+    {
+      "date": "2026-06-27",
+      "time": "22:00",
+      "home": "Croatia",
+      "away": "Ghana",
+      "round": "Group L",
+      "channel": "ITV4",
+      "stream": "ITVX"
+    },
+    {
+      "date": "2026-06-27",
+      "time": "22:00",
+      "home": "Panama",
+      "away": "England",
+      "round": "Group L",
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    {
+      "date": "2026-06-28",
+      "time": "00:30",
+      "home": "Colombia",
+      "away": "Portugal",
+      "round": "Group K",
+      "channel": "BBC One",
+      "stream": "BBC iPlayer"
+    },
+    {
+      "date": "2026-06-28",
+      "time": "00:30",
+      "home": "DR Congo",
+      "away": "Uzbekistan",
+      "round": "Group K",
+      "channel": "BBC Two",
+      "stream": "BBC iPlayer"
+    },
+    {
+      "date": "2026-06-28",
+      "time": "03:00",
+      "home": "Algeria",
+      "away": "Austria",
+      "round": "Group J",
+      "channel": "BBC Two",
+      "stream": "BBC iPlayer"
+    },
+    {
+      "date": "2026-06-28",
+      "time": "03:00",
+      "home": "Jordan",
+      "away": "Argentina",
+      "round": "Group J",
+      "channel": "BBC One",
+      "stream": "BBC iPlayer"
+    },
+    {
+      "date": "2026-06-28",
+      "time": "20:00",
+      "home": null,
+      "away": null,
+      "round": "R32",
+      "channel": null,
+      "stream": null
+    },
+    {
+      "date": "2026-06-29",
+      "time": "18:00",
+      "home": null,
+      "away": null,
+      "round": "R32",
+      "channel": null,
+      "stream": null
+    },
+    {
+      "date": "2026-06-29",
+      "time": "21:30",
+      "home": null,
+      "away": null,
+      "round": "R32",
+      "channel": null,
+      "stream": null
+    },
+    {
+      "date": "2026-06-30",
+      "time": "02:00",
+      "home": null,
+      "away": null,
+      "round": "R32",
+      "channel": null,
+      "stream": null
+    },
+    {
+      "date": "2026-06-30",
+      "time": "18:00",
+      "home": null,
+      "away": null,
+      "round": "R32",
+      "channel": null,
+      "stream": null
+    },
+    {
+      "date": "2026-06-30",
+      "time": "22:00",
+      "home": null,
+      "away": null,
+      "round": "R32",
+      "channel": null,
+      "stream": null
+    },
+    {
+      "date": "2026-07-01",
+      "time": "02:00",
+      "home": null,
+      "away": null,
+      "round": "R32",
+      "channel": null,
+      "stream": null
+    },
+    {
+      "date": "2026-07-01",
+      "time": "17:00",
+      "home": null,
+      "away": null,
+      "round": "R32",
+      "channel": null,
+      "stream": null
+    },
+    {
+      "date": "2026-07-01",
+      "time": "21:00",
+      "home": null,
+      "away": null,
+      "round": "R32",
+      "channel": null,
+      "stream": null
+    },
+    {
+      "date": "2026-07-02",
+      "time": "01:00",
+      "home": null,
+      "away": null,
+      "round": "R32",
+      "channel": null,
+      "stream": null
+    },
+    {
+      "date": "2026-07-02",
+      "time": "20:00",
+      "home": null,
+      "away": null,
+      "round": "R32",
+      "channel": null,
+      "stream": null
+    },
+    {
+      "date": "2026-07-03",
+      "time": "00:00",
+      "home": null,
+      "away": null,
+      "round": "R32",
+      "channel": null,
+      "stream": null
+    },
+    {
+      "date": "2026-07-03",
+      "time": "04:00",
+      "home": null,
+      "away": null,
+      "round": "R32",
+      "channel": null,
+      "stream": null
+    },
+    {
+      "date": "2026-07-03",
+      "time": "19:00",
+      "home": null,
+      "away": null,
+      "round": "R32",
+      "channel": null,
+      "stream": null
+    },
+    {
+      "date": "2026-07-03",
+      "time": "23:00",
+      "home": null,
+      "away": null,
+      "round": "R32",
+      "channel": null,
+      "stream": null
+    },
+    {
+      "date": "2026-07-04",
+      "time": "02:30",
+      "home": null,
+      "away": null,
+      "round": "R32",
+      "channel": null,
+      "stream": null
+    },
+    {
+      "date": "2026-07-04",
+      "time": "18:00",
+      "home": null,
+      "away": null,
+      "round": "R16",
+      "channel": null,
+      "stream": null
+    },
+    {
+      "date": "2026-07-04",
+      "time": "22:00",
+      "home": null,
+      "away": null,
+      "round": "R16",
+      "channel": null,
+      "stream": null
+    },
+    {
+      "date": "2026-07-05",
+      "time": "21:00",
+      "home": null,
+      "away": null,
+      "round": "R16",
+      "channel": null,
+      "stream": null
+    },
+    {
+      "date": "2026-07-06",
+      "time": "01:00",
+      "home": null,
+      "away": null,
+      "round": "R16",
+      "channel": null,
+      "stream": null
+    },
+    {
+      "date": "2026-07-06",
+      "time": "20:00",
+      "home": null,
+      "away": null,
+      "round": "R16",
+      "channel": null,
+      "stream": null
+    },
+    {
+      "date": "2026-07-07",
+      "time": "01:00",
+      "home": null,
+      "away": null,
+      "round": "R16",
+      "channel": null,
+      "stream": null
+    },
+    {
+      "date": "2026-07-07",
+      "time": "17:00",
+      "home": null,
+      "away": null,
+      "round": "R16",
+      "channel": null,
+      "stream": null
+    },
+    {
+      "date": "2026-07-07",
+      "time": "21:00",
+      "home": null,
+      "away": null,
+      "round": "R16",
+      "channel": null,
+      "stream": null
+    },
+    {
+      "date": "2026-07-09",
+      "time": "21:00",
+      "home": null,
+      "away": null,
+      "round": "QF",
+      "channel": null,
+      "stream": null
+    },
+    {
+      "date": "2026-07-10",
+      "time": "20:00",
+      "home": null,
+      "away": null,
+      "round": "QF",
+      "channel": null,
+      "stream": null
+    },
+    {
+      "date": "2026-07-11",
+      "time": "22:00",
+      "home": null,
+      "away": null,
+      "round": "QF",
+      "channel": null,
+      "stream": null
+    },
+    {
+      "date": "2026-07-12",
+      "time": "02:00",
+      "home": null,
+      "away": null,
+      "round": "QF",
+      "channel": null,
+      "stream": null
+    },
+    {
+      "date": "2026-07-14",
+      "time": "20:00",
+      "home": null,
+      "away": null,
+      "round": "SF",
+      "channel": null,
+      "stream": null
+    },
+    {
+      "date": "2026-07-15",
+      "time": "20:00",
+      "home": null,
+      "away": null,
+      "round": "SF",
+      "channel": null,
+      "stream": null
+    },
+    {
+      "date": "2026-07-18",
+      "time": "22:00",
+      "home": null,
+      "away": null,
+      "round": "3P",
+      "channel": null,
+      "stream": null
+    },
+    {
+      "date": "2026-07-19",
+      "time": "20:00",
+      "home": null,
+      "away": null,
+      "round": "F",
+      "channel": null,
+      "stream": null
+    }
+  ]
+}

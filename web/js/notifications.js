@@ -10,7 +10,7 @@ export function pushSupported() {
   return typeof navigator !== "undefined" && typeof window !== "undefined"
     && "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
 }
-function loadPrefs() {
+export function loadPrefs() {
   try { return { ...DEFAULT_PREFS, ...JSON.parse(localStorage.getItem(LS_KEY) || "{}") }; }
   catch { return { ...DEFAULT_PREFS }; }
 }
@@ -37,7 +37,7 @@ async function serverVapidKey() {
   } catch { return null; }
 }
 
-async function currentSubscription() {
+export async function currentSubscription() {
   const reg = await navigator.serviceWorker.ready;
   return reg.pushManager.getSubscription();
 }
@@ -62,7 +62,7 @@ async function subscribeWithRetry(reg, key, attempts = 4) {
   throw new Error("Couldn't reach the notification service. Check Google Play Services is up to date, then try again.");
 }
 
-async function enablePush(prefs, onStatus) {
+export async function enablePush(prefs, onStatus) {
   const perm = await Notification.requestPermission();
   if (perm !== "granted") throw new Error("Notifications are blocked — allow them in the browser prompt, then try again.");
   const key = await serverVapidKey();

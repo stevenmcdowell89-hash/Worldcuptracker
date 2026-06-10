@@ -84,6 +84,39 @@ Matches feed without ever removing a fixture (§1a rule 1):
   aes128gcm) is in `worker/push.js`, validated by a round-trip test (`scripts/push.test.js`).
   Inert until VAPID keys are set — generate with `npm run gen:vapid` (see `wrangler.toml`).
 
+## Phase 3 — channel, morning view, reminders
+
+Three additive features on the same snapshot/engine (never hide a fixture, no accounts):
+
+- **Channel (where to watch)** — a UK channel tag on match rows and the match centre
+  (stream — iPlayer/ITVX — on the details screen). API-Football doesn't carry the UK
+  broadcaster, so it comes from the published BBC/ITV schedules:
+  - `web/data/tvUK.json` is the static seed (mirrored to `web/js/tvUK.data.js` for the
+    Worker bundle — regenerate both with `npm run gen:tvseed`).
+  - **Kept accurate automatically:** the Worker cron re-fetches the schedules source
+    (`TV_SOURCE_URL`) **daily** at ~05:00 UK, with a 6-hourly retry while any match in
+    the next 48h still lacks a channel — so corrections propagate and the knockout
+    TBCs fill in as broadcasters announce splits. Live data overlays the seed in KV;
+    `/admin/refresh-tv` forces a check; `/admin/status` shows TV-map health.
+  - Matching is conservative (`worker/tv.js`): group games by both team names
+    (alias-aware) + UK date; knockouts by round + UK date + kickoff (slots keyed
+    `R32-M73` — official FIFA numbering). **No confident match → no tag. Never guess.**
+  - Manual escape hatch: `byFixture` (fixture id) / `bySlot` overrides in `tvUK.json`.
+- **Morning view (06:00–13:00 UK)** — the Matches tab leads with a catch-up layout
+  (`web/js/morning.js` is the pure model): *Last night* (overnight results + the
+  qualification flips they caused, computed by reverse-applying results through the
+  engine), *Today — the slate* (every match, kickoff/channel/stakes), and *What's at
+  stake today* (engine storylines: groups decided today, who can go through/out, the
+  cut line). Scales with the phase — full at `groupFinal`, quiet early, reframed as
+  advanced/ties for knockout mornings. Reverts to the normal feed after 13:00.
+  Dev/demo: append `?morning=1` to `#/matches` to force the window.
+- **Per-match reminder** — a bell on fixture rows + the match centre. Push first
+  (a one-off nudge 15/30/60 min pre-kickoff, scheduled on the device's anonymous
+  push-subscription record via `POST /push/remind` and delivered by the per-minute
+  cron — with the channel in the body); a client-generated `.ics` calendar event as
+  the works-anywhere fallback. State is per-device (localStorage + the subscription
+  record). No accounts.
+
 ## Status / honesty notes (see brief §8)
 
 - **No xG / xA anywhere.** Deliberate.

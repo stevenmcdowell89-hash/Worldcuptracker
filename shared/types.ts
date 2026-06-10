@@ -29,6 +29,13 @@ export interface Meta {
   phase?: Phase;              // derived by tournamentPhase() — the phase-evolution flag
   spotsMoving?: number;       // count of "sweating" thirds — the §12 flashbar count
   squadCount?: number;        // total players across nation squads (0 ⇒ not published yet)
+  tv?: { mapped: number; checked: string | null };  // channel-map health (daily TV check)
+}
+
+/** UK broadcaster for a match ("where to watch"). Absent = unknown — never guessed. */
+export interface TvInfo {
+  channel: string;            // e.g. "BBC One", "ITV1" (or "ITVX" for a stream-only game)
+  stream?: string;            // "BBC iPlayer" | "ITVX"
 }
 
 /** A row in a group table. GD is stored but always === GF - GA. */
@@ -93,6 +100,8 @@ export interface Match {
   away: { code: string; score: number | null };
   affectsCut?: boolean;       // woven-in marker: result affects the last-8 race
   stakes?: Stakes | null;     // §15 tag on an upcoming group fixture
+  tv?: TvInfo;                // UK channel (feature 1) — set by the Worker, never guessed
+  slot?: string;              // knockout slot key, e.g. "R32-M73" (official match number)
   progressionLine?: string;   // "as it stands, this draw sends Australia through"
   events?: MatchEvent[];
   stats?: StatRow[];

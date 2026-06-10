@@ -9,6 +9,7 @@
     "smoke": "node scripts/smoke.js",
     "gen:mock": "node scripts/gen-mock.js",
     "gen:annexc": "node scripts/gen-annexc.js",
+    "gen:tvseed": "node scripts/gen-tvseed.js",
     "gen:vapid": "node scripts/gen-vapid.js",
     "dev:web": "python3 -m http.server 8788 --directory web",
     "dev:worker": "wrangler dev",

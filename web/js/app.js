@@ -4,6 +4,8 @@
 import { loadAll, state, countdown } from "./data.js";
 import * as S from "./screens.js";
 import { registerServiceWorker } from "./notifications.js";
+import { handleReminderTap, initReminderControls, downloadIcs } from "./reminders.js";
+import { inMorningWindow } from "./morning.js";
 
 const TABS = [
   { id: "matches", label: "Matches", ico: "⚽" },
@@ -104,6 +106,15 @@ function render(opts = {}) {
 // ── global interactions ──
 let navDir = 1;   // 1 = forward (slide in from right), -1 = back (from left)
 document.addEventListener("click", (e) => {
+  // reminder bell + calendar export first — they sit near [data-nav] rows
+  const bell = e.target.closest("[data-remind]");
+  if (bell) { handleReminderTap(bell.dataset.remind, bell); return; }
+  const ics = e.target.closest("[data-ics]");
+  if (ics) {
+    const m = (state.snap?.matches || []).find((x) => x.id === ics.dataset.ics);
+    if (m) downloadIcs(m);
+    return;
+  }
   const back = e.target.closest("[data-back]");
   if (back) { navDir = -1; history.length > 1 ? history.back() : navigate("matches"); return; }
   const nav = e.target.closest("[data-nav]");
@@ -123,6 +134,7 @@ export function toast(msg) {
 
 async function boot() {
   registerServiceWorker();   // PWA install + push receiver (brief §14); no-op if unsupported
+  initReminderControls();    // lead-time selector etc. (event delegation, set up once)
   $screen.innerHTML = `<div class="empty"><div class="big">⚽</div><div class="t">Loading…</div></div>`;
   try {
     await loadAll();
@@ -150,6 +162,7 @@ async function boot() {
 
 // ── live refresh + self-update ──
 let bootVersion = null, updatePending = false, lastUpdated = null;
+let lastMorning = inMorningWindow();   // so 06:00/13:00 UK flip the Matches layout without a data change
 const LIVE_ROUTES = ["matches", "race", "watch", "match", "groups", "news", "team", "player"];
 
 async function fetchVersion() {
@@ -164,8 +177,9 @@ async function tick() {
   try {
     await loadAll();
     const u = state.snap?.meta?.updated;
-    if (u !== lastUpdated) {                       // only re-render when data really changed
-      lastUpdated = u;
+    const morning = inMorningWindow();             // the 06:00–13:00 UK window opening/closing is a layout change
+    if (u !== lastUpdated || morning !== lastMorning) {   // only re-render when something really changed
+      lastUpdated = u; lastMorning = morning;
       const { key } = parseHash();
       if (LIVE_ROUTES.includes(key)) {
         const y = $screen.scrollTop;               // preserve scroll across the re-render

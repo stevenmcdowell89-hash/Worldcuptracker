@@ -16,7 +16,9 @@
 import { thirdPlaceTable, recompute, verdicts, compareGroupRows, qualifyOutlook, tournamentPhase, spotsMoving, stakesFor } from "../web/js/engine.js";
 import { buildBracket } from "../web/js/bracket.js";
 import ANNEXC from "../web/js/annexC.data.js";
+import TVSEED from "../web/js/tvUK.data.js";
 import { sendWebPush } from "./push.js";
+import { mergeListings, annotateTv, fetchTvListings, ukTimeOf, TV_SOURCE_DEFAULT } from "./tv.js";
 
 const API = "https://v3.football.api-sports.io";
 const KV_KEY = "latest.json";
@@ -359,6 +361,16 @@ export async function buildSnapshot(env, prev, liveOnly) {
   }
   let news = prev?.news || [];
   if (!liveOnly) { try { news = await fetchNews(env); } catch {} }   // BBC RSS — refreshed on full polls + the news cadence
+
+  // UK TV channels ("where to watch"): static seed + the daily live overlay from KV
+  // (written by the cron's background check). Conservative matching — never a guess.
+  let tvLive = null;
+  try { tvLive = env.SNAPSHOT ? await env.SNAPSHOT.get("tv-listings", "json") : null; } catch {}
+  const tvInfo = annotateTv(matches, teams, {
+    listings: mergeListings(TVSEED.listings, tvLive?.listings || []),
+    byFixture: TVSEED.byFixture, bySlot: TVSEED.bySlot,
+  });
+
   for (const m of matches) { delete m._homeId; delete m._awayId; delete m._final; }  // strip internals
   for (const g of Object.keys(groups)) groups[g].forEach((r) => delete r._id);
   for (const t of Object.values(teams)) delete t._id;
@@ -377,6 +389,7 @@ export async function buildSnapshot(env, prev, liveOnly) {
             updated: new Date().toISOString(), groupStageComplete, dataSource: "api-football",
             started: anyPlayed,   // false ⇒ tournament not under way; suppress definitive narratives
             phase, spotsMoving: moving,
+            tv: { mapped: tvInfo.mapped, checked: tvLive?.at || null },   // channel-map health
             squadCount },   // 0 ⇒ nation squads not published yet (pre-tournament), not a bug
     groups,
     thirdPlaceRace: race,
@@ -726,7 +739,8 @@ async function runRefresh(env) {
   try {
     const snap = await buildSnapshot(env, await readSnapshot(env), false);
     await writeSnapshot(env, snap);
-    await env.SNAPSHOT.put(META_KEY, JSON.stringify({ lastFull: Date.now(), lastLive: Date.now() }));
+    const meta = (await env.SNAPSHOT.get(META_KEY, "json")) || {};
+    await env.SNAPSHOT.put(META_KEY, JSON.stringify({ ...meta, lastFull: Date.now(), lastLive: Date.now() }));
     const clubWatch = Object.fromEntries(Object.entries(snap.clubWatch || {}).map(([k, c]) => [k, c.players.length]));
     const summary = {
       ok: true, finished: new Date().toISOString(), groups: Object.keys(snap.groups).length,
@@ -758,8 +772,11 @@ async function hashKey(s) {
 }
 async function storeSubscription(env, subscription, prefs) {
   const id = await hashKey(subscription.endpoint);
+  // A prefs re-sync must not wipe the device's per-match reminders (feature 3).
+  const existing = await env.SNAPSHOT.get(PUSH_PREFIX + id, "json");
   await env.SNAPSHOT.put(PUSH_PREFIX + id, JSON.stringify({
-    subscription, prefs: prefs || { results: true, today: true, qual: true }, updated: Date.now(),
+    subscription, prefs: prefs || { results: true, today: true, qual: true },
+    reminders: existing?.reminders || {}, updated: Date.now(),
   }));
   return id;
 }
@@ -829,6 +846,79 @@ function todayDigest(snap, date) {
   return today.slice(0, 8).map((m) => `${m.home.code} v ${m.away.code}`).join(" · ");
 }
 
+// ── per-match reminders (feature 3) ──────────────────────────────────────────────
+// Device-local convenience: a one-off push ~N minutes before a chosen kickoff. The
+// reminder rides on the anonymous push subscription record (no accounts). The cron
+// runs every minute; this sweep is cheap — it only lists devices when a kickoff is
+// actually inside the reminder window.
+const REMINDER_MAX_LEAD = 180, REMINDER_DEFAULT_LEAD = 15;
+const clampLead = (l) => Math.min(REMINDER_MAX_LEAD, Math.max(5, parseInt(l, 10) || REMINDER_DEFAULT_LEAD));
+
+async function runReminders(env, snap) {
+  if (!pushEnabled(env) || !snap) return;
+  const now = Date.now();
+  const inWindow = (snap.matches || []).some((m) => {
+    if (m.status !== "scheduled" && m.status !== "live") return false;
+    const t = Date.parse(m.kickoff || "");
+    return Number.isFinite(t) && now >= t - (REMINDER_MAX_LEAD + 5) * 60e3 && now <= t + 10 * 60e3;
+  });
+  if (!inWindow) return;                                // nothing imminent — skip the KV list
+  const name = (c) => snap.teams?.[c]?.name || c;
+  for (const s of await listSubscriptions(env)) {
+    const rem = s.reminders || {};
+    let changed = false, gone = false;
+    for (const [fid, r] of Object.entries(rem)) {
+      const ko = Date.parse(r.at || "");
+      if (!Number.isFinite(ko) || now > ko + 10 * 60e3) { delete rem[fid]; changed = true; continue; }   // stale — prune
+      if (r.sent || now < ko - clampLead(r.lead) * 60e3) continue;
+      const m = (snap.matches || []).find((x) => x.id === fid);
+      const body = m
+        ? `${name(m.home.code)} v ${name(m.away.code)} · ${ukTimeOf(m.kickoff)} UK${m.tv ? ` · ${m.tv.channel}` : ""}`
+        : `Kick-off at ${ukTimeOf(r.at)} UK`;
+      try {
+        const res = await sendWebPush(s.subscription, { title: "⏰ Kick-off soon", body, tag: "wc26-rem-" + fid, url: "/#/match/" + fid }, env);
+        if (res.status === 404 || res.status === 410) { await env.SNAPSHOT.delete(s.key); gone = true; break; }
+      } catch (e) { console.error("reminder send failed:", e.message); }
+      r.sent = true; changed = true;                    // one shot — never re-send
+    }
+    if (changed && !gone) {
+      const { key, ...rec } = s;
+      await env.SNAPSHOT.put(key, JSON.stringify({ ...rec, reminders: rem }));
+    }
+  }
+}
+
+// ── UK TV map: the automated background check (feature 1) ────────────────────────
+// Re-fetches the published BBC/ITV schedules, stores the parsed listings in KV, and
+// immediately re-annotates the current snapshot (no API-Football cost) so a changed
+// or newly-announced channel reaches clients without waiting for the next poll.
+async function refreshTvListings(env) {
+  try {
+    const listings = await fetchTvListings(env);
+    const at = new Date().toISOString();
+    await env.SNAPSHOT.put("tv-listings", JSON.stringify({ at, source: env.TV_SOURCE_URL || TV_SOURCE_DEFAULT, listings }));
+    let mapped = null;
+    const snap = await readSnapshot(env);
+    if (snap) {
+      const info = annotateTv(snap.matches, snap.teams, {
+        listings: mergeListings(TVSEED.listings, listings),
+        byFixture: TVSEED.byFixture, bySlot: TVSEED.bySlot,
+      });
+      mapped = info.mapped;
+      snap.meta = { ...snap.meta, updated: at, tv: { mapped, checked: at } };
+      await writeSnapshot(env, snap);
+    }
+    const summary = { ok: true, at, listings: listings.length, withChannel: listings.filter((l) => l.channel).length, mapped };
+    await env.SNAPSHOT.put("tv-status", JSON.stringify(summary));
+    return summary;
+  } catch (e) {
+    // keep last-good listings; the seed still covers the baseline
+    const err = { ok: false, at: new Date().toISOString(), error: e.message };
+    await env.SNAPSHOT.put("tv-status", JSON.stringify(err));
+    return err;
+  }
+}
+
 async function runNotifications(env, prev, snap) {
   if (!pushEnabled(env)) return;                       // feature off until keys are set
   const { hour, date } = ukParts();
@@ -864,6 +954,30 @@ export default {
       const liveMs = (parseInt(env.LIVE_INTERVAL_SEC || "75", 10)) * 1e3;
       const live = inLiveWindow(prev);
 
+      // Per-match reminders (feature 3): a cheap sweep on every tick — it exits
+      // immediately unless a kickoff is inside the reminder window.
+      try { await runReminders(env, prev); } catch (e) { console.error("reminders failed:", e.message); }
+
+      // UK TV map (feature 1): check the published schedules once a day (~TV_REFRESH_HOUR
+      // UK), plus a 6-hourly retry while any match in the next 48h still lacks a channel —
+      // so corrections propagate and knockout gaps fill in as broadcasters announce.
+      try {
+        const tvHour = parseInt(env.TV_REFRESH_HOUR || "5", 10);
+        const uk = ukParts();
+        const gapSoon = (prev?.matches || []).some((m) => {
+          if (m.status !== "scheduled" || m.tv) return false;
+          const t = Date.parse(m.kickoff || "");
+          return Number.isFinite(t) && t > now && t - now < 48 * 3600e3;
+        });
+        const dueDaily = uk.hour >= tvHour && await claimDaily(env, "tv-daily", uk.date);
+        const dueRetry = gapSoon && now - (meta.lastTv || 0) >= 6 * 3600e3;
+        if (dueDaily || dueRetry) {
+          await refreshTvListings(env);
+          meta.lastTv = now;
+          await env.SNAPSHOT.put(META_KEY, JSON.stringify(meta));
+        }
+      } catch (e) { console.error("tv refresh failed:", e.message); }
+
       // Enrichment backlog → catch up every few minutes until squads + Watch-player
       // profiles are all loaded, then fall back to the 6h baseline.
       const backlog = (() => {
@@ -892,7 +1006,7 @@ export default {
       try {
         const snap = await buildSnapshot(env, prev, !dueFull /* liveOnly when only the live tick is due */);
         await writeSnapshot(env, snap);
-        await env.SNAPSHOT.put(META_KEY, JSON.stringify({ lastFull: dueFull ? now : meta.lastFull, lastLive: now, lastNews: dueFull ? now : (meta.lastNews || 0) }));
+        await env.SNAPSHOT.put(META_KEY, JSON.stringify({ ...meta, lastFull: dueFull ? now : meta.lastFull, lastLive: now, lastNews: dueFull ? now : (meta.lastNews || 0) }));
         await env.SNAPSHOT.put("cron-status", JSON.stringify({ ok: true, at: new Date().toISOString(), kind: dueFull ? "full" : "live", squadCount: snap.meta.squadCount, subrequests: SUBREQ }));
         // Push: digests + verdict-flip alerts, diffing the previous snapshot (§14).
         try { await runNotifications(env, prev, snap); } catch (e) { console.error("notify failed:", e.message); }
@@ -953,12 +1067,33 @@ export default {
         return json({ ok: true });
       } catch (e) { return json({ error: e.message }, 400); }
     }
+    // Per-match reminder (feature 3): set/clear a one-off pre-kickoff nudge on this
+    // device's anonymous subscription record. No accounts — the endpoint is the key.
+    if (path === "/push/remind" && request.method === "POST") {
+      if (!pushEnabled(env)) return json({ error: "push not configured" }, 503);
+      try {
+        const { endpoint, fixtureId, kickoff, lead, on } = await request.json();
+        if (!endpoint || !fixtureId) return json({ error: "endpoint and fixtureId required" }, 400);
+        const key = PUSH_PREFIX + (await hashKey(endpoint));
+        const rec = await env.SNAPSHOT.get(key, "json");
+        if (!rec) return json({ error: "no subscription for this device — enable notifications first" }, 404);
+        rec.reminders = rec.reminders || {};
+        if (on === false) delete rec.reminders[String(fixtureId)];
+        else {
+          if (!Number.isFinite(Date.parse(kickoff || ""))) return json({ error: "bad kickoff" }, 400);
+          rec.reminders[String(fixtureId)] = { at: kickoff, lead: clampLead(lead) };
+        }
+        await env.SNAPSHOT.put(key, JSON.stringify(rec));
+        return json({ ok: true, reminders: Object.keys(rec.reminders).length });
+      } catch (e) { return json({ error: e.message }, 400); }
+    }
 
     // Read-only health view: last cron run, last manual refresh, poll timing, and the
     // API daily quota (the usual cause of a stuck refresh). One API call.
     if (path === "/admin/status") {
-      const [cron, refresh, pm, tick] = await Promise.all([
+      const [cron, refresh, pm, tick, tvStatus] = await Promise.all([
         env.SNAPSHOT.get("cron-status", "json"), env.SNAPSHOT.get("refresh-status", "json"), env.SNAPSHOT.get(META_KEY, "json"), env.SNAPSHOT.get("cron-tick"),
+        env.SNAPSHOT.get("tv-status", "json"),
       ]);
       let quota = null;
       try {
@@ -978,11 +1113,19 @@ export default {
           seasonRows: (p.season || []).length, careerRows: (p.career || []).length, honours: (p.honours || []).length,
           enrichedVersion: p._enriched, tournamentG: p.tournament?.g };
       } catch (e) { samplePlayer = { error: e.message }; }
+      // TV-map health: last schedules check + how many upcoming matches lack a channel.
+      let tv = tvStatus ? { ...tvStatus, when: ago(tvStatus.at) } : { note: "no live check yet — running on the bundled seed" };
+      try {
+        const snap = await readSnapshot(env);
+        const upcoming = (snap?.matches || []).filter((m) => m.status === "scheduled");
+        tv = { ...tv, upcomingMapped: upcoming.filter((m) => m.tv).length, upcomingTotal: upcoming.length };
+      } catch {}
       return new Response(JSON.stringify({
         now: new Date().toISOString(), quota,
         cronHeartbeat: tick ? ago(tick) : "NEVER — cron is not firing (check dashboard Triggers)",
         lastCron: cron ? { ...cron, when: ago(cron.at) } : "no full/live poll yet",
         lastRefresh: refresh ? { ...refresh, when: ago(refresh.finished) } : "none",
+        tv,
         pollMeta: pm ? { lastFull: ago(pm.lastFull && new Date(pm.lastFull).toISOString()), lastLive: ago(pm.lastLive && new Date(pm.lastLive).toISOString()) } : null,
         samplePlayer, enrichVersionExpected: ENRICH_VERSION,
       }, null, 2), { headers: { "content-type": "application/json" } });
@@ -1029,6 +1172,12 @@ export default {
       ctx.waitUntil(work);
       let res; try { res = await work; } catch (e) { res = { ok: false, error: String(e && e.message || e) }; }
       return new Response(JSON.stringify(res, null, 2), { headers: { "content-type": "application/json" } });
+    }
+
+    // Force the TV-schedules check now (same job the cron runs daily). Token-gated.
+    if (path === "/admin/refresh-tv") {
+      if (env.DEBUG_TOKEN && url.searchParams.get("t") !== env.DEBUG_TOKEN) return json({ error: "forbidden" }, 403);
+      return json(await refreshTvListings(env));
     }
 
     // Fire a test push to every stored subscription (ignores per-device prefs) so you

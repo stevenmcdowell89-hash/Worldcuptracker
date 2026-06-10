@@ -68,7 +68,10 @@ const groups = {};
 for (const [g, codes] of Object.entries(GROUPS)) groups[g] = codes.map(row);
 
 // Remaining matchday-3 fixtures: pair (seed0 v seed3) and (seed1 v seed2).
-const baseDay = new Date("2026-06-25T16:00:00Z");
+// Anchored to the generation day (16:00 UTC today) so the time-boxed surfaces
+// (morning catch-up, countdowns) have a live "today" slate whenever the mock is
+// regenerated — the snapshot itself stays internally consistent either way.
+const baseDay = new Date(); baseDay.setUTCHours(16, 0, 0, 0);
 let fxN = 0;
 const remainingFixtures = [];
 for (const [g, codes] of Object.entries(GROUPS)) {
@@ -163,9 +166,12 @@ matches.push({
   lineups: { h: { formation: "4-4-2", coach: "Lionel Scaloni", xi: [], subs: [] } },
 });
 
-// FINISHED (matchday 2) with player ratings — for the post-match panel
+// FINISHED (matchday 2) with player ratings — for the post-match panel. Kicked off
+// in the small hours of the slate day (03:00 UK) so the morning view's
+// "Last night" section demos against this snapshot.
 matches.push({
   id: "mC0", stage: "Group Stage", group: "C", status: "ft", minute: "FT",
+  kickoff: new Date(baseDay.getTime() - 14 * 3600e3).toISOString(),
   venue: "AT&T Stadium, Dallas",
   home: { code: "ENG", score: 2 }, away: { code: "SEN", score: 1 },
   affectsCut: false,
@@ -213,6 +219,19 @@ for (const f of remainingFixtures) {
     home: { code: f.home, score: null }, away: { code: f.away, score: null },
     affectsCut: true, stakes: stakesFor(snapshotForEngine, f.id),
   });
+}
+
+// "Where to watch" (feature 1): the real UK pattern — BBC/ITV alternating, with the
+// streams alongside. Every 5th fixture is left unmapped to demo the honest fallback
+// (no mapping → show nothing, never guess). In production the Worker annotates this
+// from web/data/tvUK.json + the daily live schedules check.
+let tvN = 0;
+for (const m of matches) {
+  if (m.status === "ft") continue;
+  if (++tvN % 5 === 0) continue;
+  m.tv = tvN % 2 === 0
+    ? { channel: "BBC One", stream: "BBC iPlayer" }
+    : { channel: "ITV1", stream: "ITVX" };
 }
 
 // ── bracket: the real 2026 structure, from the shared module (web/js/bracket.js),

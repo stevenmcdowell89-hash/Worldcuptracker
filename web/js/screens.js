@@ -7,6 +7,8 @@ import { qualifyOutlook } from "./engine.js";
 import { raceContent } from "./race.js";
 import { bracketEmbed, renderBracket } from "./bracketview.js";
 import { notificationsCardHTML, mountNotifications } from "./notifications.js";
+import { morningModel } from "./morning.js";
+import { bellHTML, reminderCardHTML } from "./reminders.js";
 export { renderBracket };   // the Bracket screen now lives in bracketview.js (vertical Path/structural, §13)
 
 const S = () => state.snap;
@@ -61,12 +63,16 @@ function matchRow(m, opts = {}) {
   else mid = `<span class="ko">${fmtTime(m.kickoff)}</span>`;
   const stageLabel = m.group ? `Group ${m.group}` : (m.stage && m.stage !== "Group Stage" ? m.stage : "");
   const st = opts.showStakes && m.status === "scheduled" && m.stakes && STAKE[m.stakes];
+  // Where to watch (feature 1): UK channel on upcoming/live rows. No mapping → nothing.
+  const tv = m.tv && !ft ? `<span class="tvtag">📺 ${m.tv.channel}</span>` : "";
   const tags = [
     stageLabel ? `<span class="grp-pill">${stageLabel}</span>` : "",
+    tv,
     m.affectsCut && !st ? `<span class="stake decider">Affects the last-8 race</span>` : "",
     st ? `<span class="stake ${st.cls}">${st.lbl}</span>` : "",
   ].filter(Boolean).join("");
-  const meta = tags ? `<div class="match-meta">${tags}</div>` : "";
+  const bell = bellHTML(m);   // reminder bell (feature 3) — scheduled fixtures only
+  const meta = tags || bell ? `<div class="match-meta">${tags}${bell}</div>` : "";
   return `<div class="match-card">
     <div class="match clickable" data-nav="match/${m.id}">
       <span class="side home"><span class="nm">${teamName(m.home.code)}</span>${flag(m.home.code)}</span>
@@ -123,6 +129,19 @@ export function renderMatches(ctx = {}) {
   const head = `${stale}${liveSec}${resultsSec}`;
   const foot = `<div class="updated">Updated ${fmtTime(S().meta?.updated)} · ${S().meta?.stage}</div>`;
 
+  // ── MORNING (06:00–13:00 UK): the catch-up layout leads, then the feed reverts
+  // after 13:00 (§ feature 2). Additive: the slate lists every match today (live
+  // ones included, with live styling), later days + earlier results follow below.
+  const mm = morningModel(S(), state.annexC, ctx.now ?? Date.now(), ctx.query?.get("morning") === "1");
+  if (mm) {
+    const todayIds = new Set(mm.today.map((m) => m.id));
+    const lastIds = new Set(mm.lastNight.map((m) => m.id));
+    const later = upcomingByDay(upcoming.filter((m) => !todayIds.has(m.id))).map(daySec).join("");
+    const earlier = sec("Earlier results", finished.filter((m) => !lastIds.has(m.id)).slice(0, 8));
+    const tail = ph === "knockout" ? bracketEmbed(S(), state.annexC) : "";
+    return `${toggle}${stale}${morningHTML(mm)}${later}${earlier}${tail}${foot}`;
+  }
+
   // ── PRE: countdown hero + clubs nudge above the opening fixtures ──
   if (ph === "pre") {
     const byDay = upcomingByDay(upcoming);
@@ -154,6 +173,25 @@ export function renderMatches(ctx = {}) {
   const firstDay = byDay.slice(0, 1).map(daySec).join("");
   const restDays = byDay.slice(1).map(daySec).join("");
   return `${toggle}${head}${firstDay}${started ? compactRaceCard() : ""}${restDays}${foot}`;
+}
+
+// Morning catch-up layout (feature 2). The model (morning.js) is pure/engine-driven;
+// this just lays its three sections out. Empty sections vanish — nothing fabricated.
+function morningHTML(mm) {
+  const head = `<div class="morninghead"><span class="sun">☀️</span><span class="t">Morning catch-up</span><span class="mwhen">back to the full feed at 13:00</span></div>`;
+  const sec1 = mm.lastNight.length
+    ? `<div class="day-label">Last night — what you missed</div><div class="section">${mm.lastNight.map((m) => matchRow(m)).join("")}</div>`
+      + (mm.flips.length ? `<div class="block">${mm.flips.map((f) => `<div class="lrow"><span class="nm flipline">${f}</span></div>`).join("")}</div>` : "")
+    : "";
+  const showStakes = mm.phase === "group" || mm.phase === "groupFinal";
+  const sec2 = `<div class="day-label">Today — the slate</div>` + (mm.today.length
+    ? `<div class="section">${mm.today.map((m) => matchRow(m, { showStakes })).join("")}</div>`
+    : `<div class="block"><div class="lrow"><span class="nm muted" style="font-weight:500">Rest day — no matches today.</span></div></div>`);
+  const sec3 = mm.stakes.length
+    ? `<div class="day-label">What's at stake today</div><div class="block">${mm.stakes.map((l) => `<div class="pe"><p>${l}</p></div>`).join("")}</div>`
+    : "";
+  const race = mm.phase === "groupFinal" ? compactRaceCard(true) : "";   // the peak morning
+  return head + sec1 + sec2 + sec3 + race;
 }
 
 function upcomingByDay(upcoming) {
@@ -345,9 +383,11 @@ export function renderMatch(ctx) {
       <div class="t" data-nav="team/${m.away.code}">${flag(m.away.code, "flag")}<span class="nm">${teamName(m.away.code)}</span><span class="rk">${pos(m.away.code)}</span></div>
     </div>
     <div class="status ${live ? "" : "done"}">${statusTxt}${ctxLabel ? ` · ${ctxLabel}` : ""}${m.venue ? ` · ${m.venue}` : ""}</div>
+    ${m.tv && m.status !== "ft" ? `<div class="tvline">📺 ${m.tv.channel}${m.tv.stream ? ` <span class="str">· stream on ${m.tv.stream}</span>` : ""}</div>` : ""}
   </div>`;
   const oneLiner = m.progressionLine
     ? `<div class="oneliner"><span class="tick"></span><p>${m.progressionLine}</p></div>` : "";
+  const reminder = reminderCardHTML(m);   // bell + lead + .ics (feature 3)
 
   // Commentary is a permanent tab like the others (it shows an empty state when there's
   // nothing yet, rather than appearing/disappearing). It leads while the match is live.
@@ -366,7 +406,7 @@ export function renderMatch(ctx) {
   else if (cur === "group" && m.group) body = `<div class="sec-head"><h2>Group ${m.group}</h2></div><div class="block">${groupTableHTML(m.group, [m.home.code, m.away.code])}</div>`;
   else body = matchStats(m);
 
-  return { title: "Match", html: hero + oneLiner + tabBar + body };
+  return { title: "Match", html: hero + oneLiner + reminder + tabBar + body };
 }
 
 // Live minute-by-minute commentary (The Guardian). Newest first; key moments flagged.

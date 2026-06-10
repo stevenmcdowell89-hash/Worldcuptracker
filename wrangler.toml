@@ -45,6 +45,11 @@ SUBREQUEST_BUDGET = "900"
 # News: BBC Sport World Cup RSS (no API-Football quota cost), refreshed ~every 30 min.
 NEWS_RSS = "https://feeds.bbci.co.uk/sport/football/world-cup/rss.xml"
 NEWS_INTERVAL_MIN = "30"
+# UK TV channels ("where to watch"): the published BBC/ITV schedules are re-checked
+# daily at ~TV_REFRESH_HOUR UK (plus a 6-hourly retry while upcoming matches lack a
+# channel), overlaying the static seed in web/data/tvUK.json. No API quota cost.
+TV_SOURCE_URL = "https://www.live-footballontv.com/live-world-cup-football-on-tv.html"
+TV_REFRESH_HOUR = "5"
 # Web push public key (brief §14). This is PUBLIC by design (it's also handed to the
 # browser), so it lives here so a Git deploy can't wipe it. The matching private key
 # (VAPID_JWK) and the contact (VAPID_SUBJECT) must be set as SECRETS — secrets survive

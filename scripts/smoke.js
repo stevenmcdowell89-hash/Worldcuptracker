@@ -29,6 +29,7 @@ const cases = [
   ["Match(live)", () => S.renderMatch({ arg: "mA1", ...q("t=lineup") })],
   ["Match(commentary)", () => S.renderMatch({ arg: "mA1", ...q("t=commentary") })],
   ["Match(stats)", () => S.renderMatch({ arg: "mC0", ...q("t=stats") })],
+  ["Match(scheduled)", () => S.renderMatch({ arg: "f2", ...q() })],   // reminder card + channel line
   ["Team", () => S.renderTeam({ arg: "ARG", ...q() })],
   ["Player", () => S.renderPlayer({ arg: "150", ...q() })],
   ["Race", () => renderRace(q())],
@@ -51,6 +52,16 @@ for (const ph of ["pre", "group", "groupFinal", "knockout"]) {
   state.snap.meta.phase = ph;
   run(`Matches(${ph})`, () => S.renderMatches(q()));
   run(`Groups(${ph})`, () => S.renderGroups(q()));
+}
+state.snap.meta.phase = realPhase;
+
+// Morning catch-up (feature 2): force the window at 09:00 UK on the slate's first
+// day so the layout exercises "last night" + "today" + "at stake" deterministically.
+const slateDay = state.snap.remainingFixtures[0].kickoff.slice(0, 10);
+const morningNow = Date.parse(`${slateDay}T08:00:00Z`);   // 09:00 UK in June (BST)
+for (const ph of ["group", "groupFinal", "knockout"]) {
+  state.snap.meta.phase = ph;
+  run(`Morning(${ph})`, () => S.renderMatches({ now: morningNow, query: new URLSearchParams("morning=1") }));
 }
 state.snap.meta.phase = realPhase;
 
