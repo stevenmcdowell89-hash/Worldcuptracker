@@ -336,6 +336,57 @@ a { color:inherit; text-decoration:none; }
 .stake.seeding { color:var(--muted); background:var(--raised); }
 .stake.dead { color:var(--faint); background:transparent; box-shadow:inset 0 0 0 1px var(--divider); }
 
+/* ── channel tag + reminder bell (phase 3, features 1 & 3) ── */
+.tvtag { font-size:10px; font-weight:800; letter-spacing:.01em; color:var(--brand); background:rgba(75,69,224,.1); padding:2px 8px; border-radius:8px; display:inline-flex; align-items:center; gap:3px; white-space:nowrap; }
+.tvtag.big { font-size:12px; padding:4px 10px; border-radius:9px; }
+.bell { margin-left:auto; width:30px; height:26px; display:inline-grid; place-items:center; border-radius:8px; font-size:15px; line-height:1; color:var(--faint); opacity:.42; filter:grayscale(1); transition:opacity .12s, transform .12s; flex:none; }
+.bell.on { color:var(--sweating); opacity:1; filter:none; }
+.bell:active { transform:scale(.86); background:var(--raised); }
+.bell.big { width:40px; height:36px; font-size:20px; margin-left:0; }
+.match-meta .bell { margin-left:auto; }
+.watch-line { margin:10px 14px 0; }
+.remind-bar { display:flex; align-items:center; gap:10px; margin:10px 14px; padding:8px 12px; background:var(--card); border-radius:12px; box-shadow:inset 0 0 0 1px var(--divider); }
+.remind-bar .remind-txt { font-size:13px; font-weight:600; color:var(--muted); flex:1; min-width:0; }
+.remind-bar .remind-txt b { color:var(--text); }
+.calbtn { font-size:12.5px; font-weight:800; color:var(--brand); padding:6px 11px; border-radius:9px; background:rgba(75,69,224,.1); white-space:nowrap; }
+.calbtn:active { background:rgba(75,69,224,.2); }
+
+/* ── morning view (phase 3, feature 2) ── */
+.morning { margin-bottom:6px; }
+.mn-hd { font-family:var(--display); font-weight:800; font-size:20px; padding:16px 16px 4px; letter-spacing:-.01em; }
+.mn-hd span { color:var(--muted); font-weight:700; font-size:14px; }
+.mn-sec { margin-top:8px; }
+.mn-h { display:flex; align-items:baseline; gap:8px; padding:10px 16px 6px; }
+.mn-h h3 { font-family:var(--display); font-weight:800; font-size:16px; }
+.mn-h .sub { font-size:12px; color:var(--faint); font-weight:700; }
+.mn-result { display:flex; align-items:center; justify-content:center; gap:12px; padding:11px 14px; }
+.mn-result + .mn-result { border-top:1px solid var(--divider); }
+.mn-result .mn-side { display:flex; align-items:center; gap:7px; font-weight:600; font-size:14px; flex:1; justify-content:flex-end; min-width:0; }
+.mn-result .mn-side.away { justify-content:flex-start; }
+.mn-result .flag { width:22px; height:16px; border-radius:3px; box-shadow:inset 0 0 0 1px rgba(0,0,0,.06); flex:none; }
+.mn-result .mn-score { font-family:var(--display); font-weight:800; font-size:17px; flex:none; }
+.mn-sub { padding:10px 16px 4px; font-size:11px; font-weight:800; letter-spacing:.05em; text-transform:uppercase; color:var(--faint); }
+.mn-flips { background:var(--card); }
+.mn-flip { display:flex; align-items:center; gap:9px; padding:9px 16px; font-size:13.5px; font-weight:700; }
+.mn-flip + .mn-flip { border-top:1px solid var(--divider); }
+.mn-flip .ic { width:18px; text-align:center; }
+.mn-slate { padding:0; }
+.mn-slate + .mn-slate { border-top:1px solid var(--divider); }
+.mn-slate-top { display:flex; align-items:center; gap:10px; padding:11px 14px 6px; }
+.mn-slate-top .when { min-width:48px; font-weight:800; font-size:13px; }
+.mn-slate-top .when .min { color:var(--live); }
+.mn-slate-top .when .ko { color:var(--muted); }
+.mn-slate-top .teams { flex:1; display:flex; align-items:center; gap:6px; font-weight:600; font-size:14px; min-width:0; flex-wrap:wrap; }
+.mn-slate-top .teams .v { color:var(--faint); font-weight:600; }
+.mn-slate-top .flag { width:20px; height:15px; border-radius:3px; box-shadow:inset 0 0 0 1px rgba(0,0,0,.06); flex:none; }
+.mn-slate-top .bell { margin-left:auto; }
+.mn-slate-tags { display:flex; gap:6px; flex-wrap:wrap; padding:0 14px 10px 72px; }
+.mn-stake { display:flex; align-items:center; gap:9px; padding:10px 16px; font-size:13.5px; font-weight:600; }
+.mn-stake + .mn-stake { border-top:1px solid var(--divider); }
+.mn-stake .ic { width:18px; text-align:center; }
+.mn-stake .flag { width:22px; height:16px; border-radius:3px; box-shadow:inset 0 0 0 1px rgba(0,0,0,.06); flex:none; }
+.mn-stake .chip { margin-left:auto; flex:none; }
+
 /* pre-tournament hero (§11) */
 .prehero { margin:10px; padding:20px 16px 16px; border-radius:var(--radius); background:linear-gradient(150deg,#4B45E0,#2b2796); color:#fff; text-align:center; }
 .pre-kicker { font-size:11px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; opacity:.8; }

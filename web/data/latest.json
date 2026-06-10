@@ -1,7 +1,7 @@
 {
   "meta": {
     "stage": "Group Stage",
-    "updated": "2026-06-10T16:30:09.777Z",
+    "updated": "2026-06-10T20:03:36.092Z",
     "groupStageComplete": false,
     "dataSource": "mock",
     "started": true,
@@ -870,7 +870,7 @@
       "group": "A",
       "home": "MEX",
       "away": "KSA",
-      "kickoff": "2026-06-25T16:00:00.000Z",
+      "kickoff": "2026-06-10T22:03:36.075Z",
       "affectsThird": true
     },
     {
@@ -878,7 +878,7 @@
       "group": "A",
       "home": "CRO",
       "away": "CMR",
-      "kickoff": "2026-06-25T19:00:00.000Z",
+      "kickoff": "2026-06-11T01:03:36.075Z",
       "affectsThird": true
     },
     {
@@ -886,7 +886,7 @@
       "group": "B",
       "home": "BEL",
       "away": "JPN",
-      "kickoff": "2026-06-25T22:00:00.000Z",
+      "kickoff": "2026-06-11T04:03:36.075Z",
       "affectsThird": true
     },
     {
@@ -894,7 +894,7 @@
       "group": "B",
       "home": "CAN",
       "away": "MAR",
-      "kickoff": "2026-06-26T01:00:00.000Z",
+      "kickoff": "2026-06-11T07:03:36.075Z",
       "affectsThird": true
     },
     {
@@ -902,7 +902,7 @@
       "group": "C",
       "home": "ENG",
       "away": "IRN",
-      "kickoff": "2026-06-26T04:00:00.000Z",
+      "kickoff": "2026-06-11T10:03:36.075Z",
       "affectsThird": true
     },
     {
@@ -910,7 +910,7 @@
       "group": "C",
       "home": "USA",
       "away": "SEN",
-      "kickoff": "2026-06-26T07:00:00.000Z",
+      "kickoff": "2026-06-11T13:03:36.075Z",
       "affectsThird": true
     },
     {
@@ -918,7 +918,7 @@
       "group": "D",
       "home": "ARG",
       "away": "RSA",
-      "kickoff": "2026-06-26T10:00:00.000Z",
+      "kickoff": "2026-06-11T16:03:36.075Z",
       "affectsThird": true
     },
     {
@@ -926,7 +926,7 @@
       "group": "D",
       "home": "AUS",
       "away": "POL",
-      "kickoff": "2026-06-26T13:00:00.000Z",
+      "kickoff": "2026-06-11T19:03:36.075Z",
       "affectsThird": true
     },
     {
@@ -934,7 +934,7 @@
       "group": "E",
       "home": "FRA",
       "away": "GHA",
-      "kickoff": "2026-06-26T16:00:00.000Z",
+      "kickoff": "2026-06-11T22:03:36.075Z",
       "affectsThird": true
     },
     {
@@ -942,7 +942,7 @@
       "group": "E",
       "home": "SUI",
       "away": "KOR",
-      "kickoff": "2026-06-26T19:00:00.000Z",
+      "kickoff": "2026-06-12T01:03:36.075Z",
       "affectsThird": true
     },
     {
@@ -950,7 +950,7 @@
       "group": "F",
       "home": "BRA",
       "away": "TUN",
-      "kickoff": "2026-06-26T22:00:00.000Z",
+      "kickoff": "2026-06-12T04:03:36.075Z",
       "affectsThird": true
     },
     {
@@ -958,7 +958,7 @@
       "group": "F",
       "home": "SRB",
       "away": "ECU",
-      "kickoff": "2026-06-27T01:00:00.000Z",
+      "kickoff": "2026-06-12T07:03:36.075Z",
       "affectsThird": true
     },
     {
@@ -966,7 +966,7 @@
       "group": "G",
       "home": "ESP",
       "away": "QAT",
-      "kickoff": "2026-06-27T04:00:00.000Z",
+      "kickoff": "2026-06-12T10:03:36.075Z",
       "affectsThird": true
     },
     {
@@ -974,7 +974,7 @@
       "group": "G",
       "home": "URU",
       "away": "EGY",
-      "kickoff": "2026-06-27T07:00:00.000Z",
+      "kickoff": "2026-06-12T13:03:36.075Z",
       "affectsThird": true
     },
     {
@@ -982,7 +982,7 @@
       "group": "H",
       "home": "GER",
       "away": "UZB",
-      "kickoff": "2026-06-27T10:00:00.000Z",
+      "kickoff": "2026-06-12T16:03:36.075Z",
       "affectsThird": true
     },
     {
@@ -990,7 +990,7 @@
       "group": "H",
       "home": "COL",
       "away": "CRC",
-      "kickoff": "2026-06-27T13:00:00.000Z",
+      "kickoff": "2026-06-12T19:03:36.075Z",
       "affectsThird": true
     },
     {
@@ -998,7 +998,7 @@
       "group": "I",
       "home": "POR",
       "away": "PAN",
-      "kickoff": "2026-06-27T16:00:00.000Z",
+      "kickoff": "2026-06-12T22:03:36.075Z",
       "affectsThird": true
     },
     {
@@ -1006,7 +1006,7 @@
       "group": "I",
       "home": "CIV",
       "away": "JOR",
-      "kickoff": "2026-06-27T19:00:00.000Z",
+      "kickoff": "2026-06-13T01:03:36.075Z",
       "affectsThird": true
     },
     {
@@ -1014,7 +1014,7 @@
       "group": "J",
       "home": "ITA",
       "away": "CPV",
-      "kickoff": "2026-06-27T22:00:00.000Z",
+      "kickoff": "2026-06-13T04:03:36.075Z",
       "affectsThird": true
     },
     {
@@ -1022,7 +1022,7 @@
       "group": "J",
       "home": "DEN",
       "away": "PAR",
-      "kickoff": "2026-06-28T01:00:00.000Z",
+      "kickoff": "2026-06-13T07:03:36.075Z",
       "affectsThird": true
     },
     {
@@ -1030,7 +1030,7 @@
       "group": "K",
       "home": "NED",
       "away": "HON",
-      "kickoff": "2026-06-28T04:00:00.000Z",
+      "kickoff": "2026-06-13T10:03:36.075Z",
       "affectsThird": true
     },
     {
@@ -1038,7 +1038,7 @@
       "group": "K",
       "home": "MLI",
       "away": "NZL",
-      "kickoff": "2026-06-28T07:00:00.000Z",
+      "kickoff": "2026-06-13T13:03:36.075Z",
       "affectsThird": true
     },
     {
@@ -1046,7 +1046,7 @@
       "group": "L",
       "home": "NGA",
       "away": "CUW",
-      "kickoff": "2026-06-28T10:00:00.000Z",
+      "kickoff": "2026-06-13T16:03:36.075Z",
       "affectsThird": true
     },
     {
@@ -1054,7 +1054,7 @@
       "group": "L",
       "home": "SCO",
       "away": "AUT",
-      "kickoff": "2026-06-28T13:00:00.000Z",
+      "kickoff": "2026-06-13T19:03:36.075Z",
       "affectsThird": true
     }
   ],
@@ -1065,7 +1065,7 @@
       "group": "A",
       "status": "live",
       "minute": "67'",
-      "kickoff": "2026-06-25T16:00:00.000Z",
+      "kickoff": "2026-06-10T18:56:36.077Z",
       "venue": "Estadio Azteca, Mexico City",
       "home": {
         "code": "MEX",
@@ -1165,19 +1165,19 @@
       "commentaryUrl": "https://www.theguardian.com/football/live",
       "commentary": [
         {
-          "at": "2026-06-10T16:28:09.761Z",
+          "at": "2026-06-10T20:01:36.077Z",
           "title": "GOAL!",
           "text": "Mexico 2-1 Saudi Arabia. Giménez gets his second, turning in Pineda's low cross at the near post. The Azteca erupts.",
           "key": true
         },
         {
-          "at": "2026-06-10T16:21:09.761Z",
+          "at": "2026-06-10T19:54:36.077Z",
           "title": "",
           "text": "Saudi Arabia are growing into this. Al-Dawsari drifts inside and curls one just over — a warning to the hosts.",
           "key": false
         },
         {
-          "at": "2026-06-10T16:08:09.761Z",
+          "at": "2026-06-10T19:41:36.077Z",
           "title": "GOAL!",
           "text": "1-1. Al-Dawsari levels from the spot after a clumsy challenge by Álvarez, sending Ochoa the wrong way.",
           "key": true
@@ -1350,6 +1350,7 @@
       "group": "D",
       "status": "live",
       "minute": "39'",
+      "kickoff": "2026-06-10T19:24:36.077Z",
       "venue": "MetLife Stadium, New Jersey",
       "home": {
         "code": "ARG",
@@ -1418,6 +1419,7 @@
       "group": "C",
       "status": "ft",
       "minute": "FT",
+      "kickoff": "2026-06-09T19:00:00.000Z",
       "venue": "AT&T Stadium, Dallas",
       "home": {
         "code": "ENG",
@@ -1628,11 +1630,44 @@
       }
     },
     {
+      "id": "mF0",
+      "stage": "Group Stage",
+      "group": "F",
+      "status": "ft",
+      "minute": "FT",
+      "kickoff": "2026-06-09T21:30:00.000Z",
+      "venue": "Hard Rock Stadium, Miami",
+      "home": {
+        "code": "BRA",
+        "score": 2
+      },
+      "away": {
+        "code": "SRB",
+        "score": 0
+      },
+      "affectsCut": false,
+      "events": [
+        {
+          "min": "27'",
+          "side": "h",
+          "type": "goal",
+          "player": "Vinícius Jr",
+          "assist": "Raphinha"
+        },
+        {
+          "min": "69'",
+          "side": "h",
+          "type": "goal",
+          "player": "Rodrygo"
+        }
+      ]
+    },
+    {
       "id": "f2",
       "stage": "Group Stage",
       "group": "A",
       "status": "scheduled",
-      "kickoff": "2026-06-25T19:00:00.000Z",
+      "kickoff": "2026-06-11T01:03:36.075Z",
       "home": {
         "code": "CRO",
         "score": null
@@ -1649,7 +1684,7 @@
       "stage": "Group Stage",
       "group": "B",
       "status": "scheduled",
-      "kickoff": "2026-06-25T22:00:00.000Z",
+      "kickoff": "2026-06-11T04:03:36.075Z",
       "home": {
         "code": "BEL",
         "score": null
@@ -1666,7 +1701,7 @@
       "stage": "Group Stage",
       "group": "B",
       "status": "scheduled",
-      "kickoff": "2026-06-26T01:00:00.000Z",
+      "kickoff": "2026-06-11T07:03:36.075Z",
       "home": {
         "code": "CAN",
         "score": null
@@ -1683,7 +1718,7 @@
       "stage": "Group Stage",
       "group": "C",
       "status": "scheduled",
-      "kickoff": "2026-06-26T04:00:00.000Z",
+      "kickoff": "2026-06-11T10:03:36.075Z",
       "home": {
         "code": "ENG",
         "score": null
@@ -1700,7 +1735,7 @@
       "stage": "Group Stage",
       "group": "C",
       "status": "scheduled",
-      "kickoff": "2026-06-26T07:00:00.000Z",
+      "kickoff": "2026-06-11T13:03:36.075Z",
       "home": {
         "code": "USA",
         "score": null
@@ -1717,7 +1752,7 @@
       "stage": "Group Stage",
       "group": "D",
       "status": "scheduled",
-      "kickoff": "2026-06-26T13:00:00.000Z",
+      "kickoff": "2026-06-11T19:03:36.075Z",
       "home": {
         "code": "AUS",
         "score": null
@@ -1734,7 +1769,7 @@
       "stage": "Group Stage",
       "group": "E",
       "status": "scheduled",
-      "kickoff": "2026-06-26T16:00:00.000Z",
+      "kickoff": "2026-06-11T22:03:36.075Z",
       "home": {
         "code": "FRA",
         "score": null
@@ -1751,7 +1786,7 @@
       "stage": "Group Stage",
       "group": "E",
       "status": "scheduled",
-      "kickoff": "2026-06-26T19:00:00.000Z",
+      "kickoff": "2026-06-12T01:03:36.075Z",
       "home": {
         "code": "SUI",
         "score": null
@@ -1768,7 +1803,7 @@
       "stage": "Group Stage",
       "group": "F",
       "status": "scheduled",
-      "kickoff": "2026-06-26T22:00:00.000Z",
+      "kickoff": "2026-06-12T04:03:36.075Z",
       "home": {
         "code": "BRA",
         "score": null
@@ -1785,7 +1820,7 @@
       "stage": "Group Stage",
       "group": "F",
       "status": "scheduled",
-      "kickoff": "2026-06-27T01:00:00.000Z",
+      "kickoff": "2026-06-12T07:03:36.075Z",
       "home": {
         "code": "SRB",
         "score": null
@@ -1802,7 +1837,7 @@
       "stage": "Group Stage",
       "group": "G",
       "status": "scheduled",
-      "kickoff": "2026-06-27T04:00:00.000Z",
+      "kickoff": "2026-06-12T10:03:36.075Z",
       "home": {
         "code": "ESP",
         "score": null
@@ -1819,7 +1854,7 @@
       "stage": "Group Stage",
       "group": "G",
       "status": "scheduled",
-      "kickoff": "2026-06-27T07:00:00.000Z",
+      "kickoff": "2026-06-12T13:03:36.075Z",
       "home": {
         "code": "URU",
         "score": null
@@ -1836,7 +1871,7 @@
       "stage": "Group Stage",
       "group": "H",
       "status": "scheduled",
-      "kickoff": "2026-06-27T10:00:00.000Z",
+      "kickoff": "2026-06-12T16:03:36.075Z",
       "home": {
         "code": "GER",
         "score": null
@@ -1853,7 +1888,7 @@
       "stage": "Group Stage",
       "group": "H",
       "status": "scheduled",
-      "kickoff": "2026-06-27T13:00:00.000Z",
+      "kickoff": "2026-06-12T19:03:36.075Z",
       "home": {
         "code": "COL",
         "score": null
@@ -1870,7 +1905,7 @@
       "stage": "Group Stage",
       "group": "I",
       "status": "scheduled",
-      "kickoff": "2026-06-27T16:00:00.000Z",
+      "kickoff": "2026-06-12T22:03:36.075Z",
       "home": {
         "code": "POR",
         "score": null
@@ -1887,7 +1922,7 @@
       "stage": "Group Stage",
       "group": "I",
       "status": "scheduled",
-      "kickoff": "2026-06-27T19:00:00.000Z",
+      "kickoff": "2026-06-13T01:03:36.075Z",
       "home": {
         "code": "CIV",
         "score": null
@@ -1904,7 +1939,7 @@
       "stage": "Group Stage",
       "group": "J",
       "status": "scheduled",
-      "kickoff": "2026-06-27T22:00:00.000Z",
+      "kickoff": "2026-06-13T04:03:36.075Z",
       "home": {
         "code": "ITA",
         "score": null
@@ -1921,7 +1956,7 @@
       "stage": "Group Stage",
       "group": "J",
       "status": "scheduled",
-      "kickoff": "2026-06-28T01:00:00.000Z",
+      "kickoff": "2026-06-13T07:03:36.075Z",
       "home": {
         "code": "DEN",
         "score": null
@@ -1938,7 +1973,7 @@
       "stage": "Group Stage",
       "group": "K",
       "status": "scheduled",
-      "kickoff": "2026-06-28T04:00:00.000Z",
+      "kickoff": "2026-06-13T10:03:36.075Z",
       "home": {
         "code": "NED",
         "score": null
@@ -1955,7 +1990,7 @@
       "stage": "Group Stage",
       "group": "K",
       "status": "scheduled",
-      "kickoff": "2026-06-28T07:00:00.000Z",
+      "kickoff": "2026-06-13T13:03:36.075Z",
       "home": {
         "code": "MLI",
         "score": null
@@ -1972,7 +2007,7 @@
       "stage": "Group Stage",
       "group": "L",
       "status": "scheduled",
-      "kickoff": "2026-06-28T10:00:00.000Z",
+      "kickoff": "2026-06-13T16:03:36.075Z",
       "home": {
         "code": "NGA",
         "score": null
@@ -1989,7 +2024,7 @@
       "stage": "Group Stage",
       "group": "L",
       "status": "scheduled",
-      "kickoff": "2026-06-28T13:00:00.000Z",
+      "kickoff": "2026-06-13T19:03:36.075Z",
       "home": {
         "code": "SCO",
         "score": null
@@ -4640,7 +4675,7 @@
         "playerId": "401",
         "nation": "BRA",
         "opponent": "TUN",
-        "kickoff": "2026-06-26T22:00:00.000Z"
+        "kickoff": "2026-06-12T04:03:36.075Z"
       },
       "players": [
         {
@@ -4650,7 +4685,7 @@
           "num": 8,
           "nextFixture": {
             "opponent": "PAN",
-            "kickoff": "2026-06-27T16:00:00.000Z"
+            "kickoff": "2026-06-12T22:03:36.075Z"
           },
           "tournament": {
             "apps": 3,
@@ -4669,7 +4704,7 @@
           "num": 5,
           "nextFixture": {
             "opponent": "TUN",
-            "kickoff": "2026-06-26T22:00:00.000Z"
+            "kickoff": "2026-06-12T04:03:36.075Z"
           },
           "tournament": {
             "apps": 2,
@@ -4690,7 +4725,7 @@
         "playerId": "403",
         "nation": "ARG",
         "opponent": "RSA",
-        "kickoff": "2026-06-26T10:00:00.000Z"
+        "kickoff": "2026-06-11T16:03:36.075Z"
       },
       "players": [
         {
@@ -4700,7 +4735,7 @@
           "num": 4,
           "nextFixture": {
             "opponent": "HON",
-            "kickoff": "2026-06-28T04:00:00.000Z"
+            "kickoff": "2026-06-13T10:03:36.075Z"
           },
           "tournament": {
             "apps": 2,
@@ -4719,7 +4754,7 @@
           "num": 20,
           "nextFixture": {
             "opponent": "RSA",
-            "kickoff": "2026-06-26T10:00:00.000Z"
+            "kickoff": "2026-06-11T16:03:36.075Z"
           },
           "tournament": {
             "apps": 2,
@@ -4740,7 +4775,7 @@
         "playerId": "151",
         "nation": "ENG",
         "opponent": "IRN",
-        "kickoff": "2026-06-26T04:00:00.000Z"
+        "kickoff": "2026-06-11T10:03:36.075Z"
       },
       "players": [
         {
@@ -4750,7 +4785,7 @@
           "num": 7,
           "nextFixture": {
             "opponent": "IRN",
-            "kickoff": "2026-06-26T04:00:00.000Z"
+            "kickoff": "2026-06-11T10:03:36.075Z"
           },
           "tournament": {
             "apps": 3,
@@ -4771,7 +4806,7 @@
         "playerId": "404",
         "nation": "ARG",
         "opponent": "RSA",
-        "kickoff": "2026-06-26T10:00:00.000Z"
+        "kickoff": "2026-06-11T16:03:36.075Z"
       },
       "players": [
         {
@@ -4781,7 +4816,7 @@
           "num": 13,
           "nextFixture": {
             "opponent": "RSA",
-            "kickoff": "2026-06-26T10:00:00.000Z"
+            "kickoff": "2026-06-11T16:03:36.075Z"
           },
           "tournament": {
             "apps": 2,
@@ -4800,7 +4835,7 @@
           "num": 7,
           "nextFixture": {
             "opponent": "SUI",
-            "kickoff": "2026-06-26T19:00:00.000Z"
+            "kickoff": "2026-06-12T01:03:36.075Z"
           },
           "tournament": {
             "apps": 2,
@@ -4826,7 +4861,7 @@
         "playerId": "406",
         "nation": "SRB",
         "opponent": "ECU",
-        "kickoff": "2026-06-27T01:00:00.000Z"
+        "kickoff": "2026-06-12T07:03:36.075Z"
       },
       "players": [
         {
@@ -4836,7 +4871,7 @@
           "num": 9,
           "nextFixture": {
             "opponent": "ECU",
-            "kickoff": "2026-06-27T01:00:00.000Z"
+            "kickoff": "2026-06-12T07:03:36.075Z"
           },
           "tournament": {
             "apps": 2,
@@ -4856,7 +4891,7 @@
       "title": "Mexico hold off Saudi Arabia in Azteca opener",
       "summary": "Santiago Giménez's brace settles a nervy hosts' opener as the 2026 World Cup gets under way.",
       "link": "https://www.bbc.com/sport/football",
-      "published": "2026-06-10T15:55:09.777Z",
+      "published": "2026-06-10T19:28:36.092Z",
       "image": null,
       "source": "BBC Sport"
     },
@@ -4864,7 +4899,7 @@
       "title": "Argentina cruise as Messi pulls the strings",
       "summary": "Holders Argentina look ominous after a comfortable win in New Jersey.",
       "link": "https://www.bbc.com/sport/football",
-      "published": "2026-06-10T13:30:09.777Z",
+      "published": "2026-06-10T17:03:36.092Z",
       "image": null,
       "source": "BBC Sport"
     },
@@ -4872,7 +4907,7 @@
       "title": "Third-place race: who's still in the hunt?",
       "summary": "With the final group games to come, the eight best third-placed spots are wide open.",
       "link": "https://www.bbc.com/sport/football",
-      "published": "2026-06-10T10:30:09.777Z",
+      "published": "2026-06-10T14:03:36.092Z",
       "image": null,
       "source": "BBC Sport"
     }

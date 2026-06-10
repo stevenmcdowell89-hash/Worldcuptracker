@@ -68,7 +68,13 @@ const groups = {};
 for (const [g, codes] of Object.entries(GROUPS)) groups[g] = codes.map(row);
 
 // Remaining matchday-3 fixtures: pair (seed0 v seed3) and (seed1 v seed2).
-const baseDay = new Date("2026-06-25T16:00:00Z");
+// Anchored a couple of hours from "now" so the now-relative phase-3 surfaces (morning
+// view, today's slate, reminder countdowns) all demo against the snapshot. Production
+// regenerates from the live schedule; this is just the dev/demo vehicle.
+const baseDay = new Date(Date.now() + 2 * 3600e3);
+// "Last night" anchor (~yesterday evening UK) for the finished games that feed the
+// morning view's first section.
+const lastNight = (() => { const d = new Date(); d.setUTCHours(19, 0, 0, 0); return new Date(d.getTime() - 24 * 3600e3); })();
 let fxN = 0;
 const remainingFixtures = [];
 for (const [g, codes] of Object.entries(GROUPS)) {
@@ -92,7 +98,7 @@ const matches = [];
 // LIVE: Group A — Mexico v Saudi Arabia (the host, affects the cut)
 matches.push({
   id: "mA1", stage: "Group Stage", group: "A", status: "live", minute: "67'",
-  kickoff: remainingFixtures.find(f=>f.id).kickoff, venue: "Estadio Azteca, Mexico City",
+  kickoff: new Date(Date.now() - 67 * 6e4).toISOString(), venue: "Estadio Azteca, Mexico City",
   home: { code: "MEX", score: 2 }, away: { code: "KSA", score: 1 },
   affectsCut: true,
   progressionLine: "As it stands, this win keeps Croatia sweating for the last third-place spot.",
@@ -150,7 +156,7 @@ matches.push({
 // LIVE: Group D — Argentina v South Africa
 matches.push({
   id: "mD1", stage: "Group Stage", group: "D", status: "live", minute: "39'",
-  venue: "MetLife Stadium, New Jersey",
+  kickoff: new Date(Date.now() - 39 * 6e4).toISOString(), venue: "MetLife Stadium, New Jersey",
   home: { code: "ARG", score: 1 }, away: { code: "RSA", score: 0 },
   affectsCut: true,
   progressionLine: "Australia go through as it stands; a South Africa goal would reopen it.",
@@ -166,7 +172,7 @@ matches.push({
 // FINISHED (matchday 2) with player ratings — for the post-match panel
 matches.push({
   id: "mC0", stage: "Group Stage", group: "C", status: "ft", minute: "FT",
-  venue: "AT&T Stadium, Dallas",
+  kickoff: lastNight.toISOString(), venue: "AT&T Stadium, Dallas",
   home: { code: "ENG", score: 2 }, away: { code: "SEN", score: 1 },
   affectsCut: false,
   events: [
@@ -200,6 +206,18 @@ matches.push({
       { num: 10, name: "S. Mané", pos: "LW", rating: 7.8, playerId: 170, grid: "4:1" },
     ], subs: [] },
   },
+});
+
+// Another overnight result (Group F) so "Last night" has a couple of games. Brazil
+// beat Serbia — consistent with the group ledger (Brazil won both, Serbia dropped one).
+matches.push({
+  id: "mF0", stage: "Group Stage", group: "F", status: "ft", minute: "FT",
+  kickoff: new Date(lastNight.getTime() + 2.5 * 3600e3).toISOString(), venue: "Hard Rock Stadium, Miami",
+  home: { code: "BRA", score: 2 }, away: { code: "SRB", score: 0 }, affectsCut: false,
+  events: [
+    { min: "27'", side: "h", type: "goal", player: "Vinícius Jr", assist: "Raphinha" },
+    { min: "69'", side: "h", type: "goal", player: "Rodrygo" },
+  ],
 });
 
 // Scheduled matchday-3 fixtures become "scheduled" matches.

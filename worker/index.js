@@ -17,6 +17,7 @@ import { thirdPlaceTable, recompute, verdicts, compareGroupRows, qualifyOutlook,
 import { buildBracket } from "../web/js/bracket.js";
 import ANNEXC from "../web/js/annexC.data.js";
 import { sendWebPush } from "./push.js";
+import { overnightFinished, matchesOn, resultsLine, fixturesLine } from "../web/js/digest.js";
 
 const API = "https://v3.football.api-sports.io";
 const KV_KEY = "latest.json";
@@ -758,8 +759,10 @@ async function hashKey(s) {
 }
 async function storeSubscription(env, subscription, prefs) {
   const id = await hashKey(subscription.endpoint);
+  const existing = await env.SNAPSHOT.get(PUSH_PREFIX + id, "json");   // preserve this device's reminders
   await env.SNAPSHOT.put(PUSH_PREFIX + id, JSON.stringify({
-    subscription, prefs: prefs || { results: true, today: true, qual: true }, updated: Date.now(),
+    subscription, prefs: prefs || existing?.prefs || { results: true, today: true, qual: true },
+    reminders: existing?.reminders || {}, updated: Date.now(),
   }));
   return id;
 }
@@ -785,6 +788,35 @@ async function broadcast(env, prefKey, notif) {
       const res = await sendWebPush(s.subscription, notif, env);
       if (res.status === 404 || res.status === 410) await env.SNAPSHOT.delete(s.key);  // gone
     } catch (e) { console.error("push send failed:", e.message); }
+  }
+}
+
+// Per-match reminders (brief feature 3) — fire ~leadMin before kickoff to the single
+// device that set it (the push endpoint is that device's key — no accounts). Runs
+// every tick, not hour-gated. Marks each sent once, prunes stale/past ones and dead subs.
+async function sendDueReminders(env) {
+  const now = Date.now();
+  const subs = await listSubscriptions(env);
+  for (const s of subs) {
+    const rem = s.reminders;
+    if (!rem || !Object.keys(rem).length) continue;
+    let changed = false, dead = false;
+    for (const [mid, r] of Object.entries(rem)) {
+      const ko = Date.parse(r.kickoff);
+      if (!Number.isFinite(ko) || now >= ko + 30 * 60e3) { delete rem[mid]; changed = true; continue; }  // past/stale
+      if (r.sentAt) continue;
+      if (now < ko - (r.leadMin || 15) * 60e3) continue;          // not yet in the lead window
+      try {
+        const res = await sendWebPush(s.subscription, {
+          title: r.title || "Kicking off soon ⚽", body: r.body || "Your match starts soon",
+          tag: `wc26-rem-${mid}`, url: `/#/match/${mid}`,
+        }, env);
+        if (res.status === 404 || res.status === 410) { await env.SNAPSHOT.delete(s.key); dead = true; break; }
+      } catch (e) { console.error("reminder send failed:", e.message); }
+      r.sentAt = now; changed = true;
+    }
+    if (dead) continue;
+    if (changed) await env.SNAPSHOT.put(s.key, JSON.stringify({ subscription: s.subscription, prefs: s.prefs, reminders: rem, updated: Date.now() }));
   }
 }
 // UK wall-clock parts (digests + the waking-hours gate for qualification alerts).
@@ -817,16 +849,13 @@ function detectFlips(prev, snap) {
   }
   return Object.entries(byGroup).map(([g, list]) => `Group ${g}: ${list.join(", ")}`);
 }
+// Digests reuse the SAME composition as the in-app morning view (web/js/digest.js) —
+// one source, two surfaces (brief feature 2).
 function resultsDigest(snap) {
-  const since = Date.now() - 16 * 3600e3;   // overnight catch-up window
-  const ft = (snap.matches || []).filter((m) => m.status === "ft" && m.kickoff && new Date(m.kickoff).getTime() >= since);
-  if (!ft.length) return null;
-  return ft.slice(0, 8).map((m) => `${m.home.code} ${m.home.score}-${m.away.score} ${m.away.code}`).join(" · ");
+  return resultsLine(overnightFinished(snap));
 }
 function todayDigest(snap, date) {
-  const today = (snap.matches || []).filter((m) => m.status === "scheduled" && (m.kickoff || "").slice(0, 10) === date);
-  if (!today.length) return null;
-  return today.slice(0, 8).map((m) => `${m.home.code} v ${m.away.code}`).join(" · ");
+  return fixturesLine(matchesOn(snap, date).filter((m) => m.status === "scheduled"));
 }
 
 async function runNotifications(env, prev, snap) {
@@ -850,6 +879,8 @@ async function runNotifications(env, prev, snap) {
     const body = todayDigest(snap, date);
     if (body) await broadcast(env, "today", { title: "Today's matches", body, tag: "wc26-today", url: "/#/matches" });
   }
+  // Per-match reminders — close to kickoff, any time of day (brief feature 3).
+  await sendDueReminders(env);
 }
 
 export default {
@@ -950,6 +981,28 @@ export default {
       try {
         const { endpoint } = await request.json();
         if (endpoint) await removeSubscription(env, endpoint);
+        return json({ ok: true });
+      } catch (e) { return json({ error: e.message }, 400); }
+    }
+    // Per-match reminder: set/clear a reminder on this device's subscription record
+    // (brief feature 3). The client also keeps local state + offers an .ics fallback.
+    if (path === "/push/reminder" && request.method === "POST") {
+      if (!pushEnabled(env)) return json({ error: "push not configured" }, 503);
+      try {
+        const { endpoint, subscription, matchId, kickoff, leadMin, title, body, on } = await request.json();
+        const ep = endpoint || subscription?.endpoint;
+        if (!ep || !matchId) return json({ error: "bad request" }, 400);
+        const id = await hashKey(ep);
+        let rec = await env.SNAPSHOT.get(PUSH_PREFIX + id, "json");
+        // Allow setting a reminder in the same gesture as enabling push: create the
+        // record if the client sent its subscription and we don't have one yet.
+        if (!rec && subscription?.endpoint && subscription?.keys?.p256dh) rec = { subscription, prefs: { results: true, today: true, qual: true }, reminders: {} };
+        if (!rec) return json({ error: "no subscription" }, 404);
+        rec.reminders = rec.reminders || {};
+        if (on === false) delete rec.reminders[matchId];
+        else rec.reminders[matchId] = { kickoff, leadMin: leadMin || 15, title, body };
+        rec.updated = Date.now();
+        await env.SNAPSHOT.put(PUSH_PREFIX + id, JSON.stringify(rec));
         return json({ ok: true });
       } catch (e) { return json({ error: e.message }, 400); }
     }

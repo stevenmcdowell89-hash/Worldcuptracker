@@ -11,6 +11,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 state.snap = JSON.parse(readFileSync(`${root}/web/data/latest.json`, "utf8"));
 state.colours = JSON.parse(readFileSync(`${root}/web/data/teamColours.json`, "utf8"));
 state.annexC = JSON.parse(readFileSync(`${root}/web/data/annexC.json`, "utf8"));
+state.tvUK = JSON.parse(readFileSync(`${root}/web/data/tvUK.json`, "utf8"));
 
 const q = (s = "") => ({ query: new URLSearchParams(s) });
 const cases = [
@@ -44,6 +45,11 @@ const run = (name, fn) => {
   } catch (e) { fail++; console.error(`FAIL ${name}: ${e.message}`); }
 };
 for (const [name, fn] of cases) run(name, fn);
+
+// Phase-3 surfaces: the morning view (forced on), and a match centre with the channel
+// + reminder controls. These must render against the mock without a browser.
+run("Matches(morning)", () => S.renderMatches(q("morning=1")));
+run("Match(channel+remind)", () => S.renderMatch({ arg: "f2", ...q() }));
 
 // Exercise the Matches feed under every phase (the §11 layouts must all render).
 const realPhase = state.snap.meta.phase;

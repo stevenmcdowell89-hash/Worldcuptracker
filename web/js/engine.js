@@ -485,4 +485,74 @@ export function stakesFor(snapshot, fixtureId) {
   return "dead";
 }
 
-export default { resolve, verdicts, plainEnglish, qualifyOutlook, recompute, thirdPlaceTable, qualifiersFrom, annexCSlots, resultFromWDL, tournamentPhase, spotsMoving, stakesFor, GROUP_LETTERS, QUALIFY_COUNT };
+// ── morning view: what last night's results changed (brief feature 2) ────────────
+// The morning view has only the current snapshot (no "previous" snapshot like the
+// cron). So we reconstruct the picture BEFORE a set of finished games by subtracting
+// them from the ledger, then diff each team's verdict against now.
+
+/** A concrete Result {id,group,home,away,hg,ag,kickoff} from a finished group match
+ *  (or null if it isn't a finished group game with a score). */
+export function resultOf(match) {
+  if (!match || !match.group) return null;
+  const hg = match.home?.score, ag = match.away?.score;
+  if (hg == null || ag == null) return null;
+  return { id: match.id, group: match.group, home: match.home.code, away: match.away.code, hg, ag, kickoff: match.kickoff };
+}
+
+/** Apply a result to a (cloned) table with sign +1 (add) or -1 (subtract/undo). */
+function applySigned(tables, res, sign) {
+  for (const g of Object.keys(tables)) {
+    const rows = tables[g];
+    const h = rows.find((r) => r.code === res.home);
+    const a = rows.find((r) => r.code === res.away);
+    if (!h || !a) continue;               // result belongs to a different group
+    h.P += sign; a.P += sign;
+    h.GF += sign * res.hg; h.GA += sign * res.ag;
+    a.GF += sign * res.ag; a.GA += sign * res.hg;
+    h.GD = h.GF - h.GA; a.GD = a.GF - a.GA;
+    if (res.hg > res.ag) { h.W += sign; h.Pts += 3 * sign; a.L += sign; }
+    else if (res.hg < res.ag) { a.W += sign; a.Pts += 3 * sign; h.L += sign; }
+    else { h.D += sign; a.D += sign; h.Pts += sign; a.Pts += sign; }
+    return;
+  }
+}
+
+/** The snapshot as it stood BEFORE `results`: subtract them from the group ledger and
+ *  put them back among the remaining fixtures. EXACT when the snapshot is a consistent
+ *  ledger (production); a close approximation on the hand-tuned mock. */
+export function withoutResults(snapshot, results = []) {
+  const tables = cloneGroups(snapshot.groups);
+  for (const res of results) applySigned(tables, res, -1);
+  for (const g of Object.keys(tables)) tables[g].sort(compareGroupRows);
+  const restored = results.map((r) => ({
+    id: r.id, group: r.group, home: r.home, away: r.away, kickoff: r.kickoff || "", affectsThird: true,
+  }));
+  return { ...snapshot, groups: tables, remainingFixtures: [...(snapshot.remainingFixtures || []), ...restored] };
+}
+
+/** Diff each team's qualification verdict with vs without `results` (e.g. last night's
+ *  finished games). Returns only the teams whose status flipped, most-consequential
+ *  first. Powers the morning view's "what last night changed". */
+export function verdictFlips(snapshot, results = []) {
+  if (!results.length) return [];
+  const before = withoutResults(snapshot, results);
+  const flips = [];
+  for (const g of GROUP_LETTERS) {
+    for (const r of (snapshot.groups[g] || [])) {
+      const was = qualifyOutlook(before, r.code).status;
+      const now = qualifyOutlook(snapshot, r.code).status;
+      if (was === now) continue;
+      let kind = null;
+      if (now === "qualified") kind = "qualified";
+      else if (now === "eliminated") kind = "eliminated";
+      else if (now === "in" && (was === "sweating" || was === "out")) kind = "intoCut";
+      else if ((was === "in" || was === "qualified") && (now === "sweating" || now === "out")) kind = "outOfCut";
+      if (kind) flips.push({ code: r.code, group: g, was, now, kind });
+    }
+  }
+  const order = { qualified: 0, eliminated: 1, intoCut: 2, outOfCut: 3 };
+  flips.sort((a, b) => order[a.kind] - order[b.kind]);
+  return flips;
+}
+
+export default { resolve, verdicts, plainEnglish, qualifyOutlook, recompute, thirdPlaceTable, qualifiersFrom, annexCSlots, resultFromWDL, tournamentPhase, spotsMoving, stakesFor, resultOf, withoutResults, verdictFlips, GROUP_LETTERS, QUALIFY_COUNT };

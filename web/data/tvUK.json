@@ -1,0 +1,35 @@
+{
+  "_note": "UK TV broadcaster map (brief feature 1). API-Football doesn't carry the UK broadcaster, so this is hand-kept from the BBC/ITV published schedules. GROUP games are keyed by fixture id; KNOCKOUT ties by slot (e.g. R32-M73) because the BBC/ITV split is by slot/time, not team. No mapping for a match => the app shows nothing (never guess). VERIFY the real fixture ids against the live API before deploying, exactly like the rest of the snapshot — the keys below are the demo/mock fixture ids so the feature is visible in local dev.",
+  "_source": "BBC Sport & ITV Sport published World Cup 2026 schedules",
+  "fixtures": {
+    "mA1": { "channel": "BBC One", "stream": "iPlayer" },
+    "mD1": { "channel": "ITV1", "stream": "ITVX" },
+    "mC0": { "channel": "BBC One", "stream": "iPlayer" },
+    "f2": { "channel": "ITV4", "stream": "ITVX" },
+    "f3": { "channel": "BBC Two", "stream": "iPlayer" },
+    "f4": { "channel": "ITV1", "stream": "ITVX" },
+    "f5": { "channel": "BBC One", "stream": "iPlayer" },
+    "f6": { "channel": "ITV1", "stream": "ITVX" },
+    "f8": { "channel": "ITV4", "stream": "ITVX" },
+    "f9": { "channel": "BBC One", "stream": "iPlayer" },
+    "f10": { "channel": "BBC Two", "stream": "iPlayer" },
+    "f11": { "channel": "ITV1", "stream": "ITVX" },
+    "f12": { "channel": "ITV4", "stream": "ITVX" },
+    "f13": { "channel": "BBC One", "stream": "iPlayer" },
+    "f14": { "channel": "BBC Two", "stream": "iPlayer" },
+    "f15": { "channel": "ITV1", "stream": "ITVX" },
+    "f16": { "channel": "ITV4", "stream": "ITVX" },
+    "f17": { "channel": "BBC One", "stream": "iPlayer" },
+    "f18": { "channel": "BBC Two", "stream": "iPlayer" },
+    "f19": { "channel": "ITV1", "stream": "ITVX" },
+    "f20": { "channel": "ITV4", "stream": "ITVX" },
+    "f21": { "channel": "BBC One", "stream": "iPlayer" },
+    "f22": { "channel": "BBC Two", "stream": "iPlayer" },
+    "f23": { "channel": "ITV1", "stream": "ITVX" },
+    "f24": { "channel": "BBC One", "stream": "iPlayer" }
+  },
+  "knockout": {
+    "R32-M73": { "channel": "BBC One", "stream": "iPlayer" },
+    "R32-M74": { "channel": "ITV1", "stream": "ITVX" }
+  }
+}

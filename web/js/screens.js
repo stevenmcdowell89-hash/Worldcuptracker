@@ -7,6 +7,9 @@ import { qualifyOutlook } from "./engine.js";
 import { raceContent } from "./race.js";
 import { bracketEmbed, renderBracket } from "./bracketview.js";
 import { notificationsCardHTML, mountNotifications } from "./notifications.js";
+import { tvTag, channelFor } from "./tv.js";
+import { bellButton, reminderControls } from "./reminders.js";
+import { morningView, shouldShowMorning } from "./morning.js";
 export { renderBracket };   // the Bracket screen now lives in bracketview.js (vertical Path/structural, §13)
 
 const S = () => state.snap;
@@ -65,8 +68,10 @@ function matchRow(m, opts = {}) {
     stageLabel ? `<span class="grp-pill">${stageLabel}</span>` : "",
     m.affectsCut && !st ? `<span class="stake decider">Affects the last-8 race</span>` : "",
     st ? `<span class="stake ${st.cls}">${st.lbl}</span>` : "",
+    tvTag(m),                                  // UK channel (brief feature 1); "" if unmapped
   ].filter(Boolean).join("");
-  const meta = tags ? `<div class="match-meta">${tags}</div>` : "";
+  const bell = bellButton(m);                  // reminder (brief feature 3); "" unless upcoming
+  const meta = (tags || bell) ? `<div class="match-meta">${tags}${bell}</div>` : "";
   return `<div class="match-card">
     <div class="match clickable" data-nav="match/${m.id}">
       <span class="side home"><span class="nm">${teamName(m.home.code)}</span>${flag(m.home.code)}</span>
@@ -108,6 +113,10 @@ export function renderMatches(ctx = {}) {
   // The Race view of the Matches tab reuses the canonical Race content (§11).
   if (view === "race" && raceRelevant) return toggle + raceContent();
 
+  // Morning overlay (brief feature 2): 06:00–13:00 UK the Matches tab leads with the
+  // morning layout, then the normal phase feed follows (additive — never hides games).
+  const morning = shouldShowMorning(ctx) ? morningView(ph) : "";
+
   const matches = S().matches || [];
   const live = matches.filter((m) => m.status === "live" || m.status === "ht");
   const upcoming = matches.filter((m) => m.status === "scheduled").sort((a, b) => (a.kickoff || "").localeCompare(b.kickoff || ""));
@@ -126,7 +135,7 @@ export function renderMatches(ctx = {}) {
   // ── PRE: countdown hero + clubs nudge above the opening fixtures ──
   if (ph === "pre") {
     const byDay = upcomingByDay(upcoming);
-    return `${stale}${preHero(upcoming)}${resultsSec}${byDay.map(daySec).join("")}${foot}`;
+    return `${morning}${stale}${preHero(upcoming)}${resultsSec}${byDay.map(daySec).join("")}${foot}`;
   }
 
   // ── GROUP FINAL: interleave each group's table beneath that group's final games ──
@@ -139,13 +148,13 @@ export function renderMatches(ctx = {}) {
         ? `<div class="block embed-table">${groupTableHTML(g)}</div>` : "";
       return `<div class="day-label">Group ${g} · final games</div><div class="section">${fixtures}</div>${table}`;
     }).join("");
-    return `${toggle}${head}${compactRaceCard(true)}${groupBlocks}${foot}`;
+    return `${morning}${toggle}${head}${compactRaceCard(true)}${groupBlocks}${foot}`;
   }
 
   // ── KNOCKOUT: KO fixtures lead, then the bracket embedded inline (§11/§13) ──
   if (ph === "knockout") {
     const byDay = upcomingByDay(upcoming);
-    return `${head}${byDay.map(daySec).join("")}${bracketEmbed(S(), state.annexC)}${foot}`;
+    return `${morning}${head}${byDay.map(daySec).join("")}${bracketEmbed(S(), state.annexC)}${foot}`;
   }
 
   // ── GROUP (everyday): feed with the race card embedded once it has meaning ──
@@ -153,7 +162,7 @@ export function renderMatches(ctx = {}) {
   const started = S().meta?.started !== false && (S().thirdPlaceRace || []).some((t) => t.Pts > 0);
   const firstDay = byDay.slice(0, 1).map(daySec).join("");
   const restDays = byDay.slice(1).map(daySec).join("");
-  return `${toggle}${head}${firstDay}${started ? compactRaceCard() : ""}${restDays}${foot}`;
+  return `${morning}${toggle}${head}${firstDay}${started ? compactRaceCard() : ""}${restDays}${foot}`;
 }
 
 function upcomingByDay(upcoming) {
@@ -349,6 +358,12 @@ export function renderMatch(ctx) {
   const oneLiner = m.progressionLine
     ? `<div class="oneliner"><span class="tick"></span><p>${m.progressionLine}</p></div>` : "";
 
+  // Where to watch (brief feature 1) — channel + stream on the detail screen — and the
+  // per-match reminder controls (brief feature 3). Both only when relevant.
+  const ch = channelFor(m);
+  const watchLine = ch ? `<div class="watch-line"><span class="tvtag big">📺 ${ch.channel}${ch.stream ? ` · ${ch.stream}` : ""}</span></div>` : "";
+  const remind = reminderControls(m);
+
   // Commentary is a permanent tab like the others (it shows an empty state when there's
   // nothing yet, rather than appearing/disappearing). It leads while the match is live.
   const tabs = ["commentary", "facts", "lineup", "stats"];
@@ -366,7 +381,7 @@ export function renderMatch(ctx) {
   else if (cur === "group" && m.group) body = `<div class="sec-head"><h2>Group ${m.group}</h2></div><div class="block">${groupTableHTML(m.group, [m.home.code, m.away.code])}</div>`;
   else body = matchStats(m);
 
-  return { title: "Match", html: hero + oneLiner + tabBar + body };
+  return { title: "Match", html: hero + oneLiner + watchLine + remind + tabBar + body };
 }
 
 // Live minute-by-minute commentary (The Guardian). Newest first; key moments flagged.

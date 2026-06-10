@@ -4,6 +4,7 @@
 import { loadAll, state, countdown } from "./data.js";
 import * as S from "./screens.js";
 import { registerServiceWorker } from "./notifications.js";
+import * as R from "./reminders.js";
 
 const TABS = [
   { id: "matches", label: "Matches", ico: "⚽" },
@@ -104,6 +105,17 @@ function render(opts = {}) {
 // ── global interactions ──
 let navDir = 1;   // 1 = forward (slide in from right), -1 = back (from left)
 document.addEventListener("click", (e) => {
+  // Reminder bell / calendar — handled before nav, since the bell can sit inside a
+  // tappable (data-nav) row and must not also navigate (brief feature 3).
+  const bell = e.target.closest("[data-reminder]");
+  if (bell) {
+    const r = R.toggle(bell.dataset.reminder);
+    bell.classList.toggle("on", r.set); bell.setAttribute("aria-pressed", String(r.set));
+    toast(r.set ? "Reminder set · 15 min before kickoff" : "Reminder removed");
+    return;
+  }
+  const cal = e.target.closest("[data-ics]");
+  if (cal) { R.downloadIcs(cal.dataset.ics); toast("Calendar event downloaded"); return; }
   const back = e.target.closest("[data-back]");
   if (back) { navDir = -1; history.length > 1 ? history.back() : navigate("matches"); return; }
   const nav = e.target.closest("[data-nav]");
@@ -131,6 +143,8 @@ async function boot() {
     return;
   }
   render();
+  R.rearmAll();        // re-arm in-page reminder timers for still-future games (feature 3)
+  R.syncAll();         // push any locally-set reminders up if this device has a subscription
   lastUpdated = state.snap?.meta?.updated;
   bootVersion = await fetchVersion();   // the deployed build this page loaded with
 

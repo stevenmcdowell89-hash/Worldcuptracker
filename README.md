@@ -84,6 +84,29 @@ Matches feed without ever removing a fixture (§1a rule 1):
   aes128gcm) is in `worker/push.js`, validated by a round-trip test (`scripts/push.test.js`).
   Inert until VAPID keys are set — generate with `npm run gen:vapid` (see `wrangler.toml`).
 
+## Phase 3 additions (channel · morning view · per-match reminder)
+
+Three further additions, all additive, composed from the snapshot, no accounts:
+
+- **Channel — where to watch.** A small UK-TV tag on the match row and the match centre
+  (`web/js/tv.js`). API-Football doesn't carry the UK broadcaster, so it's a hand-kept
+  static map at `web/data/tvUK.json`: group games keyed by **fixture id**, knockout ties
+  by **slot** (`R32-M73`). No mapping ⇒ show nothing (never guess). The keys in the file
+  are the **mock** fixture ids so it's visible in dev — **VERIFY the real fixture ids**
+  against the live API before deploying, like the rest of the snapshot.
+- **Morning view.** 06:00–13:00 UK the Matches tab leads with a morning layout
+  (`web/js/morning.js`), then reverts to the normal feed: last night's results + the
+  engine **verdict flips** they caused (`withoutResults`/`verdictFlips`), today's full
+  slate (kickoff · channel · stakes), and plain-English "what's at stake today". The
+  last-night/today selection is shared with the push digests (`web/js/digest.js`) — one
+  source, two surfaces. Force it for testing/demo with `#/matches?morning=1`.
+- **Per-match reminder.** A bell on any upcoming fixture row and in the match centre
+  (`web/js/reminders.js`), per-device via `localStorage`. **Push (primary)** piggybacks
+  the notification system above: the reminder rides on this device's anonymous
+  push-subscription record and the Worker cron (`sendDueReminders`) fires it ~15 min
+  before kickoff (inert until VAPID keys are set). **Calendar `.ics` (secondary)** is
+  generated client-side and works anywhere push doesn't (notably iOS).
+
 ## Status / honesty notes (see brief §8)
 
 - **No xG / xA anywhere.** Deliberate.

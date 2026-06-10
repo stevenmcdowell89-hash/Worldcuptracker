@@ -187,3 +187,22 @@ export interface ResolveOutput {
   qualifiers: string[];                 // 8 codes
   annexCSlots: Record<string, string>;  // groupLetter -> R32 slot id
 }
+
+// --- Static UK TV map (web/data/tvUK.json) — channel feature (phase 3, feature 1) ---
+// Not part of the snapshot: a hand-kept static file from the BBC/ITV schedules.
+export interface TVChannel { channel: string; stream?: string; }   // e.g. "BBC One" / "iPlayer"
+export interface TVUK {
+  fixtures: Record<string, TVChannel>;   // key = group-game fixture id
+  knockout: Record<string, TVChannel>;   // key = slot, e.g. "R32-M73"
+}
+
+// --- Push device record (KV "push:<sha256(endpoint)>") — phase 3, feature 3 ---
+// The push subscription endpoint is the anonymous per-device key (no accounts). Prefs
+// and per-match reminders ride along with it.
+export interface PushReminder { kickoff: string; leadMin: number; title?: string; body?: string; sentAt?: number; }
+export interface PushRecord {
+  subscription: unknown;                 // the browser PushSubscription JSON
+  prefs: { results: boolean; today: boolean; qual: boolean };
+  reminders?: Record<string, PushReminder>;   // key = match id
+  updated: number;
+}

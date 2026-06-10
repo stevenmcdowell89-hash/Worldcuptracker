@@ -5,6 +5,7 @@ export const state = {
   snap: null,        // the snapshot
   colours: {},       // teamColours.json
   annexC: null,      // annexC.json
+  tvUK: null,        // tvUK.json — UK broadcaster map (brief feature 1)
   scenario: new Map(),  // fixtureId -> { outcome:'W'|'D'|'L', hg?, ag?, exact }
 };
 
@@ -13,6 +14,7 @@ const j = (r) => { if (!r.ok) throw new Error(r.status); return r.json(); };
 export async function loadAll() {
   // last-good behaviour: if the snapshot fetch fails we still try to render
   // whatever we have; the Worker guarantees a last-good snapshot in production.
+  // The TV map is a small static file (loaded once; it changes rarely).
   const [snap, colours, annexC] = await Promise.all([
     fetch("data/latest.json", { cache: "no-store" }).then(j),
     fetch("data/teamColours.json").then(j).catch(() => ({})),
@@ -21,6 +23,7 @@ export async function loadAll() {
   state.snap = snap;
   state.colours = colours;
   state.annexC = annexC;
+  if (!state.tvUK) state.tvUK = await fetch("data/tvUK.json").then(j).catch(() => null);
   return state;
 }
 
