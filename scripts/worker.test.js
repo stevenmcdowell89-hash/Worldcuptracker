@@ -103,7 +103,7 @@ function cannedFetch(url) {
 
 let snap;
 test("setup: drive buildSnapshot with a mocked API", async () => {
-  globalThis.fetch = async (url) => ({ ok: true, status: 200, json: async () => ({ response: cannedFetch(url) }) });
+  globalThis.fetch = async (url) => ({ ok: true, status: 200, headers: { get: () => null }, json: async () => ({ response: cannedFetch(url) }) });
   snap = await buildSnapshot({ APIFOOTBALL_KEY: "test", WC_LEAGUE_ID: "1", WC_SEASON: "2026" }, null, false);
   assert.ok(snap);
 });
@@ -184,7 +184,7 @@ test("bracket built with full structure", () => {
 });
 
 test("tight subrequest budget degrades gracefully (no crash)", async () => {
-  globalThis.fetch = async (url) => ({ ok: true, status: 200, json: async () => ({ response: cannedFetch(url) }) });
+  globalThis.fetch = async (url) => ({ ok: true, status: 200, headers: { get: () => null }, json: async () => ({ response: cannedFetch(url) }) });
   const s = await buildSnapshot({ APIFOOTBALL_KEY: "t", WC_LEAGUE_ID: "1", WC_SEASON: "2026", SUBREQUEST_BUDGET: "5" }, null, false);
   assert.equal(Object.keys(s.groups).length, 2);          // core still works under a tiny budget
   assert.ok(typeof s.meta.squadCount === "number");       // no throw; just fewer enriched

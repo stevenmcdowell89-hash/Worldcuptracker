@@ -29,10 +29,12 @@ const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
 // (squads persist once fetched). Reset at the start of each buildSnapshot.
 let SUBREQ = 0, SUBREQ_CAP = 45, RATE_LIMITED = false;
 const budgetLeft = () => (RATE_LIMITED ? 0 : SUBREQ_CAP - SUBREQ);   // stop enrichment once throttled
+// Last-seen rate-limit headers (api-sports): per-minute + per-day. Drives throttling.
+let RL = { min: null, minLimit: null, day: null, dayLimit: null };
 
 // Run an async fn over items with bounded concurrency (keeps wall-clock low without
 // firing all subrequests at once). Used for the heavy per-team / per-player loops.
-async function pmap(items, fn, concurrency = 5) {
+async function pmap(items, fn, concurrency = 3) {
   let i = 0;
   const workers = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
     while (i < items.length) { const idx = i++; await fn(items[idx]); }
@@ -46,9 +48,18 @@ async function pmap(items, fn, concurrency = 5) {
 // each minute) so a burst of live calls degrades gracefully instead of throwing.
 async function apiGet(env, path, params = {}, attempt = 0) {
   if (attempt === 0) SUBREQ++;
+  // Self-throttle: if we're about to exhaust the per-minute allowance, wait for the
+  // window to roll over. Keeps a full poll under the plan's per-minute cap.
+  if (RL.min != null && RL.min <= 1) { await sleep(4000); RL.min = RL.minLimit ?? 5; }
   const url = new URL(API + path);
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
   const r = await fetch(url, { headers: { "x-apisports-key": env.APIFOOTBALL_KEY } });
+  // capture rate-limit headers (case-insensitive)
+  const h = (k) => { const v = r.headers.get(k); return v == null ? null : Number(v); };
+  const min = h("x-ratelimit-remaining"), minL = h("x-ratelimit-limit");
+  const day = h("x-ratelimit-requests-remaining"), dayL = h("x-ratelimit-requests-limit");
+  if (min != null) RL.min = min; if (minL != null) RL.minLimit = minL;
+  if (day != null) RL.day = day; if (dayL != null) RL.dayLimit = dayL;
   if (!r.ok) {
     if (r.status === 429 && attempt < 3) { await sleep(6500); return apiGet(env, path, params, attempt + 1); }
     throw new Error(`API-Football ${path} → ${r.status}`);
@@ -461,7 +472,7 @@ function curatedPlayerIds({ scorers, assists, discipline, prev, matches }) {
 // ── deep player drill-in: stats per competition + bio + transfers + trophies ──
 // Profiles/transfers/trophies are static-ish → fetched once per player and persisted.
 // Capped per poll so cost stays bounded; the set fills in over successive polls.
-async function enrichPlayers(env, base, ids, players, cfg, dir, cap = 60) {
+async function enrichPlayers(env, base, ids, players, cfg, dir, cap = 18) {   // small batch/poll; fills over polls
   const todo = [...ids].filter((id) => !players[id]?._enriched)
     .slice(0, Math.min(cap, Math.floor(Math.max(0, budgetLeft() - 6) / 3)));   // ~3 subrequests each
   await pmap(todo, async (id) => {
@@ -595,7 +606,18 @@ export default {
       const liveMs = (parseInt(env.LIVE_INTERVAL_SEC || "75", 10)) * 1e3;
       const live = inLiveWindow(prev);
 
-      const dueFull = now - meta.lastFull >= baselineMs;
+      // Enrichment backlog → catch up every few minutes until squads + Watch-player
+      // profiles are all loaded, then fall back to the 6h baseline.
+      const backlog = (() => {
+        if (!prev || !(prev.meta?.squadCount > 0)) return true;
+        const players = prev.players || {};
+        for (const club of Object.values(prev.clubWatch || {}))
+          for (const p of club.players || []) if (!players[String(p.playerId)]?._enriched) return true;
+        return false;
+      })();
+      const effectiveBaseline = backlog ? 4 * 60e3 : baselineMs;   // 4 min while catching up
+
+      const dueFull = now - meta.lastFull >= effectiveBaseline;
       const dueLive = live && now - meta.lastLive >= liveMs;
       if (!dueFull && !dueLive) return; // cheap skip — no API calls
 
@@ -637,8 +659,11 @@ export default {
         env.SNAPSHOT.get("cron-status", "json"), env.SNAPSHOT.get("refresh-status", "json"), env.SNAPSHOT.get(META_KEY, "json"),
       ]);
       let quota = null;
-      try { const s = await apiGet(env, "/status", {}); const o = Array.isArray(s) ? s[0] : s; quota = { plan: o?.subscription?.plan, requestsToday: o?.requests?.current, dailyLimit: o?.requests?.limit_day }; }
-      catch (e) { quota = { error: e.message }; }
+      try {
+        const s = await apiGet(env, "/status", {}); const o = Array.isArray(s) ? s[0] : s;
+        quota = { plan: o?.subscription?.plan, requestsToday: o?.requests?.current, dailyLimit: o?.requests?.limit_day,
+          perMinuteLimit: RL.minLimit, perMinuteRemaining: RL.min };
+      } catch (e) { quota = { error: e.message, perMinuteLimit: RL.minLimit }; }
       const ago = (t) => (t ? Math.round((Date.now() - new Date(t).getTime()) / 60000) + "m ago" : "never");
       return new Response(JSON.stringify({
         now: new Date().toISOString(), quota,
