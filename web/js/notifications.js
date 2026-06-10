@@ -42,14 +42,35 @@ async function currentSubscription() {
   return reg.pushManager.getSubscription();
 }
 
-async function enablePush(prefs) {
+// pushManager.subscribe() against FCM intermittently rejects with an AbortError
+// ("Registration failed - push service error") even when everything is configured
+// correctly. It's transient, so retry with backoff behind the single tap rather than
+// asking the user to keep pressing. Permission/state errors are permanent — bail.
+async function subscribeWithRetry(reg, key, attempts = 4) {
+  const appKey = urlB64ToBytes(key);
+  let lastErr;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: appKey });
+    } catch (e) {
+      lastErr = e;
+      if (e && (e.name === "NotAllowedError" || e.name === "InvalidStateError")) throw e;
+      if (i < attempts - 1) await new Promise((r) => setTimeout(r, 600 * 2 ** i));   // 0.6s, 1.2s, 2.4s
+    }
+  }
+  // Friendlier message than the raw browser string once we've genuinely given up.
+  throw new Error("Couldn't reach the notification service. Check Google Play Services is up to date, then try again.");
+}
+
+async function enablePush(prefs, onStatus) {
   const perm = await Notification.requestPermission();
-  if (perm !== "granted") throw new Error("Permission denied");
+  if (perm !== "granted") throw new Error("Notifications are blocked — allow them in the browser prompt, then try again.");
   const key = await serverVapidKey();
   if (!key) throw new Error("Push isn't configured on the server");
+  if (onStatus) onStatus("Setting up…");
   const reg = await navigator.serviceWorker.ready;
   let sub = await reg.pushManager.getSubscription();
-  if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToBytes(key) });
+  if (!sub) sub = await subscribeWithRetry(reg, key);
   await fetch("/push/subscribe", {
     method: "POST", headers: { "content-type": "application/json" },
     body: JSON.stringify({ subscription: sub.toJSON(), prefs }),
@@ -132,9 +153,10 @@ export async function mountNotifications(root) {
 
   toggleBtn.addEventListener("click", async () => {
     toggleBtn.disabled = true;
+    const setStatus = (t) => { statusEl.textContent = t; };
     try {
       if (on) { await disablePush(); on = false; }
-      else { await enablePush(loadPrefs()); on = true; }
+      else { toggleBtn.textContent = "Setting up…"; await enablePush(loadPrefs(), setStatus); on = true; }
     } catch (e) {
       window.dispatchEvent(new CustomEvent("wc-toast", { detail: e.message || "Couldn't change notifications" }));
     } finally { toggleBtn.disabled = false; paint(); }
