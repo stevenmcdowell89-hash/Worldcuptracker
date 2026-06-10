@@ -459,3 +459,15 @@ a { color:inherit; text-decoration:none; }
 .tabs button.active::after { background:linear-gradient(90deg,#4B45E0,#3F7BF6); }
 .datetabs button.active { background:linear-gradient(120deg,#4B45E0,#3F7BF6); }
 .go[data-nav], .sec-head .link { background:linear-gradient(90deg,#4B45E0,#3F7BF6); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+
+/* ════ refined light top bar (replaces the solid colour slab) ════ */
+.appbar.top { background:var(--card); box-shadow:var(--shadow-bar); }
+.appbar.top .iconbtn { color:var(--brand); }
+.appbar.top .iconbtn:active { background:var(--raised); }
+.appbar .logo { display:inline-flex; align-items:center; gap:7px; }
+.appbar .logo .wc { color:#1B1E29; letter-spacing:-.01em; }
+.appbar .logo .yr {
+  color:#fff; background:linear-gradient(135deg,#4B45E0,#3F7BF6);
+  border-radius:9px; padding:1px 8px; font-size:16px; letter-spacing:0;
+  box-shadow:0 3px 10px rgba(63,75,224,.34);
+}

@@ -55,9 +55,11 @@ function renderAppbar(route, ctx) {
   $appbar.classList.toggle("top", !!route.top);   // top-level bars get the brand gradient
   if (route.top) {
     $appbar.innerHTML = `
-      <span class="logo">WC<span class="dot">26</span></span>
+      <span class="logo"><span class="wc">WC</span><span class="yr">26</span></span>
       <span class="spacer"></span>
-      <button class="iconbtn" data-nav="stats" aria-label="Stats">📈</button>`;
+      <button class="iconbtn" data-nav="stats" aria-label="Stats">
+        <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V11M12 20V4M19 20v-6"/></svg>
+      </button>`;
   } else {
     $appbar.innerHTML = `
       <button class="iconbtn back" data-back aria-label="Back">‹</button>
