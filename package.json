@@ -10,6 +10,7 @@
     "gen:mock": "node scripts/gen-mock.js",
     "gen:annexc": "node scripts/gen-annexc.js",
     "gen:vapid": "node scripts/gen-vapid.js",
+    "gen:icon": "node scripts/gen-icon.js",
     "dev:web": "python3 -m http.server 8788 --directory web",
     "dev:worker": "wrangler dev",
     "deploy": "wrangler deploy"

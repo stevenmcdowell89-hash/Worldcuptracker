@@ -1,5 +1,32 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#4B45E0"/>
-  <text x="256" y="290" font-family="'Bricolage Grotesque', system-ui, sans-serif" font-size="190" font-weight="800" fill="#FFFFFF" text-anchor="middle">WC</text>
-  <text x="256" y="410" font-family="'Bricolage Grotesque', system-ui, sans-serif" font-size="120" font-weight="800" fill="#C9C6FF" text-anchor="middle">26</text>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4B45E0"/><stop offset="1" stop-color="#322CB0"/>
+    </linearGradient>
+    <radialGradient id="shine" cx="0.38" cy="0.32" r="0.75">
+      <stop offset="0" stop-color="#FFFFFF"/><stop offset="0.7" stop-color="#FFFFFF"/><stop offset="1" stop-color="#E8E9FB"/>
+    </radialGradient>
+    <clipPath id="ball"><circle cx="256" cy="256" r="140"/></clipPath>
+  </defs>
+
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+
+  <!-- soft drop shadow under the ball -->
+  <ellipse cx="256" cy="406" rx="120" ry="26" fill="#1A1670" opacity="0.35"/>
+
+  <!-- ball -->
+  <circle cx="256" cy="256" r="140" fill="url(#shine)"/>
+  <g clip-path="url(#ball)" fill="#2A2597">
+    <polygon points="256.0,198.0 311.2,238.1 290.1,302.9 221.9,302.9 200.8,238.1"/>
+    <polygon points="256.0,149.0 224.6,126.2 236.6,89.3 275.4,89.3 287.4,126.2"/>
+    <polygon points="357.8,222.9 369.8,186.0 408.5,186.0 420.5,222.9 389.1,245.7"/>
+    <polygon points="318.9,342.6 357.7,342.6 369.7,379.5 338.3,402.3 306.9,379.5"/>
+    <polygon points="193.1,342.6 205.1,379.5 173.7,402.3 142.3,379.5 154.3,342.6"/>
+    <polygon points="154.2,222.9 122.9,245.7 91.5,222.9 103.5,186.0 142.2,186.0"/>
+  </g>
+  <g clip-path="url(#ball)" fill="none" stroke="#2A2597" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 256.0,198.0 L 256.0,139.1 M 311.2,238.1 L 367.2,219.9 M 290.1,302.9 L 324.7,350.6 M 221.9,302.9 L 187.3,350.6 M 200.8,238.1 L 144.8,219.9"/>
+    <path d="M 256.0,116.0 L 389.1,212.7 L 338.3,369.3 L 173.7,369.3 L 122.9,212.7 Z" stroke-width="6"/>
+  </g>
+  <circle cx="256" cy="256" r="140" fill="none" stroke="#1A1670" stroke-opacity="0.12" stroke-width="2"/>
 </svg>
