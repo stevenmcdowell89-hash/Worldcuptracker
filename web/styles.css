@@ -314,3 +314,67 @@ a { color:inherit; text-decoration:none; }
 .muted { color:var(--muted); } .faint { color:var(--faint); }
 .center { text-align:center; }
 .updated { text-align:center; font-size:11px; color:var(--faint); padding:14px; font-weight:600; }
+
+/* ── Phase 2 (Part B): phase evolution, flash, stakes, vertical bracket ── */
+
+/* Matches | Race split toggle + the Groups Race "flash" (§11/§12). Indigo stays
+   chrome; the live race uses the amber "sweating"/jeopardy colour only. */
+.tabs.split button { font-size:14.5px; }
+.livedot { display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--live); margin-right:5px; vertical-align:middle; animation:pulse 1.3s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{ opacity:1; transform:scale(1);} 50%{ opacity:.35; transform:scale(.78);} }
+.livebadge { font-size:9px; font-weight:800; letter-spacing:.06em; color:#fff; background:var(--live); padding:1px 5px; border-radius:5px; vertical-align:middle; }
+.tabs button.flash { color:var(--sweating); }
+.tabs button.flash::after { content:""; position:absolute; left:14%; right:14%; bottom:-1px; height:2.5px; background:var(--sweating); border-radius:2px; box-shadow:0 0 8px rgba(243,155,27,.9); animation:glow 1.4s ease-in-out infinite; }
+@keyframes glow { 0%,100%{ opacity:.55;} 50%{ opacity:1;} }
+.flashbar { margin:0; padding:8px 16px; background:rgba(243,155,27,.14); color:#8a5a00; font-size:12px; font-weight:700; display:flex; align-items:center; gap:8px; border-bottom:1px solid rgba(243,155,27,.25); }
+
+/* stakes tags on fixture rows (§15) */
+.match-meta { display:flex; gap:6px; flex-wrap:wrap; }
+.stake { font-size:10px; font-weight:800; letter-spacing:.02em; padding:2px 8px; border-radius:8px; }
+.stake.decider { color:var(--out); background:rgba(226,71,90,.12); }
+.stake.seeding { color:var(--muted); background:var(--raised); }
+.stake.dead { color:var(--faint); background:transparent; box-shadow:inset 0 0 0 1px var(--divider); }
+
+/* pre-tournament hero (§11) */
+.prehero { margin:10px; padding:20px 16px 16px; border-radius:var(--radius); background:linear-gradient(150deg,#4B45E0,#2b2796); color:#fff; text-align:center; }
+.pre-kicker { font-size:11px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; opacity:.8; }
+.pre-count { font-family:var(--display); font-weight:800; font-size:42px; line-height:1.05; margin:6px 0 2px; }
+.pre-fix { font-size:13px; font-weight:600; opacity:.92; }
+.pre-nudge { margin-top:14px; background:rgba(255,255,255,.14); border-radius:12px; padding:11px 13px; font-size:13px; font-weight:600; }
+.pre-nudge b { font-family:var(--display); font-weight:800; }
+
+/* prominent (groupFinal) race card + status chips inside the cut list */
+.racecard.prominent { box-shadow:0 0 0 2px rgba(243,155,27,.35); }
+.racecard.prominent .head h3 { color:var(--sweating); display:flex; align-items:center; gap:7px; }
+.race-sub { padding:0 15px 8px; font-size:12px; font-weight:600; color:#8a5a00; }
+.cutrow { grid-template-columns:22px 24px 1fr auto auto auto; }
+.cutrow .chip { padding:2px 7px; font-size:10px; }
+.embed-table { margin:0 10px 12px; border-radius:var(--radius); overflow:hidden; }
+
+/* ── vertical bracket: Path + structural (§13), no horizontal scroll ── */
+.bx-team.won .nm { font-weight:800; }
+.bx-team.won { box-shadow:inset 3px 0 0 var(--through); }
+.bx-team.lost { opacity:.5; }
+.bx-team.live { box-shadow:inset 3px 0 0 var(--live); }
+.bx-live { float:right; font-size:10px; font-weight:800; color:var(--live); }
+.bx-ft { float:right; font-size:10px; font-weight:700; color:var(--faint); }
+.bx.here { box-shadow:0 0 0 2px var(--brand); }
+
+.bx-picker { display:flex; gap:7px; overflow-x:auto; padding:10px 12px; scrollbar-width:none; }
+.bx-picker::-webkit-scrollbar { display:none; }
+.chip-btn { flex:none; display:inline-flex; align-items:center; gap:5px; padding:6px 11px; border-radius:var(--radius-pill); background:var(--card); border:1px solid var(--divider); font-size:13px; font-weight:700; color:var(--muted); }
+.chip-btn .flag { width:18px; height:13px; border-radius:2px; }
+.chip-btn.on { color:#fff; background:var(--brand); border-color:var(--brand); }
+
+.bx-path { padding:4px 12px 4px; }
+.spine-node { position:relative; padding-left:20px; padding-bottom:10px; }
+.spine-rail { position:absolute; left:6px; top:0; bottom:0; width:2px; background:var(--divider); }
+.spine-node:first-child .spine-rail { top:14px; }
+.spine-node:last-child .spine-rail { bottom:auto; height:14px; }
+.spine-node::before { content:""; position:absolute; left:1px; top:11px; width:12px; height:12px; border-radius:50%; background:var(--through); box-shadow:0 0 0 3px var(--page); }
+.spine-node.here::before { background:var(--brand); }
+.spine-node.future::before { background:var(--faint); }
+.spine-node.future .bx { border-style:dashed; opacity:.85; }
+
+.bxwrap.connected .bx { border-left:3px solid var(--divider); }
+.bxwrap.embed { padding-bottom:10px; }

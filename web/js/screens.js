@@ -5,23 +5,40 @@
 import { state, colour, teamName, player, flag, statusChip, fmtTime, fmtDay, countdown, gd, timeAgo } from "./data.js";
 import { qualifyOutlook } from "./engine.js";
 import { raceContent } from "./race.js";
+import { bracketEmbed, renderBracket } from "./bracketview.js";
+export { renderBracket };   // the Bracket screen now lives in bracketview.js (vertical Path/structural, §13)
 
 const S = () => state.snap;
+// The phase flag (brief §11). Falls back to a sensible value if an old snapshot
+// predates it, so the frontend still works offline against either.
+function phase() {
+  const m = S().meta || {};
+  if (m.phase) return m.phase;
+  if (m.started === false) return "pre";
+  if (m.groupStageComplete) return "knockout";
+  return "group";
+}
 
 // ── shared bits ──
-function compactRaceCard() {
+function compactRaceCard(prominent = false) {
   const race = S().thirdPlaceRace || [];
-  const window = race.slice(5, 9); // ranks 6–9, straddling the cut at 8 (compact)
+  const window = race.slice(prominent ? 4 : 5, prominent ? 10 : 9); // wider window when it's the peak
+  const moving = S().meta?.spotsMoving ?? race.filter((t) => t.status === "sweating").length;
   const rows = window.map((t) => {
     const below = t.rank > 8;
     return `<div class="cutrow ${below ? "below" : ""} clickable" data-nav="team/${t.code}">
       <span class="pos">${t.rank}</span>${flag(t.code)}
       <span class="nm">${teamName(t.code)} <span class="grp">${t.group}</span></span>
+      ${statusChip(t.status, false)}
       <span class="pts">${t.Pts}</span><span class="gd">${gd(t.GD)}</span>
     </div>${t.rank === 8 ? cutLineHTML() : ""}`;
   }).join("");
-  return `<div class="racecard">
-    <div class="head"><h3>Third-place race <span class="faint" style="font-weight:600;text-transform:none">· 8 of 12 reach R32</span></h3><span class="go" data-nav="groups?t=race">Full table ›</span></div>
+  const head = prominent
+    ? `<h3><span class="livedot"></span>Race for the last 8 — LIVE</h3><span class="go" data-nav="groups?t=race">Full table ›</span>`
+    : `<h3>Third-place race <span class="faint" style="font-weight:600;text-transform:none">· 8 of 12 reach R32</span></h3><span class="go" data-nav="groups?t=race">Full table ›</span>`;
+  return `<div class="racecard ${prominent ? "prominent" : ""}">
+    <div class="head">${head}</div>
+    ${prominent && moving ? `<div class="race-sub">The cut line is live — ${moving} spot${moving === 1 ? "" : "s"} still moving.</div>` : ""}
     <div class="cutlist">${rows}</div>
   </div>`;
 }
@@ -29,7 +46,12 @@ function cutLineHTML() {
   return `<div class="cutline"><span class="lbl">cut</span><span class="ln"></span><span class="lbl">8th</span></div>`;
 }
 
-function matchRow(m) {
+const STAKE = {
+  decider: { cls: "decider", lbl: "Decider" },
+  seeding: { cls: "seeding", lbl: "Seeding" },
+  dead: { cls: "dead", lbl: "Dead rubber" },
+};
+function matchRow(m, opts = {}) {
   const live = m.status === "live" || m.status === "ht";
   const ft = m.status === "ft";
   let mid;
@@ -37,7 +59,13 @@ function matchRow(m) {
   else if (ft) mid = `<span class="score">${m.home.score}–${m.away.score}</span><span class="ko">FT</span>`;
   else mid = `<span class="ko">${fmtTime(m.kickoff)}</span>`;
   const stageLabel = m.group ? `Group ${m.group}` : (m.stage && m.stage !== "Group Stage" ? m.stage : "");
-  const meta = stageLabel ? `<div class="match-meta"><span class="grp-pill">${stageLabel}</span></div>` : "";
+  const st = opts.showStakes && m.status === "scheduled" && m.stakes && STAKE[m.stakes];
+  const tags = [
+    stageLabel ? `<span class="grp-pill">${stageLabel}</span>` : "",
+    m.affectsCut && !st ? `<span class="stake decider">Affects the last-8 race</span>` : "",
+    st ? `<span class="stake ${st.cls}">${st.lbl}</span>` : "",
+  ].filter(Boolean).join("");
+  const meta = tags ? `<div class="match-meta">${tags}</div>` : "";
   return `<div class="match-card">
     <div class="match clickable" data-nav="match/${m.id}">
       <span class="side home"><span class="nm">${teamName(m.home.code)}</span>${flag(m.home.code)}</span>
@@ -46,37 +74,100 @@ function matchRow(m) {
     </div>${meta}</div>`;
 }
 
-// ── Matches (home spine) ──
-export function renderMatches() {
+// The Matches | Race-for-R32 top split (§11). Underlined two-tab style (NOT a pill).
+// The right side flashes when the race is live (groupFinal).
+function matchesToggle(view) {
+  const live = phase() === "groupFinal";
+  const raceCls = (view === "race" ? "active " : "") + (live ? "flash" : "");
+  return `<div class="tabs split">
+    <button data-nav="matches" data-replace class="${view === "matches" ? "active" : ""}">Matches</button>
+    <button data-nav="matches?v=race" data-replace class="${raceCls}">
+      ${live ? '<span class="livedot"></span>' : ""}Race for R32${live ? ' <span class="livebadge">LIVE</span>' : ""}
+    </button></div>`;
+}
+
+// Pre-tournament hero: countdown to the opening match + a clubs-at-the-WC nudge (§11).
+function preHero(upcoming) {
+  const first = upcoming[0];
+  const cw = S().clubWatch || {};
+  const n = Object.values(cw).reduce((s, c) => s + (c.players?.length || 0), 0);
+  const nudge = n > 0
+    ? `<div class="pre-nudge clickable" data-nav="watch">⭐ <b>${n}</b> player${n === 1 ? "" : "s"} from your clubs are at the World Cup ›</div>`
+    : `<div class="pre-nudge clickable" data-nav="watch">⭐ Track your clubs' players across the tournament ›</div>`;
+  const cd = first ? `<div class="pre-count">${countdown(first.kickoff)}</div>
+      <div class="pre-fix">${teamName(first.home.code)} v ${teamName(first.away.code)} · ${fmtDay(first.kickoff)}</div>` : "";
+  return `<div class="prehero">
+    <div class="pre-kicker">2026 FIFA World Cup</div>
+    ${cd}
+    ${nudge}
+  </div>`;
+}
+
+// ── Matches (home spine) — accretes phase-relevant context inline (§11) ──
+export function renderMatches(ctx = {}) {
+  const view = ctx.query?.get("v") || "matches";
+  const ph = phase();
+  const raceRelevant = ph === "group" || ph === "groupFinal";
+  const toggle = raceRelevant ? matchesToggle(view) : "";
+  // The Race view of the Matches tab reuses the canonical Race content (§11).
+  if (view === "race" && raceRelevant) return toggle + raceContent();
+
   const matches = S().matches || [];
   const live = matches.filter((m) => m.status === "live" || m.status === "ht");
   const upcoming = matches.filter((m) => m.status === "scheduled").sort((a, b) => (a.kickoff || "").localeCompare(b.kickoff || ""));
   const finished = matches.filter((m) => m.status === "ft").sort((a, b) => (b.kickoff || "").localeCompare(a.kickoff || ""));
 
   const stale = S().meta?.stale ? `<div class="banner">⚠️ Showing the last good update — live data is briefly unavailable.</div>` : "";
-  const sec = (label, list) => list.length
-    ? `<div class="day-label">${label}</div><div class="section">${list.map(matchRow).join("")}</div>` : "";
+  const showStakes = ph === "group" || ph === "groupFinal";
+  const sec = (label, list, o) => list.length
+    ? `<div class="day-label">${label}</div><div class="section">${list.map((m) => matchRow(m, o)).join("")}</div>` : "";
 
-  // upcoming grouped by day so the long pre-tournament list stays navigable
-  const byDay = Object.entries(upcoming.reduce((acc, m) => {
+  const liveSec = sec(live.length ? "● Live" : "", live, { showStakes });
+  const resultsSec = finished.length ? sec("Latest results", finished.slice(0, 8)) : "";
+  const head = `${stale}${liveSec}${resultsSec}`;
+  const foot = `<div class="updated">Updated ${fmtTime(S().meta?.updated)} · ${S().meta?.stage}</div>`;
+
+  // ── PRE: countdown hero + clubs nudge above the opening fixtures ──
+  if (ph === "pre") {
+    const byDay = upcomingByDay(upcoming);
+    return `${stale}${preHero(upcoming)}${resultsSec}${byDay.map(daySec).join("")}${foot}`;
+  }
+
+  // ── GROUP FINAL: interleave each group's table beneath that group's final games ──
+  if (ph === "groupFinal") {
+    const byGroup = {};
+    for (const m of upcoming) (byGroup[m.group || "—"] = byGroup[m.group || "—"] || []).push(m);
+    const groupBlocks = Object.keys(byGroup).sort().map((g) => {
+      const fixtures = byGroup[g].map((m) => matchRow(m, { showStakes })).join("");
+      const table = S().groups?.[g]
+        ? `<div class="block embed-table">${groupTableHTML(g)}</div>` : "";
+      return `<div class="day-label">Group ${g} · final games</div><div class="section">${fixtures}</div>${table}`;
+    }).join("");
+    return `${toggle}${head}${compactRaceCard(true)}${groupBlocks}${foot}`;
+  }
+
+  // ── KNOCKOUT: KO fixtures lead, then the bracket embedded inline (§11/§13) ──
+  if (ph === "knockout") {
+    const byDay = upcomingByDay(upcoming);
+    return `${head}${byDay.map(daySec).join("")}${bracketEmbed(S(), state.annexC)}${foot}`;
+  }
+
+  // ── GROUP (everyday): feed with the race card embedded once it has meaning ──
+  const byDay = upcomingByDay(upcoming);
+  const started = S().meta?.started !== false && (S().thirdPlaceRace || []).some((t) => t.Pts > 0);
+  const firstDay = byDay.slice(0, 1).map(daySec).join("");
+  const restDays = byDay.slice(1).map(daySec).join("");
+  return `${toggle}${head}${firstDay}${started ? compactRaceCard() : ""}${restDays}${foot}`;
+}
+
+function upcomingByDay(upcoming) {
+  return Object.entries(upcoming.reduce((acc, m) => {
     const d = fmtDay(m.kickoff); (acc[d] = acc[d] || []).push(m); return acc;
   }, {}));
-  const daySec = ([day, list]) => `<div class="day-label">${day}</div><div class="section">${list.map(matchRow).join("")}</div>`;
-  // fixtures front and centre: the soonest day first, then the race hook, then the rest
-  const firstDay = byDay.slice(0, 1).map(daySec).join("");
-  const restDays = byDay.slice(1, 8).map(daySec).join("");
-
-  // The third-place race only means something once results exist; until then the
-  // group context on each fixture row is the useful information.
-  const started = S().meta?.started !== false && (S().thirdPlaceRace || []).some((t) => t.Pts > 0);
-  return `
-    ${stale}
-    ${sec(live.length ? "● Live" : "", live)}
-    ${finished.length ? sec("Latest results", finished.slice(0, 8)) : ""}
-    ${firstDay}
-    ${started ? compactRaceCard() : ""}
-    ${restDays}
-    <div class="updated">Updated ${fmtTime(S().meta?.updated)} · ${S().meta?.stage}</div>`;
+}
+function daySec([day, list]) {
+  const showStakes = phase() === "group" || phase() === "groupFinal";
+  return `<div class="day-label">${day}</div><div class="section">${list.map((m) => matchRow(m, { showStakes })).join("")}</div>`;
 }
 
 // ── More ──
@@ -127,13 +218,26 @@ function groupTableHTML(letter, highlight = []) {
 // group-stage concerns). The Race route deep-links straight to the Race sub-tab.
 export function renderGroups(ctx = {}) {
   const tab = ctx.forceTab || ctx.query?.get("t") || "tables";
+  // Phase-driven flash (§12): dormant in `group`, LIVE in `groupFinal`, hands off to
+  // the Bracket in `knockout`. Indigo stays chrome; the live race uses amber jeopardy.
+  const ph = phase();
+  const live = ph === "groupFinal";
+  const handoff = ph === "knockout";
+  const raceCls = (tab === "race" ? "active " : "") + (live || handoff ? "flash" : "");
+  const raceLabel = (live ? '<span class="livedot"></span>' : "") + "Race for R32" + (live ? ' <span class="livebadge">LIVE</span>' : "");
   const tabBar = `<div class="tabs">
     <button data-nav="groups?t=tables" data-replace class="${tab === "tables" ? "active" : ""}">Tables</button>
-    <button data-nav="groups?t=race" data-replace class="${tab === "race" ? "active" : ""}">Race for R32</button></div>`;
-  if (tab === "race") return { title: "Groups", html: tabBar + raceContent() };
+    <button data-nav="groups?t=race" data-replace class="${raceCls}">${raceLabel}</button></div>`;
+  const moving = S().meta?.spotsMoving ?? 0;
+  const flashbar = live
+    ? `<div class="flashbar"><span class="livedot"></span>The cut line is live — ${moving} spot${moving === 1 ? "" : "s"} still moving.</div>` : "";
+  const handoffBar = handoff
+    ? `<div class="flashbar clickable" data-nav="bracket"><span class="livedot"></span>The third-place race is settled — follow it into the bracket ›</div>` : "";
+
+  if (tab === "race") return { title: "Groups", html: tabBar + flashbar + handoffBar + raceContent() };
   const tables = Object.keys(S().groups).map((letter) =>
     `<div class="sec-head"><h2>Group ${letter}</h2></div><div class="block">${groupTableHTML(letter)}</div>`).join("");
-  return { title: "Groups", html: tabBar + `<div class="banner">● top two through · ● 3rd in the race · ● out</div>${tables}` };
+  return { title: "Groups", html: tabBar + flashbar + handoffBar + `<div class="banner">● top two through · ● 3rd in the race · ● out</div>${tables}` };
 }
 function raceStatus(code) {
   const t = (S().thirdPlaceRace || []).find((x) => x.code === code);
@@ -163,52 +267,6 @@ export function renderStats(ctx) {
       <span class="sub" style="color:var(--out)">▮ ${d.r}</span></div>`).join("");
   }
   return { title: "Stats", html: tabBar + `<div class="section">${list}</div>` };
-}
-
-// ── Bracket ──
-const ROUND_DESC = {
-  R32: "Round of 32 — group winners & runners-up + the 8 best third-placed teams",
-  R16: "Round of 16", QF: "Quarter-finals", SF: "Semi-finals", Final: "Final",
-};
-export function renderBracket(ctx) {
-  const b = S().bracket;
-  const done = S().meta?.groupStageComplete;
-  const tab = ctx.query.get("r") || "R32";
-  const tabBar = `<div class="tabs">${b.rounds.map((r) =>
-    `<button data-nav="bracket?r=${r}" data-replace class="${r === tab ? "active" : ""}">${r}</button>`).join("")}</div>`;
-  const legend = !done
-    ? `<div class="bx-legend"><span class="bx-tag in">QUALIFIED</span> already through · <span class="bx-tag cur">CURRENT</span> leads the slot as it stands, can still change</div>`
-    : "";
-
-  const teamSide = (s) => {
-    if (!s) return `<div class="bx-team ph"><span class="nm">TBD</span></div>`;
-    if (s.code) {
-      // locked = group finished, or the team is already mathematically qualified.
-      const locked = done || qualifyOutlook(S(), s.code, state.annexC).status === "qualified";
-      const tag = done ? "" : (locked ? `<span class="bx-tag in">QUALIFIED</span>` : `<span class="bx-tag cur">CURRENT</span>`);
-      return `<div class="bx-team ${locked ? "locked" : "prov"} clickable" data-nav="team/${s.code}">${flag(s.code)}
-        <span class="nm">${teamName(s.code)}</span>${s.pos ? `<span class="bx-pos">${s.pos}</span>` : ""}${tag}
-        <span class="sc">${s.score ?? ""}</span></div>`;
-    }
-    const third = !!s.thirdPlaceSlot;
-    return `<div class="bx-team ph ${third ? "third" : ""}">
-        <span class="nm">${third ? "3rd place" : (s.label || "TBD")}</span>
-        <span class="bx-pos">${third ? s.thirdPlaceSlot.join("/") : (s.pos || "")}</span></div>`;
-  };
-  const hasMatch = (id) => (S().matches || []).some((x) => x.id === id);
-  // Order so the two matches feeding the same next-round tie sit side by side (the
-  // 2-up grid then reads like a bracket).
-  const ms = b.matches.filter((m) => m.rd === tab);
-  const byNext = {};
-  ms.forEach((m) => { const k = m.next || m.id; (byNext[k] = byNext[k] || []).push(m); });
-  const ordered = Object.values(byNext).flat();
-  const list = ordered.map((m) => `<div class="bx" ${hasMatch(m.id) ? `data-nav="match/${m.id}"` : ""}>
-      <div class="bx-head"><span class="bx-no">Match ${m.id}</span></div>
-      ${teamSide(m.a)}<div class="bx-v"><span>vs</span></div>${teamSide(m.b)}
-    </div>`).join("");
-
-  return { title: "Bracket", html: tabBar +
-    `<div class="bx-round">${ROUND_DESC[tab] || tab}</div>${legend}<div class="bxwrap">${list}</div>` };
 }
 
 // ── Watch (club tracker) ──
