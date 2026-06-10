@@ -289,18 +289,38 @@ export function renderMatch(ctx) {
   const oneLiner = m.progressionLine
     ? `<div class="oneliner"><span class="tick"></span><p>${m.progressionLine}</p></div>` : "";
 
-  const tabs = ["facts", "lineup", "stats"];
+  const hasCommentary = (m.commentary && m.commentary.length) || live;
+  const tabs = [];
+  if (hasCommentary) tabs.push("live");
+  tabs.push("facts", "lineup", "stats");
   if (m.group) tabs.push("group");
+  const defaultTab = hasCommentary && m.commentary?.length ? "live" : "facts";
+  const cur = ctx.query.get("t") || defaultTab;
+  const label = { live: "Live", facts: "Facts", lineup: "Lineup", stats: "Stats", group: "Group" };
   const tabBar = `<div class="tabs">${tabs.map((t) =>
-    `<button data-nav="match/${m.id}?t=${t}" data-replace class="${t === tab ? "active" : ""}">${t[0].toUpperCase() + t.slice(1)}</button>`).join("")}</div>`;
+    `<button data-nav="match/${m.id}?t=${t}" data-replace class="${t === cur ? "active" : ""}">${label[t]}</button>`).join("")}</div>`;
 
   let body = "";
-  if (tab === "facts") body = matchFacts(m);
-  else if (tab === "lineup") body = matchLineup(m);
-  else if (tab === "group" && m.group) body = `<div class="sec-head"><h2>Group ${m.group}</h2></div><div class="block">${groupTableHTML(m.group, [m.home.code, m.away.code])}</div>`;
+  if (cur === "live") body = matchCommentary(m);
+  else if (cur === "facts") body = matchFacts(m);
+  else if (cur === "lineup") body = matchLineup(m);
+  else if (cur === "group" && m.group) body = `<div class="sec-head"><h2>Group ${m.group}</h2></div><div class="block">${groupTableHTML(m.group, [m.home.code, m.away.code])}</div>`;
   else body = matchStats(m);
 
   return { title: "Match", html: hero + oneLiner + tabBar + body };
+}
+
+// Live minute-by-minute commentary (The Guardian). Newest first; key moments flagged.
+function matchCommentary(m) {
+  const blocks = m.commentary || [];
+  if (!blocks.length) return emptyState("🎙️", "No commentary yet", "Minute-by-minute updates appear here once the match is under way.");
+  const rows = blocks.map((b) => `<div class="cmt ${b.key ? "key" : ""}">
+      <div class="cmt-head">${b.at ? `<span class="cmt-time">${fmtTime(b.at)}</span>` : ""}${b.title ? `<span class="cmt-title">${b.title}</span>` : ""}</div>
+      <p>${b.text}</p></div>`).join("");
+  const credit = m.commentaryUrl
+    ? `<div class="updated">Live commentary via <a href="${m.commentaryUrl}" target="_blank" rel="noopener noreferrer" style="color:var(--brand);font-weight:700">The Guardian</a></div>`
+    : `<div class="updated">Live commentary via ${m.commentarySource || "The Guardian"}</div>`;
+  return `<div class="section cmts">${rows}</div>${credit}`;
 }
 
 function matchFacts(m) {

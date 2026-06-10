@@ -285,6 +285,19 @@ export async function buildSnapshot(env, prev, liveOnly) {
     if (m.status === "ft") {  // player ratings + per-match stats land at full time
       try { mergePlayerRatings(m, await apiGet(env, "/fixtures/players", { fixture: m.id })); } catch {}
     }
+    // Live commentary from The Guardian's minute-by-minute (gated on a key). Reuse the
+    // matched liveblog id across polls so we don't re-search each time.
+    if (env.GUARDIAN_KEY && (m.status === "live" || m.status === "ht")) {
+      try {
+        let gid = prevMatch[m.id]?._guardianId;
+        if (!gid) gid = await findLiveblogId(env, dir.byId[m._homeId]?.name, dir.byId[m._awayId]?.name);
+        if (gid) {
+          m._guardianId = gid;
+          const com = await fetchCommentary(env, gid);
+          if (com.blocks.length) { m.commentary = com.blocks; m.commentaryUrl = com.url; m.commentarySource = "The Guardian"; }
+        }
+      } catch { /* commentary is best-effort */ }
+    }
   }
 
   // Has the tournament actually started? (any match played or in play)
@@ -597,6 +610,48 @@ async function fetchNews(env) {
   const r = await fetch(url, { headers: { "user-agent": "wc26-tracker/1.0", accept: "application/rss+xml,text/xml" } });
   if (!r.ok) throw new Error(`news ${r.status}`);
   return parseNews(await r.text());
+}
+
+// ── live commentary: Guardian Open Platform MBM liveblog → timestamped blocks ──
+// Free tier (text + metadata), separate from the API-Football quota. Gated on
+// GUARDIAN_KEY; attribution + link back are required and surfaced in the UI.
+const GUARDIAN = "https://content.guardianapis.com";
+const stripHtml = (s) => (s || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+async function guardianGet(env, path, params = {}) {
+  const url = new URL(GUARDIAN + path);
+  url.searchParams.set("api-key", env.GUARDIAN_KEY);
+  url.searchParams.set("format", "json");
+  for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`Guardian ${path} ${r.status}`);
+  return (await r.json()).response || {};
+}
+// Find the minute-by-minute liveblog id for a fixture (best-effort name match).
+async function findLiveblogId(env, home, away) {
+  if (!home || !away) return null;
+  const res = await guardianGet(env, "/search", {
+    q: `${home} ${away}`, tag: "tone/minutebyminute", "order-by": "newest",
+    "page-size": "8", "show-fields": "liveBloggingNow",
+  });
+  const results = res.results || [];
+  const wanted = (s) => (s || "").toLowerCase();
+  const match = results.find((r) => r.type === "liveblog"
+    && wanted(r.webTitle).includes(wanted(home).split(" ").pop())
+    && wanted(r.webTitle).includes(wanted(away).split(" ").pop()));
+  return (match || results.find((r) => r.type === "liveblog") || results[0])?.id || null;
+}
+// Pull the latest timestamped commentary blocks for a liveblog id.
+async function fetchCommentary(env, id) {
+  const res = await guardianGet(env, "/" + id, { "show-blocks": "body:latest:30", "show-fields": "liveBloggingNow" });
+  const c = res.content || {};
+  const blocks = (c.blocks?.body || []).map((b) => ({
+    at: b.firstPublishedDate || b.publishedDate || b.createdDate || "",
+    title: (b.title || "").trim(),
+    text: b.bodyTextSummary || stripHtml(b.bodyHtml),
+    key: !!(b.attributes && b.attributes.keyEvent),
+  })).filter((b) => b.text);
+  blocks.sort((a, b) => (b.at || "").localeCompare(a.at || ""));
+  return { url: c.webUrl || null, live: c.fields?.liveBloggingNow === "true", blocks: blocks.slice(0, 30) };
 }
 
 // ── football-data.org fallback (fixtures/standings only — resilience, never primary) ──

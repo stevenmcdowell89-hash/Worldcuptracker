@@ -44,3 +44,6 @@ NEWS_INTERVAL_MIN = "30"
 
 # APIFOOTBALL_KEY is a secret:  wrangler secret put APIFOOTBALL_KEY
 # FOOTBALLDATA_KEY (fallback, optional):  wrangler secret put FOOTBALLDATA_KEY
+# GUARDIAN_KEY (live minute-by-minute commentary, optional): set as a secret/var.
+#   Free Open Platform key from open-platform.theguardian.com — text + metadata,
+#   5,000 calls/day. Without it, the live Commentary tab simply doesn't appear.

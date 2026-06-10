@@ -79,6 +79,14 @@ function cannedFetch(url) {
   const u = new URL(url);
   const p = u.pathname, q = u.searchParams;
   const team = +q.get("team");
+  // Guardian Open Platform (live commentary) — separate host
+  if (u.hostname === "content.guardianapis.com") {
+    if (p === "/search") return { results: [{ id: "football/live/2026/argentina-v-australia", type: "liveblog", webTitle: "Argentina v Australia: World Cup 2026 – live", webUrl: "https://www.theguardian.com/x", fields: { liveBloggingNow: "true" } }] };
+    return { content: { webUrl: "https://www.theguardian.com/x", fields: { liveBloggingNow: "true" }, blocks: { body: [
+      { firstPublishedDate: "2026-06-25T16:20:00Z", title: "GOAL!", bodyTextSummary: "Argentina lead.", attributes: { keyEvent: true } },
+      { firstPublishedDate: "2026-06-25T16:05:00Z", title: "", bodyHtml: "<p>Lively start in New Jersey.</p>", attributes: {} },
+    ] } } };
+  }
   const data = {
     "/standings": standings(),
     "/fixtures": fixtures(),
@@ -181,6 +189,24 @@ test("deep player enrichment: tournament + season + career + honours", () => {
 test("bracket built with full structure", () => {
   assert.equal(snap.bracket.matches.filter((m) => m.rd === "R32").length, 16);
   assert.equal(snap.bracket.matches.length, 31);
+});
+
+test("guardian commentary attaches to live matches when GUARDIAN_KEY is set", async () => {
+  globalThis.fetch = async (url) => ({ ok: true, status: 200, headers: { get: () => null }, json: async () => ({ response: cannedFetch(url) }) });
+  const s = await buildSnapshot({ APIFOOTBALL_KEY: "t", WC_LEAGUE_ID: "1", WC_SEASON: "2026", GUARDIAN_KEY: "g" }, null, false);
+  const live = s.matches.find((m) => m.status === "live");
+  assert.ok(live.commentary?.length, "live match has commentary blocks");
+  assert.equal(live.commentary[0].title, "GOAL!");           // newest-first
+  assert.equal(live.commentary[0].key, true);
+  assert.equal(live.commentarySource, "The Guardian");
+  assert.ok(live.commentaryUrl);
+});
+
+test("no GUARDIAN_KEY → no commentary (graceful)", async () => {
+  globalThis.fetch = async (url) => ({ ok: true, status: 200, headers: { get: () => null }, json: async () => ({ response: cannedFetch(url) }) });
+  const s = await buildSnapshot({ APIFOOTBALL_KEY: "t", WC_LEAGUE_ID: "1", WC_SEASON: "2026" }, null, false);
+  const live = s.matches.find((m) => m.status === "live");
+  assert.ok(!live.commentary, "no commentary without a key");
 });
 
 test("tight subrequest budget degrades gracefully (no crash)", async () => {

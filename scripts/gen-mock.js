@@ -110,6 +110,13 @@ matches.push({
     { k: "Pass accuracy", h: 88, a: 81, unit: "%" }, { k: "Corners", h: 7, a: 2 },
     { k: "Fouls", h: 9, a: 13 }, { k: "Offsides", h: 2, a: 1 },
   ],
+  commentarySource: "The Guardian",
+  commentaryUrl: "https://www.theguardian.com/football/live",
+  commentary: [
+    { at: new Date(Date.now() - 2 * 6e4).toISOString(), title: "GOAL!", text: "Mexico 2-1 Saudi Arabia. Giménez gets his second, turning in Pineda's low cross at the near post. The Azteca erupts.", key: true },
+    { at: new Date(Date.now() - 9 * 6e4).toISOString(), title: "", text: "Saudi Arabia are growing into this. Al-Dawsari drifts inside and curls one just over — a warning to the hosts.", key: false },
+    { at: new Date(Date.now() - 22 * 6e4).toISOString(), title: "GOAL!", text: "1-1. Al-Dawsari levels from the spot after a clumsy challenge by Álvarez, sending Ochoa the wrong way.", key: true },
+  ],
   lineups: {
     h: { formation: "4-3-3", coach: "Javier Aguirre", xi: [
       { num: 1, name: "G. Ochoa", pos: "GK", grid: "1:1" },
