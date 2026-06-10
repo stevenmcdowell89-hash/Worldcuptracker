@@ -13,7 +13,7 @@
 // The shared engine pre-derives the third-place race & verdicts so the snapshot is
 // engine-ready and the frontend renders instantly.
 
-import { thirdPlaceTable, recompute, verdicts, compareGroupRows, qualifyOutlook } from "../web/js/engine.js";
+import { thirdPlaceTable, recompute, verdicts, compareGroupRows, qualifyOutlook, tournamentPhase, spotsMoving, stakesFor } from "../web/js/engine.js";
 import { buildBracket } from "../web/js/bracket.js";
 import ANNEXC from "../web/js/annexC.data.js";
 
@@ -347,10 +347,14 @@ export async function buildSnapshot(env, prev, liveOnly) {
   try { bracket = buildBracket(groups, ANNEXC, { groupStageComplete }); } catch {}
 
   const squadCount = Object.values(teams).reduce((n, t) => n + (t.squad?.length || 0), 0);
+  const engineSnap = { groups, remainingFixtures, teams };
+  const phase = tournamentPhase(engineSnap);                 // pre | group | groupFinal | knockout (§11)
+  const moving = anyPlayed ? spotsMoving(engineSnap) : 0;    // sweating thirds — drives the §12 flash copy
   return {
     meta: { stage: matches.some((m) => m.status === "live") ? "Group Stage" : (prev?.meta?.stage || "Group Stage"),
             updated: new Date().toISOString(), groupStageComplete, dataSource: "api-football",
             started: anyPlayed,   // false ⇒ tournament not under way; suppress definitive narratives
+            phase, spotsMoving: moving,
             squadCount },   // 0 ⇒ nation squads not published yet (pre-tournament), not a bug
     groups,
     thirdPlaceRace: race,
@@ -585,6 +589,10 @@ function annotateProgression(matches, groups, remainingFixtures, teams, race, an
     if (m.affectsCut && (m.status === "live" || m.status === "ht")) {
       const focus = codes.find((c) => outlook(c).status === "sweating") || codes[0];
       m.progressionLine = outlook(focus).line;
+    }
+    // Stakes tag (brief §15) — only meaningful for an upcoming group fixture.
+    if (m.status === "scheduled" && m.stage === "Group Stage") {
+      try { m.stakes = stakesFor(engineSnap, m.id); } catch { m.stakes = null; }
     }
   }
 }

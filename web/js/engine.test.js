@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   discPoints, compareGroupRows, compareThird, recompute, thirdPlaceTable,
   qualifiersFrom, resolve, verdicts, plainEnglish, resultFromWDL, annexCSlots, qualifyOutlook,
+  tournamentPhase, stakesFor,
 } from "./engine.js";
 
 function gr(code, Pts, GD, GF, y = 0, r = 0) {
@@ -164,4 +165,63 @@ test("resultFromWDL gives default margins and flags non-exact", () => {
   const fx = { id: "f1", home: "X", away: "Y" };
   assert.deepEqual(resultFromWDL(fx, "W"), { id: "f1", home: "X", away: "Y", hg: 1, ag: 0, exact: false });
   assert.deepEqual(resultFromWDL(fx, "D"), { id: "f1", home: "X", away: "Y", hg: 1, ag: 1, exact: false });
+});
+
+// ── phase flag (brief §11) ──
+test("phase: no games played → pre", () => {
+  const s = { groups: { A: ["AA", "BB", "CC", "DD"].map(gr0) }, remainingFixtures: [rem("f1", "A", "AA", "BB")] };
+  assert.equal(tournamentPhase(s), "pre");
+});
+
+test("phase: games played, a group still mid-stage (4 games left) → group", () => {
+  // A is on its last round (2 games left), but B is only one round in (4 left).
+  const s = {
+    groups: {
+      A: [gr("AA", 6, 3, 5), gr("BB", 3, 0, 3), gr("CC", 3, 0, 2), gr("DD", 0, -3, 0)],
+      B: ["B1", "B2", "B3", "B4"].map(gr0),
+    },
+    remainingFixtures: [
+      rem("f1", "A", "AA", "BB"), rem("f2", "A", "CC", "DD"),
+      rem("f3", "B", "B1", "B2"), rem("f4", "B", "B3", "B4"),
+      rem("f5", "B", "B1", "B3"), rem("f6", "B", "B2", "B4"),
+    ],
+  };
+  assert.equal(tournamentPhase(s), "group");
+});
+
+test("phase: every group down to its last round → groupFinal", () => {
+  const s = {
+    groups: { A: [gr("AA", 6, 3, 5), gr("BB", 3, 0, 3), gr("CC", 3, 0, 2), gr("DD", 0, -3, 0)] },
+    remainingFixtures: [rem("f1", "A", "AA", "BB"), rem("f2", "A", "CC", "DD")],
+  };
+  assert.equal(tournamentPhase(s), "groupFinal");
+});
+
+test("phase: no group fixtures remain → knockout", () => {
+  const s = {
+    groups: { A: [gr("AA", 7, 4, 6), gr("BB", 4, 1, 3), gr("CC", 4, 0, 2), gr("DD", 1, -5, 1)] },
+    remainingFixtures: [],
+  };
+  assert.equal(tournamentPhase(s), "knockout");
+});
+
+// ── stakes (brief §15) ──
+test("stakes: a result that flips a side's qualification → decider", () => {
+  // AA locked 1st. CC v DD play off for 2nd: the loser drops to 4th (out) behind BB(4),
+  // so the result decides qualification → decider.
+  const s = {
+    groups: { A: [gr("AA", 6, 4, 6), gr("BB", 4, 0, 2), gr("CC", 3, 0, 2), gr("DD", 3, 0, 2)] },
+    remainingFixtures: [rem("f1", "A", "CC", "DD")],
+  };
+  assert.equal(stakesFor(s, "f1"), "decider");
+});
+
+test("stakes: both already safe but the result swaps seeding → seeding", () => {
+  // AA & BB both on 6 pts (top two locked: CC/DD can't catch them), they meet on the
+  // last day; the winner finishes 1st, the loser 2nd → seeding, not a decider.
+  const s = {
+    groups: { A: [gr("AA", 6, 3, 5), gr("BB", 6, 3, 5), gr("CC", 0, -3, 1), gr("DD", 0, -3, 1)] },
+    remainingFixtures: [rem("f1", "A", "AA", "BB")],
+  };
+  assert.equal(stakesFor(s, "f1"), "seeding");
 });

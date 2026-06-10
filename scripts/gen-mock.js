@@ -10,7 +10,7 @@
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname, resolve as pathResolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { verdicts, thirdPlaceTable, recompute, compareGroupRows } from "../web/js/engine.js";
+import { verdicts, thirdPlaceTable, recompute, compareGroupRows, tournamentPhase, spotsMoving, stakesFor } from "../web/js/engine.js";
 import { buildBracket } from "../web/js/bracket.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -211,7 +211,7 @@ for (const f of remainingFixtures) {
   matches.push({
     id: f.id, stage: "Group Stage", group: f.group, status: "scheduled", kickoff: f.kickoff,
     home: { code: f.home, score: null }, away: { code: f.away, score: null },
-    affectsCut: true,
+    affectsCut: true, stakes: stakesFor(snapshotForEngine, f.id),
   });
 }
 
@@ -375,7 +375,12 @@ const news = [
 ];
 
 const snapshot = {
-  meta: { stage: "Group Stage", updated: new Date().toISOString(), groupStageComplete: false, dataSource: "mock", started: true },
+  meta: {
+    stage: "Group Stage", updated: new Date().toISOString(), groupStageComplete: false,
+    dataSource: "mock", started: true,
+    phase: tournamentPhase(snapshotForEngine),          // groupFinal in this mid-tournament demo
+    spotsMoving: spotsMoving(snapshotForEngine),
+  },
   groups: sortedGroups,
   thirdPlaceRace: race,
   remainingFixtures,

@@ -1,10 +1,12 @@
 {
   "meta": {
     "stage": "Group Stage",
-    "updated": "2026-06-10T12:16:59.442Z",
+    "updated": "2026-06-10T16:30:09.777Z",
     "groupStageComplete": false,
     "dataSource": "mock",
-    "started": true
+    "started": true,
+    "phase": "groupFinal",
+    "spotsMoving": 7
   },
   "groups": {
     "A": [
@@ -1163,19 +1165,19 @@
       "commentaryUrl": "https://www.theguardian.com/football/live",
       "commentary": [
         {
-          "at": "2026-06-10T12:14:59.437Z",
+          "at": "2026-06-10T16:28:09.761Z",
           "title": "GOAL!",
           "text": "Mexico 2-1 Saudi Arabia. Giménez gets his second, turning in Pineda's low cross at the near post. The Azteca erupts.",
           "key": true
         },
         {
-          "at": "2026-06-10T12:07:59.437Z",
+          "at": "2026-06-10T16:21:09.761Z",
           "title": "",
           "text": "Saudi Arabia are growing into this. Al-Dawsari drifts inside and curls one just over — a warning to the hosts.",
           "key": false
         },
         {
-          "at": "2026-06-10T11:54:59.437Z",
+          "at": "2026-06-10T16:08:09.761Z",
           "title": "GOAL!",
           "text": "1-1. Al-Dawsari levels from the spot after a clumsy challenge by Álvarez, sending Ochoa the wrong way.",
           "key": true
@@ -1639,7 +1641,8 @@
         "code": "CMR",
         "score": null
       },
-      "affectsCut": true
+      "affectsCut": true,
+      "stakes": "seeding"
     },
     {
       "id": "f3",
@@ -1655,7 +1658,8 @@
         "code": "JPN",
         "score": null
       },
-      "affectsCut": true
+      "affectsCut": true,
+      "stakes": "dead"
     },
     {
       "id": "f4",
@@ -1671,7 +1675,8 @@
         "code": "MAR",
         "score": null
       },
-      "affectsCut": true
+      "affectsCut": true,
+      "stakes": "seeding"
     },
     {
       "id": "f5",
@@ -1687,7 +1692,8 @@
         "code": "IRN",
         "score": null
       },
-      "affectsCut": true
+      "affectsCut": true,
+      "stakes": "dead"
     },
     {
       "id": "f6",
@@ -1703,7 +1709,8 @@
         "code": "SEN",
         "score": null
       },
-      "affectsCut": true
+      "affectsCut": true,
+      "stakes": "seeding"
     },
     {
       "id": "f8",
@@ -1719,7 +1726,8 @@
         "code": "POL",
         "score": null
       },
-      "affectsCut": true
+      "affectsCut": true,
+      "stakes": "decider"
     },
     {
       "id": "f9",
@@ -1735,7 +1743,8 @@
         "code": "GHA",
         "score": null
       },
-      "affectsCut": true
+      "affectsCut": true,
+      "stakes": "dead"
     },
     {
       "id": "f10",
@@ -1751,7 +1760,8 @@
         "code": "KOR",
         "score": null
       },
-      "affectsCut": true
+      "affectsCut": true,
+      "stakes": "seeding"
     },
     {
       "id": "f11",
@@ -1767,7 +1777,8 @@
         "code": "TUN",
         "score": null
       },
-      "affectsCut": true
+      "affectsCut": true,
+      "stakes": "decider"
     },
     {
       "id": "f12",
@@ -1783,7 +1794,8 @@
         "code": "ECU",
         "score": null
       },
-      "affectsCut": true
+      "affectsCut": true,
+      "stakes": "decider"
     },
     {
       "id": "f13",
@@ -1799,7 +1811,8 @@
         "code": "QAT",
         "score": null
       },
-      "affectsCut": true
+      "affectsCut": true,
+      "stakes": "decider"
     },
     {
       "id": "f14",
@@ -1815,7 +1828,8 @@
         "code": "EGY",
         "score": null
       },
-      "affectsCut": true
+      "affectsCut": true,
+      "stakes": "decider"
     },
     {
       "id": "f15",
@@ -1831,7 +1845,8 @@
         "code": "UZB",
         "score": null
       },
-      "affectsCut": true
+      "affectsCut": true,
+      "stakes": "decider"
     },
     {
       "id": "f16",
@@ -1847,7 +1862,8 @@
         "code": "CRC",
         "score": null
       },
-      "affectsCut": true
+      "affectsCut": true,
+      "stakes": "decider"
     },
     {
       "id": "f17",
@@ -1863,7 +1879,8 @@
         "code": "PAN",
         "score": null
       },
-      "affectsCut": true
+      "affectsCut": true,
+      "stakes": "decider"
     },
     {
       "id": "f18",
@@ -1879,7 +1896,8 @@
         "code": "JOR",
         "score": null
       },
-      "affectsCut": true
+      "affectsCut": true,
+      "stakes": "decider"
     },
     {
       "id": "f19",
@@ -1895,7 +1913,8 @@
         "code": "CPV",
         "score": null
       },
-      "affectsCut": true
+      "affectsCut": true,
+      "stakes": "decider"
     },
     {
       "id": "f20",
@@ -1911,7 +1930,8 @@
         "code": "PAR",
         "score": null
       },
-      "affectsCut": true
+      "affectsCut": true,
+      "stakes": "decider"
     },
     {
       "id": "f21",
@@ -1927,7 +1947,8 @@
         "code": "HON",
         "score": null
       },
-      "affectsCut": true
+      "affectsCut": true,
+      "stakes": "decider"
     },
     {
       "id": "f22",
@@ -1943,7 +1964,8 @@
         "code": "NZL",
         "score": null
       },
-      "affectsCut": true
+      "affectsCut": true,
+      "stakes": "decider"
     },
     {
       "id": "f23",
@@ -1959,7 +1981,8 @@
         "code": "CUW",
         "score": null
       },
-      "affectsCut": true
+      "affectsCut": true,
+      "stakes": "dead"
     },
     {
       "id": "f24",
@@ -1975,7 +1998,8 @@
         "code": "AUT",
         "score": null
       },
-      "affectsCut": true
+      "affectsCut": true,
+      "stakes": "seeding"
     }
   ],
   "bracket": {
@@ -4832,7 +4856,7 @@
       "title": "Mexico hold off Saudi Arabia in Azteca opener",
       "summary": "Santiago Giménez's brace settles a nervy hosts' opener as the 2026 World Cup gets under way.",
       "link": "https://www.bbc.com/sport/football",
-      "published": "2026-06-10T11:41:59.442Z",
+      "published": "2026-06-10T15:55:09.777Z",
       "image": null,
       "source": "BBC Sport"
     },
@@ -4840,7 +4864,7 @@
       "title": "Argentina cruise as Messi pulls the strings",
       "summary": "Holders Argentina look ominous after a comfortable win in New Jersey.",
       "link": "https://www.bbc.com/sport/football",
-      "published": "2026-06-10T09:16:59.442Z",
+      "published": "2026-06-10T13:30:09.777Z",
       "image": null,
       "source": "BBC Sport"
     },
@@ -4848,7 +4872,7 @@
       "title": "Third-place race: who's still in the hunt?",
       "summary": "With the final group games to come, the eight best third-placed spots are wide open.",
       "link": "https://www.bbc.com/sport/football",
-      "published": "2026-06-10T06:16:59.442Z",
+      "published": "2026-06-10T10:30:09.777Z",
       "image": null,
       "source": "BBC Sport"
     }

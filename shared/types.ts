@@ -14,6 +14,10 @@ export type Stage =
   | "Quarter-final" | "Semi-final" | "Final";
 export type MatchStatus = "scheduled" | "live" | "ht" | "ft";
 export type Side = "h" | "a";
+/** Tournament phase, drives the §11 Matches-feed evolution + the §12 Race flash. */
+export type Phase = "pre" | "group" | "groupFinal" | "knockout";
+/** Stakes label for an upcoming group fixture (§15). */
+export type Stakes = "decider" | "seeding" | "dead";
 
 export interface Meta {
   stage: Stage;
@@ -21,6 +25,10 @@ export interface Meta {
   groupStageComplete: boolean;
   dataSource: "api-football" | "football-data" | "mock";
   stale?: boolean;            // true when serving last-good after upstream failure
+  started?: boolean;          // any match played/in-play yet
+  phase?: Phase;              // derived by tournamentPhase() — the phase-evolution flag
+  spotsMoving?: number;       // count of "sweating" thirds — the §12 flashbar count
+  squadCount?: number;        // total players across nation squads (0 ⇒ not published yet)
 }
 
 /** A row in a group table. GD is stored but always === GF - GA. */
@@ -84,6 +92,7 @@ export interface Match {
   home: { code: string; score: number | null };
   away: { code: string; score: number | null };
   affectsCut?: boolean;       // woven-in marker: result affects the last-8 race
+  stakes?: Stakes | null;     // §15 tag on an upcoming group fixture
   progressionLine?: string;   // "as it stands, this draw sends Australia through"
   events?: MatchEvent[];
   stats?: StatRow[];

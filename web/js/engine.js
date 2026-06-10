@@ -393,4 +393,75 @@ export function qualifyOutlook(snapshot, code, annexC = null) {
   return { status: "out", line: `${name} can't get through on their own result against ${oppName} — they need help elsewhere.` };
 }
 
-export default { resolve, verdicts, plainEnglish, qualifyOutlook, recompute, thirdPlaceTable, qualifiersFrom, annexCSlots, resultFromWDL, GROUP_LETTERS, QUALIFY_COUNT };
+// ── tournament phase (brief §11) ─────────────────────────────────────────────────
+// One flag drives the whole phase-evolution layer. Pure + deterministic so the Worker,
+// the mock and the frontend all agree (and the frontend can recompute offline).
+//   pre        — no group game has kicked off yet
+//   group      — group stage under way, not yet every group on its last round
+//   groupFinal — every group with games left has ≤2 remaining (the final-matchday window)
+//   knockout   — no group fixtures remain (group stage complete)
+export function tournamentPhase(snapshot) {
+  const groups = snapshot.groups || {};
+  const anyPlayed = GROUP_LETTERS.some((g) => (groups[g] || []).some((r) => (r.P || 0) > 0));
+  if (!anyPlayed) return "pre";
+  const groupRemaining = (snapshot.remainingFixtures || []).filter((f) => f.group);
+  if (groupRemaining.length === 0) return "knockout";
+  const remByGroup = {};
+  for (const f of groupRemaining) remByGroup[f.group] = (remByGroup[f.group] || 0) + 1;
+  // "Final matchday" once every group still in play is down to its last round (≤2 games).
+  const allOnFinalRound = Object.values(remByGroup).every((n) => n <= 2);
+  return allOnFinalRound ? "groupFinal" : "group";
+}
+
+// Count of third-placed teams currently "sweating" — drives the §12 flashbar copy.
+export function spotsMoving(snapshot) {
+  return verdicts(snapshot).filter((t) => t.status === "sweating").length;
+}
+
+// ── stakes per upcoming fixture (brief §15) ──────────────────────────────────────
+// Run the fixture's W/D/L through the engine (others held at a draw) and diff R32
+// qualification / final group position to classify what's at stake:
+//   decider — a side's R32 qualification (top-2 OR the third-place cut) changes
+//   seeding — both qualify in every outcome, but final group position changes
+//   dead    — nothing at stake (skippable)
+// Exact when goal-margins are set; approximate on plain W/D/L (label accordingly upstream).
+function fateOf(snapshot, group, code, results) {
+  const tables = recompute(snapshot, results);
+  const idx = tables[group].findIndex((r) => r.code === code);
+  const reaches = idx <= 1 || (idx === 2 && qualifiersFrom(thirdPlaceTable(tables)).includes(code));
+  return { reaches, pos: idx };
+}
+
+export function stakesFor(snapshot, fixtureId) {
+  const fx = (snapshot.remainingFixtures || []).find((f) => f.id === fixtureId);
+  if (!fx || !fx.group) return null;
+  const others = (snapshot.remainingFixtures || []).filter((f) => f.id !== fixtureId);
+  const base = others.map((f) => resultFromWDL(f, "D"));
+  const sides = [
+    { code: fx.home, group: fx.group },
+    { code: fx.away, group: fx.group },
+  ].filter((s) => groupOf(snapshot, s.code) === fx.group);
+
+  const fates = { W: [], D: [], L: [] };
+  for (const o of ["W", "D", "L"]) {
+    const results = [resultFromWDL(fx, o), ...base];
+    fates[o] = sides.map((s) => fateOf(snapshot, s.group, s.code, results));
+  }
+  // Decider: any side's qualification flips across the three outcomes.
+  for (let i = 0; i < sides.length; i++) {
+    const r = [fates.W[i].reaches, fates.D[i].reaches, fates.L[i].reaches];
+    if (r.some((x) => x !== r[0])) return "decider";
+  }
+  // Seeding: both always qualify, but a final group position changes.
+  const bothAlwaysThrough = sides.length > 0 && sides.every((_, i) =>
+    [fates.W[i], fates.D[i], fates.L[i]].every((f) => f.reaches));
+  if (bothAlwaysThrough) {
+    for (let i = 0; i < sides.length; i++) {
+      const p = [fates.W[i].pos, fates.D[i].pos, fates.L[i].pos];
+      if (p.some((x) => x !== p[0])) return "seeding";
+    }
+  }
+  return "dead";
+}
+
+export default { resolve, verdicts, plainEnglish, qualifyOutlook, recompute, thirdPlaceTable, qualifiersFrom, annexCSlots, resultFromWDL, tournamentPhase, spotsMoving, stakesFor, GROUP_LETTERS, QUALIFY_COUNT };
