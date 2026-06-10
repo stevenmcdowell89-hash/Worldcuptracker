@@ -1001,6 +1001,26 @@ export default {
       return new Response(JSON.stringify(res, null, 2), { headers: { "content-type": "application/json" } });
     }
 
+    // Fire a test push to every stored subscription (ignores per-device prefs) so you
+    // can verify the whole VAPID → encryption → delivery chain on demand. Token-gated
+    // (set DEBUG_TOKEN as a secret; pass ?t=…). Prunes any dead subscriptions it finds.
+    if (path === "/admin/test-push") {
+      if (env.DEBUG_TOKEN && url.searchParams.get("t") !== env.DEBUG_TOKEN) return json({ error: "forbidden" }, 403);
+      if (!pushEnabled(env)) return json({ error: "push not configured — set VAPID_JWK + VAPID_PUBLIC_KEY first" }, 503);
+      const subs = await listSubscriptions(env);
+      const notif = { title: "WC26 — test", body: "Push is working 🎉", tag: "wc26-test", url: "/#/matches" };
+      let sent = 0, pruned = 0, failed = 0;
+      for (const s of subs) {
+        try {
+          const res = await sendWebPush(s.subscription, notif, env);
+          if (res.status === 404 || res.status === 410) { await env.SNAPSHOT.delete(s.key); pruned++; }
+          else if (res.ok) sent++;
+          else failed++;
+        } catch { failed++; }
+      }
+      return json({ ok: true, subscriptions: subs.length, sent, pruned, failed });
+    }
+
     // Everything else: the static /web app. Force revalidation so a deploy reaches
     // already-loaded browsers (the assets aren't content-hashed).
     const res = await env.ASSETS.fetch(request);
