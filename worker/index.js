@@ -997,8 +997,14 @@ export default {
         // No data poll due — but keep the news fresh on its own ~30-min cadence (cheap,
         // no API-Football quota, doesn't touch lastFull/lastLive).
         if (dueNews && prev) {
-          try { prev.news = await fetchNews(env); await writeSnapshot(env, prev);
-            await env.SNAPSHOT.put(META_KEY, JSON.stringify({ ...meta, lastNews: now })); } catch {}
+          try {
+            prev.news = await fetchNews(env);
+            // Bump meta.updated: the frontend only repaints an open tab when it changes,
+            // so without this fresh headlines sit unseen until the next full/live poll.
+            prev.meta = { ...prev.meta, updated: new Date().toISOString() };
+            await writeSnapshot(env, prev);
+            await env.SNAPSHOT.put(META_KEY, JSON.stringify({ ...meta, lastNews: now }));
+          } catch {}
         }
         return;
       }
