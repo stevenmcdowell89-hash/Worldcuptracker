@@ -127,15 +127,56 @@ async function boot() {
     return;
   }
   render();
-  // Auto-refresh only while something is live: re-fetch the snapshot and re-render
-  // the data screens (so the score/minute update). Idle browsing isn't disturbed.
-  setInterval(async () => {
-    const live = (state.snap?.matches || []).some((m) => m.status === "live" || m.status === "ht");
-    if (!live) return;
-    try { await loadAll(); } catch { return; }
-    const { key } = parseHash();
-    if (["matches", "race", "watch", "match"].includes(key)) render({ animate: false });
-  }, 45000);
+  lastUpdated = state.snap?.meta?.updated;
+  bootVersion = await fetchVersion();   // the deployed build this page loaded with
+
+  // Always poll the KV snapshot (cheap, no API cost) so newly-live matches are picked
+  // up and scores/minute stay fresh without a manual reload. Re-render in place only
+  // when the snapshot actually changed, preserving scroll so browsing isn't disturbed.
+  setInterval(tick, 30000);
+  // When the tab is re-shown, refresh immediately and apply any pending code update.
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) { applyUpdate(); tick(); } });
+  window.addEventListener("hashchange", applyUpdate);   // navigating? take the new build now
+}
+
+// ── live refresh + self-update ──
+let bootVersion = null, updatePending = false, lastUpdated = null;
+const LIVE_ROUTES = ["matches", "race", "watch", "match", "groups", "news", "team", "player"];
+
+async function fetchVersion() {
+  try { const r = await fetch("/version", { cache: "no-store" }); return r.ok ? (await r.json()).version : bootVersion; }
+  catch { return bootVersion; }
+}
+// Reload to pick up a freshly-deployed build (only when visible, to avoid yanking the
+// page mid-read). After reload, bootVersion matches again, so this fires at most once.
+function applyUpdate() { if (updatePending && !document.hidden) location.reload(); }
+
+async function tick() {
+  try {
+    await loadAll();
+    const u = state.snap?.meta?.updated;
+    if (u !== lastUpdated) {                       // only re-render when data really changed
+      lastUpdated = u;
+      const { key } = parseHash();
+      if (LIVE_ROUTES.includes(key)) {
+        const y = $screen.scrollTop;               // preserve scroll across the re-render
+        render({ animate: false });
+        $screen.scrollTop = y;
+      }
+    }
+  } catch { /* keep last-good on a transient failure */ }
+
+  const v = await fetchVersion();                  // detect a new deploy
+  if (bootVersion && v && v !== bootVersion && !updatePending) { updatePending = true; showUpdateBar(); }
+}
+
+function showUpdateBar() {
+  if (document.getElementById("updbar")) return;
+  const bar = document.createElement("button");
+  bar.id = "updbar"; bar.className = "updbar";
+  bar.innerHTML = `<span class="d"></span> New version available — tap to refresh`;
+  bar.onclick = () => location.reload();
+  document.body.appendChild(bar);
 }
 
 boot();

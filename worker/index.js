@@ -901,6 +901,15 @@ export default {
     }
     if (path === "/healthz") return new Response("ok");
 
+    // Current deployment id — the frontend polls this to detect a new build and
+    // surface a refresh (so an open tab isn't stuck on stale code). Changes on every
+    // deploy via the version-metadata binding; falls back to "dev" if unbound.
+    if (path === "/version") {
+      const vm = env.CF_VERSION_METADATA;
+      const version = (vm && (vm.id || vm.tag)) || "dev";
+      return new Response(JSON.stringify({ version }), { headers: { "content-type": "application/json", "cache-control": "no-store" } });
+    }
+
     // ── Web push subscription endpoints (brief §14) ──
     const json = (obj, status = 200) => new Response(JSON.stringify(obj), { status, headers: { "content-type": "application/json" } });
     if (path === "/push/vapidPublicKey") {

@@ -20,6 +20,10 @@ run_worker_first = true
 binding = "SNAPSHOT"
 id = "616c8be67b784ed7ba4285d426a6762a"
 
+# --- Deployment id (for the frontend's self-update check at GET /version) ---
+[version_metadata]
+binding = "CF_VERSION_METADATA"
+
 # --- Cron: poll cadence (brief §3) ---
 # Baseline every 6h; the Worker self-tightens to ~60-90s when a fixture is live by
 # scheduling its own short-lived re-checks (see worker/index.js liveGate()).
