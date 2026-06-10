@@ -469,18 +469,20 @@ function curatedPlayerIds({ scorers, assists, discipline, prev, matches }) {
   return ids;
 }
 
-// ── deep player drill-in: stats per competition + bio + transfers + trophies ──
-// Profiles/transfers/trophies are static-ish → fetched once per player and persisted.
-// Capped per poll so cost stays bounded; the set fills in over successive polls.
+// ── deep player drill-in: club-season stats + transfers + trophies ──
+// Bump ENRICH_VERSION to force re-enrichment of already-flagged players after a fix.
+const ENRICH_VERSION = 2;
 async function enrichPlayers(env, base, ids, players, cfg, dir, cap = 18) {   // small batch/poll; fills over polls
-  const todo = [...ids].filter((id) => !players[id]?._enriched)
+  // European club seasons (2025-26) are filed under the START year (2025) in the API,
+  // so club stats live under (WC season - 1), NOT the WC season.
+  const clubSeason = String(Number(env.CLUB_SEASON || base.season) - (env.CLUB_SEASON ? 0 : 1));
+  const todo = [...ids].filter((id) => players[id]?._enriched !== ENRICH_VERSION)
     .slice(0, Math.min(cap, Math.floor(Math.max(0, budgetLeft() - 6) / 3)));   // ~3 subrequests each
   await pmap(todo, async (id) => {
     const existing = players[id];
     try {
-      const statsResp = await apiGet(env, "/players", { id, season: base.season });
-      const rec = normPlayer(statsResp, cfg.league, dir) || {};
-      if (!rec.code && existing?.code) rec.code = existing.code;   // keep nation code from squad seed
+      const wc = normPlayer(await apiGet(env, "/players", { id, season: base.season }), cfg.league, dir) || {};   // WC tournament stats
+      const club = normPlayerClub(await apiGet(env, "/players", { id, season: clubSeason })) || {};               // club-season stats + bio
       let career = existing?.career || [], honours = existing?.honours || [];
       try {
         const tr = await apiGet(env, "/transfers", { player: id });
@@ -491,9 +493,32 @@ async function enrichPlayers(env, base, ids, players, cfg, dir, cap = 18) {   //
         const tro = await apiGet(env, "/trophies", { player: id });
         honours = (tro || []).filter((x) => /winner/i.test(x.place || "")).map((x) => ({ title: x.league, year: x.season }));
       } catch {}
-      players[id] = { ...(existing || {}), ...rec, career, honours, _enriched: true };
+      const rec = {
+        name: club.name || wc.name || existing?.name,
+        age: club.age ?? wc.age, pos: club.pos || wc.pos || existing?.pos,
+        club: club.club, league: club.league,
+        code: wc.code || existing?.code,                       // nation, from squad seed / WC entry
+        tournament: wc.tournament || existing?.tournament,     // WC aggregate (0 until games played)
+        season: club.season || [],
+      };
+      players[id] = { ...(existing || {}), ...rec, career, honours, _enriched: ENRICH_VERSION };
     } catch { /* skip this player this round */ }
-  }, 5);
+  });
+}
+// Build bio + per-competition club-season stats from a /players?season=<club season>.
+function normPlayerClub(resp) {
+  const p = resp?.[0]; if (!p) return null;
+  const stats = (p.statistics || []).filter((s) => s.league?.name);
+  const main = stats.slice().sort((a, b) => (b.games?.appearences || 0) - (a.games?.appearences || 0))[0] || {};
+  return {
+    name: p.player?.name, age: p.player?.age, pos: main.games?.position || p.player?.position,
+    club: main.team?.name, league: main.league?.name,
+    season: stats.map((s) => ({
+      comp: s.league?.name, apps: s.games?.appearences ?? 0, g: s.goals?.total ?? 0, a: s.goals?.assists ?? 0,
+      yellow: s.cards?.yellow ?? 0, red: s.cards?.red ?? 0, min: s.games?.minutes ?? 0,
+      rating: s.games?.rating ? parseFloat(s.games.rating) : undefined,
+    })),
+  };
 }
 function normPlayer(resp, leagueId, dir) {
   const p = resp?.[0]; if (!p) return null;
@@ -599,6 +624,7 @@ export default {
   // Cron entrypoint.
   async scheduled(event, env, ctx) {
     const work = (async () => {
+      await env.SNAPSHOT.put("cron-tick", new Date().toISOString());   // heartbeat: proves the cron is firing
       const prev = await readSnapshot(env);
       const meta = (await env.SNAPSHOT.get(META_KEY, "json")) || { lastFull: 0, lastLive: 0 };
       const now = Date.now();
@@ -612,7 +638,7 @@ export default {
         if (!prev || !(prev.meta?.squadCount > 0)) return true;
         const players = prev.players || {};
         for (const club of Object.values(prev.clubWatch || {}))
-          for (const p of club.players || []) if (!players[String(p.playerId)]?._enriched) return true;
+          for (const p of club.players || []) if (players[String(p.playerId)]?._enriched !== ENRICH_VERSION) return true;
         return false;
       })();
       const effectiveBaseline = backlog ? 4 * 60e3 : baselineMs;   // 4 min while catching up
@@ -655,8 +681,8 @@ export default {
     // Read-only health view: last cron run, last manual refresh, poll timing, and the
     // API daily quota (the usual cause of a stuck refresh). One API call.
     if (path === "/admin/status") {
-      const [cron, refresh, pm] = await Promise.all([
-        env.SNAPSHOT.get("cron-status", "json"), env.SNAPSHOT.get("refresh-status", "json"), env.SNAPSHOT.get(META_KEY, "json"),
+      const [cron, refresh, pm, tick] = await Promise.all([
+        env.SNAPSHOT.get("cron-status", "json"), env.SNAPSHOT.get("refresh-status", "json"), env.SNAPSHOT.get(META_KEY, "json"), env.SNAPSHOT.get("cron-tick"),
       ]);
       let quota = null;
       try {
@@ -667,7 +693,8 @@ export default {
       const ago = (t) => (t ? Math.round((Date.now() - new Date(t).getTime()) / 60000) + "m ago" : "never");
       return new Response(JSON.stringify({
         now: new Date().toISOString(), quota,
-        lastCron: cron ? { ...cron, when: ago(cron.at) } : "no cron run recorded yet",
+        cronHeartbeat: tick ? ago(tick) : "NEVER — cron is not firing (check dashboard Triggers)",
+        lastCron: cron ? { ...cron, when: ago(cron.at) } : "no full/live poll yet",
         lastRefresh: refresh ? { ...refresh, when: ago(refresh.finished) } : "none",
         pollMeta: pm ? { lastFull: ago(pm.lastFull && new Date(pm.lastFull).toISOString()), lastLive: ago(pm.lastLive && new Date(pm.lastLive).toISOString()) } : null,
       }, null, 2), { headers: { "content-type": "application/json" } });
