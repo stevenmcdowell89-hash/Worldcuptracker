@@ -42,11 +42,13 @@ function parseHash() {
 
 // replace:true swaps the current history entry instead of pushing — used for sub-tab
 // switches inside a detail page so Back exits the page rather than cycling its tabs.
+// Those in-place swaps also skip the enter animation: the slide is for moving between
+// sections or drilling in, not for flipping Commentary → Lineup on the same screen.
 export function navigate(to, replace = false) {
   const url = "#/" + to;
-  if (replace) { history.replaceState(null, "", url); render(); }
-  else if (("#/" + to) === location.hash) { render(); }
-  else { location.hash = url; }   // triggers hashchange → render
+  if (replace) { history.replaceState(null, "", url); render({ animate: false }); }
+  else if (("#/" + to) === location.hash) { render({ animate: false }); }   // re-tap of the current tab
+  else { location.hash = url; }   // triggers hashchange → render (animated)
 }
 
 const $screen = document.getElementById("screen");
