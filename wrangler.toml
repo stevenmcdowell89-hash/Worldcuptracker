@@ -2,6 +2,7 @@
 # The single Worker serves the static /web app via Static Assets and intercepts
 # GET /data/latest.json to return the KV snapshot — one deployment, same origin,
 # no CORS, no separate Pages project. The frontend only ever reads the snapshot.
+# Build trigger: phase 3 (channel · morning view · per-match reminders).
 
 name = "worldcuptracker"
 main = "worker/index.js"
