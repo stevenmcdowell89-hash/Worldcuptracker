@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#4B45E0"/>
+  <text x="256" y="290" font-family="'Bricolage Grotesque', system-ui, sans-serif" font-size="190" font-weight="800" fill="#FFFFFF" text-anchor="middle">WC</text>
+  <text x="256" y="410" font-family="'Bricolage Grotesque', system-ui, sans-serif" font-size="120" font-weight="800" fill="#C9C6FF" text-anchor="middle">26</text>
+</svg>

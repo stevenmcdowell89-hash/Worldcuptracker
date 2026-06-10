@@ -378,3 +378,13 @@ a { color:inherit; text-decoration:none; }
 
 .bxwrap.connected .bx { border-left:3px solid var(--divider); }
 .bxwrap.embed { padding-bottom:10px; }
+
+/* notifications settings (§14) */
+.btn-pill { padding:7px 16px; border-radius:var(--radius-pill); background:var(--brand); color:#fff; font-weight:700; font-size:13px; flex:none; }
+.btn-pill.on { background:var(--raised); color:var(--muted); }
+.btn-pill:disabled { opacity:.5; }
+.toggle-row { cursor:pointer; }
+.sw { appearance:none; -webkit-appearance:none; width:42px; height:25px; border-radius:13px; background:var(--divider); position:relative; flex:none; transition:background .2s; cursor:pointer; }
+.sw::after { content:""; position:absolute; top:2px; left:2px; width:21px; height:21px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.25); transition:transform .2s; }
+.sw:checked { background:var(--through); }
+.sw:checked::after { transform:translateX(17px); }

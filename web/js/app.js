@@ -3,6 +3,7 @@
 
 import { loadAll, state } from "./data.js";
 import * as S from "./screens.js";
+import { registerServiceWorker } from "./notifications.js";
 
 const TABS = [
   { id: "matches", label: "Matches", ico: "⚽" },
@@ -117,6 +118,7 @@ export function toast(msg) {
 }
 
 async function boot() {
+  registerServiceWorker();   // PWA install + push receiver (brief §14); no-op if unsupported
   $screen.innerHTML = `<div class="empty"><div class="big">⚽</div><div class="t">Loading…</div></div>`;
   try {
     await loadAll();

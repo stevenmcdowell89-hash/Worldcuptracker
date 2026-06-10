@@ -57,6 +57,33 @@ Open the local web server and you get the full app running against the mock
 snapshot. Everything (Matches, Race, Watch, Bracket, More + detail pages) works
 offline against `web/data/latest.json`.
 
+```bash
+npm run smoke        # render every screen (all phases) in node to catch view errors
+```
+
+## Phase evolution (Part B — §11–15)
+
+The tournament's focus shifts over time via one flag, `meta.phase`
+(`pre | group | groupFinal | knockout`), derived by the pure `tournamentPhase()` in
+`web/js/engine.js`. Phase shifting is **additive only** — it layers context onto the
+Matches feed without ever removing a fixture (§1a rule 1):
+
+- **Matches** gains a `Matches | Race for R32` underlined toggle (the right side flashes
+  amber + LIVE during `groupFinal`), and accretes inline: a countdown hero (`pre`), the
+  embedded Race card (`group`), each group's table under its final games + a prominent
+  cut-line card (`groupFinal`), and the bracket (`knockout`).
+- **Groups → Race for R32** runs the same phase-driven flash, handing off to the Bracket
+  in `knockout`.
+- **Bracket** (under More) is two fully-vertical sub-tabs — **Path** (a team's route as a
+  spine) and **Bracket** (Top/Bottom-half connected ties) — no horizontal scroll.
+- **Stakes** (`Decider / Seeding / Dead rubber`, `stakesFor()` in the engine) tag upcoming
+  group fixtures.
+- **Notifications** (§14) — web push via the PWA (`web/manifest.webmanifest`, `web/sw.js`),
+  three quiet toggles in More → settings. **No login/identity**: the push endpoint is the
+  per-device key, stored in KV with that device's prefs. The push crypto (VAPID + RFC 8291
+  aes128gcm) is in `worker/push.js`, validated by a round-trip test (`scripts/push.test.js`).
+  Inert until VAPID keys are set — generate with `npm run gen:vapid` (see `wrangler.toml`).
+
 ## Status / honesty notes (see brief §8)
 
 - **No xG / xA anywhere.** Deliberate.

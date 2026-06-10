@@ -1,0 +1,14 @@
+{
+  "name": "WC26 · World Cup Tracker",
+  "short_name": "WC26",
+  "description": "2026 World Cup live scores and the live race for the last 8 — all in one place.",
+  "start_url": "/#/matches",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#EDEEF2",
+  "theme_color": "#4B45E0",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

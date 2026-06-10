@@ -16,6 +16,7 @@
 import { thirdPlaceTable, recompute, verdicts, compareGroupRows, qualifyOutlook, tournamentPhase, spotsMoving, stakesFor } from "../web/js/engine.js";
 import { buildBracket } from "../web/js/bracket.js";
 import ANNEXC from "../web/js/annexC.data.js";
+import { sendWebPush } from "./push.js";
 
 const API = "https://v3.football.api-sports.io";
 const KV_KEY = "latest.json";
@@ -723,6 +724,113 @@ async function runRefresh(env) {
   }
 }
 
+// ── notifications (brief §14) ────────────────────────────────────────────────────
+// Web push via the PWA. The push endpoint is the per-device key — no login/identity.
+// Subscriptions live in KV under "push:<hash>" with that device's prefs. The whole
+// feature is inert unless VAPID keys are configured.
+const PUSH_PREFIX = "push:";
+const pushEnabled = (env) => !!(env.VAPID_JWK && env.VAPID_PUBLIC_KEY);
+
+async function hashKey(s) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+  return [...new Uint8Array(buf)].slice(0, 16).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+async function storeSubscription(env, subscription, prefs) {
+  const id = await hashKey(subscription.endpoint);
+  await env.SNAPSHOT.put(PUSH_PREFIX + id, JSON.stringify({
+    subscription, prefs: prefs || { results: true, today: true, qual: true }, updated: Date.now(),
+  }));
+  return id;
+}
+async function removeSubscription(env, endpoint) {
+  await env.SNAPSHOT.delete(PUSH_PREFIX + (await hashKey(endpoint)));
+}
+async function listSubscriptions(env) {
+  const out = [];
+  let cursor;
+  do {
+    const page = await env.SNAPSHOT.list({ prefix: PUSH_PREFIX, cursor });
+    for (const k of page.keys) { const v = await env.SNAPSHOT.get(k.name, "json"); if (v) out.push({ key: k.name, ...v }); }
+    cursor = page.list_complete ? null : page.cursor;
+  } while (cursor);
+  return out;
+}
+// Send one notification to every subscriber opted into `prefKey`. Prunes dead subs.
+async function broadcast(env, prefKey, notif) {
+  const subs = await listSubscriptions(env);
+  for (const s of subs) {
+    if (s.prefs && s.prefs[prefKey] === false) continue;
+    try {
+      const res = await sendWebPush(s.subscription, notif, env);
+      if (res.status === 404 || res.status === 410) await env.SNAPSHOT.delete(s.key);  // gone
+    } catch (e) { console.error("push send failed:", e.message); }
+  }
+}
+// UK wall-clock parts (digests + the waking-hours gate for qualification alerts).
+function ukParts() {
+  const fmt = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/London", hour12: false, hour: "2-digit", year: "numeric", month: "2-digit", day: "2-digit" });
+  const p = Object.fromEntries(fmt.formatToParts(new Date()).map((x) => [x.type, x.value]));
+  return { hour: parseInt(p.hour, 10) % 24, date: `${p.year}-${p.month}-${p.day}` };
+}
+// Mark a once-per-day job as done; returns true the first time it's called for `date`.
+async function claimDaily(env, key, date) {
+  if ((await env.SNAPSHOT.get(key)) === date) return false;
+  await env.SNAPSHOT.put(key, date);
+  return true;
+}
+// Verdict flips between two snapshots (brief §14): qualified / eliminated / cut-line
+// crossings. Batched into one line per group so simultaneous flips don't spam.
+function detectFlips(prev, snap) {
+  if (!prev?.teams) return [];
+  const interesting = (v) => v === "qualified" || v === "eliminated";
+  const byGroup = {};
+  for (const [code, t] of Object.entries(snap.teams || {})) {
+    const was = prev.teams[code]?.verdict;
+    const now = t.verdict;
+    if (!now || now === was) continue;
+    if (interesting(now) || interesting(was)) {
+      const name = t.name || code;
+      const phrase = now === "qualified" ? `${name} qualify` : now === "eliminated" ? `${name} are out` : `${name}: ${now}`;
+      (byGroup[t.group || "?"] = byGroup[t.group || "?"] || []).push(phrase);
+    }
+  }
+  return Object.entries(byGroup).map(([g, list]) => `Group ${g}: ${list.join(", ")}`);
+}
+function resultsDigest(snap) {
+  const since = Date.now() - 16 * 3600e3;   // overnight catch-up window
+  const ft = (snap.matches || []).filter((m) => m.status === "ft" && m.kickoff && new Date(m.kickoff).getTime() >= since);
+  if (!ft.length) return null;
+  return ft.slice(0, 8).map((m) => `${m.home.code} ${m.home.score}-${m.away.score} ${m.away.code}`).join(" · ");
+}
+function todayDigest(snap, date) {
+  const today = (snap.matches || []).filter((m) => m.status === "scheduled" && (m.kickoff || "").slice(0, 10) === date);
+  if (!today.length) return null;
+  return today.slice(0, 8).map((m) => `${m.home.code} v ${m.away.code}`).join(" · ");
+}
+
+async function runNotifications(env, prev, snap) {
+  if (!pushEnabled(env)) return;                       // feature off until keys are set
+  const { hour, date } = ukParts();
+  const waking = hour >= 8 && hour < 23;
+
+  // Qualification moments — live verdict flips, waking hours only (overnight folds
+  // into the morning digest).
+  if (waking) {
+    const flips = detectFlips(prev, snap);
+    if (flips.length) await broadcast(env, "qual", { title: "Qualification update", body: flips.join(" · "), tag: "wc26-qual", url: "/#/groups?t=race" });
+  }
+  // Morning results digest (~8am UK) + the overnight catch-up.
+  if (hour === 8 && await claimDaily(env, "digest-results", date)) {
+    const body = resultsDigest(snap);
+    if (body) await broadcast(env, "results", { title: "Last night's results", body, tag: "wc26-results", url: "/#/matches" });
+  }
+  // Today's matches (~midday UK).
+  if (hour === 12 && await claimDaily(env, "digest-today", date)) {
+    const body = todayDigest(snap, date);
+    if (body) await broadcast(env, "today", { title: "Today's matches", body, tag: "wc26-today", url: "/#/matches" });
+  }
+}
+
 export default {
   // Cron entrypoint.
   async scheduled(event, env, ctx) {
@@ -765,6 +873,8 @@ export default {
         await writeSnapshot(env, snap);
         await env.SNAPSHOT.put(META_KEY, JSON.stringify({ lastFull: dueFull ? now : meta.lastFull, lastLive: now, lastNews: dueFull ? now : (meta.lastNews || 0) }));
         await env.SNAPSHOT.put("cron-status", JSON.stringify({ ok: true, at: new Date().toISOString(), kind: dueFull ? "full" : "live", squadCount: snap.meta.squadCount, subrequests: SUBREQ }));
+        // Push: digests + verdict-flip alerts, diffing the previous snapshot (§14).
+        try { await runNotifications(env, prev, snap); } catch (e) { console.error("notify failed:", e.message); }
       } catch (err) {
         console.error("poll failed:", err.message);
         await env.SNAPSHOT.put("cron-status", JSON.stringify({ ok: false, at: new Date().toISOString(), error: err.message }));
@@ -790,6 +900,29 @@ export default {
       });
     }
     if (path === "/healthz") return new Response("ok");
+
+    // ── Web push subscription endpoints (brief §14) ──
+    const json = (obj, status = 200) => new Response(JSON.stringify(obj), { status, headers: { "content-type": "application/json" } });
+    if (path === "/push/vapidPublicKey") {
+      if (!pushEnabled(env)) return json({ enabled: false }, 404);
+      return json({ enabled: true, key: env.VAPID_PUBLIC_KEY });
+    }
+    if (path === "/push/subscribe" && request.method === "POST") {
+      if (!pushEnabled(env)) return json({ error: "push not configured" }, 503);
+      try {
+        const { subscription, prefs } = await request.json();
+        if (!subscription?.endpoint || !subscription?.keys?.p256dh) return json({ error: "bad subscription" }, 400);
+        const id = await storeSubscription(env, subscription, prefs);
+        return json({ ok: true, id });
+      } catch (e) { return json({ error: e.message }, 400); }
+    }
+    if (path === "/push/unsubscribe" && request.method === "POST") {
+      try {
+        const { endpoint } = await request.json();
+        if (endpoint) await removeSubscription(env, endpoint);
+        return json({ ok: true });
+      } catch (e) { return json({ error: e.message }, 400); }
+    }
 
     // Read-only health view: last cron run, last manual refresh, poll timing, and the
     // API daily quota (the usual cause of a stuck refresh). One API call.

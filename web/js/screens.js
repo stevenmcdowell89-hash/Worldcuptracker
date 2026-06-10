@@ -6,6 +6,7 @@ import { state, colour, teamName, player, flag, statusChip, fmtTime, fmtDay, cou
 import { qualifyOutlook } from "./engine.js";
 import { raceContent } from "./race.js";
 import { bracketEmbed, renderBracket } from "./bracketview.js";
+import { notificationsCardHTML, mountNotifications } from "./notifications.js";
 export { renderBracket };   // the Bracket screen now lives in bracketview.js (vertical Path/structural, §13)
 
 const S = () => state.snap;
@@ -172,16 +173,18 @@ function daySec([day, list]) {
 
 // ── More ──
 export function renderMore() {
-  return `
+  const html = `
     <div class="block">
       <div class="lrow clickable" data-nav="bracket"><span class="nm">🏆 Bracket</span><span class="chev">›</span></div>
       <div class="lrow clickable" data-nav="stats"><span class="nm">📈 Stats — scorers, assists, discipline</span><span class="chev">›</span></div>
     </div>
+    ${notificationsCardHTML()}
     <div class="sec-head"><h2>About</h2></div>
     <div class="block">
       <div class="lrow"><span class="nm muted" style="font-weight:500">2026 World Cup tracker. Live scores plus the live third-place race — all in one place. No xG, by design.</span></div>
     </div>
     <div class="updated">Snapshot ${fmtDay(S().meta?.updated)} ${fmtTime(S().meta?.updated)} · source: ${S().meta?.dataSource}</div>`;
+  return { html, mount: (root) => { mountNotifications(root).catch(() => {}); } };
 }
 
 // ── News (BBC Sport World Cup headlines; tap opens the article) ──

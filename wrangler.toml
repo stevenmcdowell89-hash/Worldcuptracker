@@ -47,3 +47,9 @@ NEWS_INTERVAL_MIN = "30"
 # GUARDIAN_KEY (live minute-by-minute commentary, optional): set as a secret/var.
 #   Free Open Platform key from open-platform.theguardian.com — text + metadata,
 #   5,000 calls/day. Without it, the live Commentary tab simply doesn't appear.
+#
+# Web push notifications (brief §14) — OPTIONAL. The feature stays inert until set.
+#   Generate a key pair once:  npm run gen:vapid
+#   VAPID_JWK        (Secret)   — the private-key JWK it prints
+#   VAPID_PUBLIC_KEY (Variable) — the base64url public key (also handed to the browser)
+#   VAPID_SUBJECT    (Variable) — a mailto: or https: contact, e.g. mailto:you@example.com
