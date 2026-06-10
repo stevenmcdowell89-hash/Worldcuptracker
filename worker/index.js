@@ -98,14 +98,17 @@ const CFG = (env) => ({
 function inLiveWindow(snapshot) {
   if (!snapshot) return false;
   const now = Date.now();
-  const all = [
-    ...(snapshot.matches || []).map((m) => m.kickoff),
-    ...(snapshot.remainingFixtures || []).map((f) => f.kickoff),
-  ].filter(Boolean);
-  // a match is "live-ish" from 5 min before KO to 140 min after
-  return all.some((iso) => {
-    const ko = new Date(iso).getTime();
-    return now >= ko - 5 * 60e3 && now <= ko + 140 * 60e3;
+  // Knockout matches (no group) can run to extra time + penalties — a normal match is
+  // done by ~KO+120, but ET+pens pushes the whistle out to ~KO+180. Give knockouts a
+  // longer tail so live polling (scores + commentary) doesn't drop out mid-ET.
+  const items = [
+    ...(snapshot.matches || []).map((m) => ({ ko: m.kickoff, knockout: !m.group })),
+    ...(snapshot.remainingFixtures || []).map((f) => ({ ko: f.kickoff, knockout: false })),
+  ].filter((x) => x.ko);
+  return items.some(({ ko, knockout }) => {
+    const t = new Date(ko).getTime();
+    const tail = (knockout ? 240 : 140) * 60e3;   // min after KO; knockout covers ET+pens+wrap-up
+    return now >= t - 5 * 60e3 && now <= t + tail;
   });
 }
 
