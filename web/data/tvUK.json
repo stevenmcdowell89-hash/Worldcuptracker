@@ -1,18 +1,322 @@
 {
-  "_note": "UK TV broadcaster map (brief feature 1). API-Football does not carry the UK broadcaster, so it is hand-kept here from the OFFICIAL BBC/ITV published schedules. NEVER put a guessed/placeholder channel here: if a real fixture is not in this map the app shows nothing for it, which is correct. Real group fixtures are intentionally UNMAPPED until the official schedule is transcribed.",
-  "_keys": "Group games resolve by fixture id (fixtures{}) first, then by HOME-AWAY team matchup (byTeams{}). Knockout ties resolve by slot, e.g. R32-M73 (knockout{}).",
-  "_dev": "The fixtures{} entries below are LOCAL-DEV demo keys (mock fixture ids like mA1/f2). They can never match production, where matches carry real API-Football ids, so they only light up the feature when running against the local mock snapshot.",
+  "_note": "UK TV broadcaster map (brief feature 1). API-Football does not carry the UK broadcaster, so it is hand-kept here. Group games resolve by fixture id (fixtures{}) first, then by HOME-AWAY team matchup (byTeams{}); knockout ties by slot, e.g. R32-M73 (knockout{}). If a real fixture is not in this map the app shows nothing for it — never a guessed channel.",
+  "_source": "byTeams = 2026 World Cup group-stage UK channels, transcribed and CROSS-VERIFIED across two independent listings (live-footballontv.com and worldcuptvguide.co.uk). Only fixtures where both sources AGREE are mapped. 3 of 72 are deliberately left unmapped: MEX-KOR (sources conflict: BBC Two vs BBC One), KOR-CZE and TUN-NED (listed by only one source). Re-verify against the official BBC Sport / ITV schedule before relying on it.",
+  "_dev": "fixtures{} below are LOCAL-DEV demo keys (mock fixture ids like mA1/f2). They never match production (real API-Football ids) and only light up the feature against the local mock snapshot.",
   "fixtures": {
-    "mA1": { "channel": "BBC One", "stream": "iPlayer" },
-    "mD1": { "channel": "ITV1", "stream": "ITVX" },
-    "mC0": { "channel": "BBC One", "stream": "iPlayer" },
-    "f2": { "channel": "ITV4", "stream": "ITVX" },
-    "f3": { "channel": "BBC Two", "stream": "iPlayer" },
-    "f5": { "channel": "BBC One", "stream": "iPlayer" },
-    "f8": { "channel": "ITV1", "stream": "ITVX" },
-    "f11": { "channel": "BBC One", "stream": "iPlayer" },
-    "f15": { "channel": "ITV1", "stream": "ITVX" }
+    "mA1": {
+      "channel": "BBC One",
+      "stream": "iPlayer"
+    },
+    "mD1": {
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    "mC0": {
+      "channel": "BBC One",
+      "stream": "iPlayer"
+    },
+    "f2": {
+      "channel": "ITV4",
+      "stream": "ITVX"
+    },
+    "f3": {
+      "channel": "BBC Two",
+      "stream": "iPlayer"
+    },
+    "f5": {
+      "channel": "BBC One",
+      "stream": "iPlayer"
+    },
+    "f8": {
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    "f11": {
+      "channel": "BBC One",
+      "stream": "iPlayer"
+    },
+    "f15": {
+      "channel": "ITV1",
+      "stream": "ITVX"
+    }
   },
-  "byTeams": {},
+  "byTeams": {
+    "MEX-RSA": {
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    "CAN-BIH": {
+      "channel": "BBC One",
+      "stream": "iPlayer"
+    },
+    "USA-PAR": {
+      "channel": "BBC One",
+      "stream": "iPlayer"
+    },
+    "QAT-SUI": {
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    "BRA-MAR": {
+      "channel": "BBC One",
+      "stream": "iPlayer"
+    },
+    "HAI-SCO": {
+      "channel": "BBC One",
+      "stream": "iPlayer"
+    },
+    "AUS-TUR": {
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    "GER-CUR": {
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    "NED-JPN": {
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    "CIV-ECU": {
+      "channel": "BBC One",
+      "stream": "iPlayer"
+    },
+    "SWE-TUN": {
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    "ESP-CPV": {
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    "BEL-EGY": {
+      "channel": "BBC One",
+      "stream": "iPlayer"
+    },
+    "KSA-URU": {
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    "IRN-NZL": {
+      "channel": "BBC One",
+      "stream": "iPlayer"
+    },
+    "FRA-SEN": {
+      "channel": "BBC One",
+      "stream": "iPlayer"
+    },
+    "IRQ-NOR": {
+      "channel": "BBC One",
+      "stream": "iPlayer"
+    },
+    "ARG-ALG": {
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    "AUT-JOR": {
+      "channel": "BBC One",
+      "stream": "iPlayer"
+    },
+    "POR-CGO": {
+      "channel": "BBC One",
+      "stream": "iPlayer"
+    },
+    "ENG-CRO": {
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    "GHA-PAN": {
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    "UZB-COL": {
+      "channel": "BBC One",
+      "stream": "iPlayer"
+    },
+    "CZE-RSA": {
+      "channel": "BBC One",
+      "stream": "iPlayer"
+    },
+    "SUI-BIH": {
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    "CAN-QAT": {
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    "USA-AUS": {
+      "channel": "BBC One",
+      "stream": "iPlayer"
+    },
+    "SCO-MAR": {
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    "BRA-HAI": {
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    "TUR-PAR": {
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    "NED-SWE": {
+      "channel": "BBC One",
+      "stream": "iPlayer"
+    },
+    "GER-CIV": {
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    "ECU-CUR": {
+      "channel": "BBC One",
+      "stream": "iPlayer"
+    },
+    "TUN-JPN": {
+      "channel": "BBC One",
+      "stream": "iPlayer"
+    },
+    "ESP-KSA": {
+      "channel": "BBC One",
+      "stream": "iPlayer"
+    },
+    "BEL-IRN": {
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    "URU-CPV": {
+      "channel": "BBC One",
+      "stream": "iPlayer"
+    },
+    "NZL-EGY": {
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    "ARG-AUT": {
+      "channel": "BBC One",
+      "stream": "iPlayer"
+    },
+    "FRA-IRQ": {
+      "channel": "BBC One",
+      "stream": "iPlayer"
+    },
+    "NOR-SEN": {
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    "JOR-ALG": {
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    "POR-UZB": {
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    "ENG-GHA": {
+      "channel": "BBC One",
+      "stream": "iPlayer"
+    },
+    "PAN-CRO": {
+      "channel": "BBC One",
+      "stream": "iPlayer"
+    },
+    "COL-CGO": {
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    "SUI-CAN": {
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    "BIH-QAT": {
+      "channel": "ITV4",
+      "stream": "ITVX"
+    },
+    "MAR-HAI": {
+      "channel": "BBC Two",
+      "stream": "iPlayer"
+    },
+    "SCO-BRA": {
+      "channel": "BBC One",
+      "stream": "iPlayer"
+    },
+    "CZE-MEX": {
+      "channel": "BBC One",
+      "stream": "iPlayer"
+    },
+    "RSA-KOR": {
+      "channel": "BBC Two",
+      "stream": "iPlayer"
+    },
+    "ECU-GER": {
+      "channel": "BBC One",
+      "stream": "iPlayer"
+    },
+    "CUR-CIV": {
+      "channel": "BBC Two",
+      "stream": "iPlayer"
+    },
+    "JPN-SWE": {
+      "channel": "BBC Two",
+      "stream": "iPlayer"
+    },
+    "TUR-USA": {
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    "PAR-AUS": {
+      "channel": "ITV4",
+      "stream": "ITVX"
+    },
+    "SEN-IRQ": {
+      "channel": "ITV4",
+      "stream": "ITVX"
+    },
+    "NOR-FRA": {
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    "URU-ESP": {
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    "CPV-KSA": {
+      "channel": "ITV4",
+      "stream": "ITVX"
+    },
+    "EGY-IRN": {
+      "channel": "BBC Two",
+      "stream": "iPlayer"
+    },
+    "NZL-BEL": {
+      "channel": "BBC One",
+      "stream": "iPlayer"
+    },
+    "CRO-GHA": {
+      "channel": "ITV4",
+      "stream": "ITVX"
+    },
+    "PAN-ENG": {
+      "channel": "ITV1",
+      "stream": "ITVX"
+    },
+    "COL-POR": {
+      "channel": "BBC One",
+      "stream": "iPlayer"
+    },
+    "CGO-UZB": {
+      "channel": "BBC Two",
+      "stream": "iPlayer"
+    },
+    "ALG-AUT": {
+      "channel": "BBC Two",
+      "stream": "iPlayer"
+    },
+    "JOR-ARG": {
+      "channel": "BBC One",
+      "stream": "iPlayer"
+    }
+  },
   "knockout": {}
 }
