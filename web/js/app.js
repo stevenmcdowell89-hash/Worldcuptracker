@@ -52,6 +52,7 @@ const $appbar = document.getElementById("appbar");
 const $nav = document.getElementById("bottomnav");
 
 function renderAppbar(route, ctx) {
+  $appbar.classList.toggle("top", !!route.top);   // top-level bars get the brand gradient
   if (route.top) {
     $appbar.innerHTML = `
       <span class="logo">WC<span class="dot">26</span></span>
