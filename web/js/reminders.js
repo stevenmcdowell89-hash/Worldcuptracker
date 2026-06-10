@@ -4,11 +4,14 @@
 //     scheduled server-side on this device's anonymous push-subscription record
 //     (POST /push/remind). The Worker's per-minute cron delivers it.
 //   • Calendar (secondary): a client-generated .ics event — works anywhere,
-//     including where push doesn't (e.g. iOS Safari without Add-to-Home-Screen).
+//     including where push doesn't, but ONLY via the explicit "Add to calendar"
+//     row on the match screen. A bell tap never silently downloads a file: row
+//     bells are too easy to brush on the Matches screen, so without push set up
+//     the tap just points at the two deliberate paths.
 //   • State: localStorage marks which fixtures this device has a bell on.
 
 import { state, teamName } from "./data.js";
-import { pushSupported, currentSubscription, enablePush, loadPrefs } from "./notifications.js";
+import { pushSupported, currentSubscription } from "./notifications.js";
 
 const LS_REMS = "wc26-reminders";
 const LS_LEAD = "wc26-reminder-lead";
@@ -90,27 +93,24 @@ export async function handleReminderTap(fixtureId, el) {
     return;
   }
 
-  // toggle ON — push first, .ics as the works-anywhere fallback
+  // toggle ON — reminders ride on the push subscription. Not set up yet? Say where
+  // the two deliberate options live; never auto-download a calendar file from a tap.
+  let sub = null;
+  if (pushSupported() && Notification.permission === "granted") {
+    sub = await currentSubscription().catch(() => null);
+  }
+  if (!sub) {
+    toast("To get reminders, turn on notifications in the More tab — or open the match and tap “Add to calendar”.");
+    return;
+  }
   if (el) el.disabled = true;
   try {
-    if (pushSupported() && Notification.permission !== "denied") {
-      let sub = await currentSubscription().catch(() => null);
-      if (!sub) sub = await enablePush(loadPrefs());      // one prompt; reuses the §14 flow
-      await postRemind(sub, m, true);
-      rems[fixtureId] = { at: m.kickoff, lead: reminderLead() };
-      saveRems(rems); paintBells(fixtureId);
-      toast(`Reminder set — ${reminderLead()} min before kick-off`);
-      return;
-    }
-    throw new Error("push unavailable");
+    await postRemind(sub, m, true);
+    rems[fixtureId] = { at: m.kickoff, lead: reminderLead() };
+    saveRems(rems); paintBells(fixtureId);
+    toast(`Reminder set — ${reminderLead()} min before kick-off`);
   } catch {
-    // push refused/unavailable → calendar fallback still delivers the nudge
-    try {
-      downloadIcs(m);
-      rems[fixtureId] = { at: m.kickoff, lead: reminderLead(), ics: true };
-      saveRems(rems); paintBells(fixtureId);
-      toast("Push unavailable — added a calendar event instead");
-    } catch { toast("Couldn't set a reminder"); }
+    toast("Couldn't set the reminder — check notifications are still enabled in the More tab.");
   } finally { if (el) el.disabled = false; }
 }
 
