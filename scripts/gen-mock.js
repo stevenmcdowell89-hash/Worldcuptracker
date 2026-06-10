@@ -10,7 +10,7 @@
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname, resolve as pathResolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { verdicts, thirdPlaceTable, recompute, compareGroupRows, tournamentPhase, spotsMoving, stakesFor } from "../web/js/engine.js";
+import { verdicts, thirdPlaceTable, recompute, compareGroupRows, spotsMoving, stakesFor } from "../web/js/engine.js";
 import { buildBracket } from "../web/js/bracket.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -378,7 +378,9 @@ const snapshot = {
   meta: {
     stage: "Group Stage", updated: new Date().toISOString(), groupStageComplete: false,
     dataSource: "mock", started: true,
-    phase: tournamentPhase(snapshotForEngine),          // groupFinal in this mid-tournament demo
+    // Phase is time-based on real data; the mock is a static "final group matchday"
+    // demo (results baked in, kickoffs in the future), so pin it rather than compute it.
+    phase: "groupFinal",
     spotsMoving: spotsMoving(snapshotForEngine),
   },
   groups: sortedGroups,

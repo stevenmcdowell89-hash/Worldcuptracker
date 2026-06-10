@@ -167,42 +167,39 @@ test("resultFromWDL gives default margins and flags non-exact", () => {
   assert.deepEqual(resultFromWDL(fx, "D"), { id: "f1", home: "X", away: "Y", hg: 1, ag: 1, exact: false });
 });
 
-// ── phase flag (brief §11) ──
-test("phase: no games played → pre", () => {
-  const s = { groups: { A: ["AA", "BB", "CC", "DD"].map(gr0) }, remainingFixtures: [rem("f1", "A", "AA", "BB")] };
-  assert.equal(tournamentPhase(s), "pre");
-});
+// ── phase flag (brief §11) — time-based off the real fixture schedule ──
+const mko = (id, group, kickoff) => ({ id, group, stage: group ? "Group Stage" : "R32", kickoff, status: "scheduled" });
+// group runs 11–27 Jun; a knockout fixture on 28 Jun
+const SCHED = {
+  matches: [
+    mko("1", "A", "2026-06-11T18:00:00Z"), mko("2", "A", "2026-06-27T20:00:00Z"),
+    mko("90", null, "2026-06-28T18:00:00Z"),
+  ],
+};
+const at = (iso) => Date.parse(iso);
 
-test("phase: games played, a group still mid-stage (4 games left) → group", () => {
-  // A is on its last round (2 games left), but B is only one round in (4 left).
-  const s = {
-    groups: {
-      A: [gr("AA", 6, 3, 5), gr("BB", 3, 0, 3), gr("CC", 3, 0, 2), gr("DD", 0, -3, 0)],
-      B: ["B1", "B2", "B3", "B4"].map(gr0),
-    },
-    remainingFixtures: [
-      rem("f1", "A", "AA", "BB"), rem("f2", "A", "CC", "DD"),
-      rem("f3", "B", "B1", "B2"), rem("f4", "B", "B3", "B4"),
-      rem("f5", "B", "B1", "B3"), rem("f6", "B", "B2", "B4"),
-    ],
-  };
-  assert.equal(tournamentPhase(s), "group");
+test("phase: before the first kickoff → pre", () => {
+  assert.equal(tournamentPhase(SCHED, at("2026-06-10T12:00:00Z")), "pre");
 });
-
-test("phase: every group down to its last round → groupFinal", () => {
-  const s = {
-    groups: { A: [gr("AA", 6, 3, 5), gr("BB", 3, 0, 3), gr("CC", 3, 0, 2), gr("DD", 0, -3, 0)] },
-    remainingFixtures: [rem("f1", "A", "AA", "BB"), rem("f2", "A", "CC", "DD")],
-  };
-  assert.equal(tournamentPhase(s), "groupFinal");
+test("phase: after kickoff, well before the final matchday → group", () => {
+  assert.equal(tournamentPhase(SCHED, at("2026-06-16T12:00:00Z")), "group");
 });
-
-test("phase: no group fixtures remain → knockout", () => {
-  const s = {
-    groups: { A: [gr("AA", 7, 4, 6), gr("BB", 4, 1, 3), gr("CC", 4, 0, 2), gr("DD", 1, -5, 1)] },
-    remainingFixtures: [],
-  };
-  assert.equal(tournamentPhase(s), "knockout");
+test("phase: within the last ~3 days of group fixtures → groupFinal", () => {
+  assert.equal(tournamentPhase(SCHED, at("2026-06-25T12:00:00Z")), "groupFinal");
+});
+test("phase: the morning after the last group game → knockout", () => {
+  assert.equal(tournamentPhase(SCHED, at("2026-06-28T12:00:00Z")), "knockout");
+});
+test("phase: flips snap to ~05:00 UK, not to the kickoff", () => {
+  // 03:00 UK on the knockout morning is still groupFinal; 06:00 UK has flipped.
+  assert.equal(tournamentPhase(SCHED, at("2026-06-28T02:00:00Z")), "groupFinal");
+  assert.equal(tournamentPhase(SCHED, at("2026-06-28T05:00:00Z")), "knockout");
+});
+test("phase: falls back to results when the snapshot has no schedule", () => {
+  const played = { groups: { A: [gr("AA", 6, 3, 5)] }, remainingFixtures: [] };
+  assert.equal(tournamentPhase(played, at("2026-06-28T12:00:00Z")), "knockout");
+  const fresh = { groups: { A: ["AA", "BB"].map(gr0) }, remainingFixtures: [rem("f1", "A", "AA", "BB")] };
+  assert.equal(tournamentPhase(fresh), "pre");
 });
 
 // ── stakes (brief §15) ──

@@ -394,23 +394,44 @@ export function qualifyOutlook(snapshot, code, annexC = null) {
 }
 
 // ── tournament phase (brief §11) ─────────────────────────────────────────────────
-// One flag drives the whole phase-evolution layer. Pure + deterministic so the Worker,
-// the mock and the frontend all agree (and the frontend can recompute offline).
-//   pre        — no group game has kicked off yet
-//   group      — group stage under way, not yet every group on its last round
-//   groupFinal — every group with games left has ≤2 remaining (the final-matchday window)
-//   knockout   — no group fixtures remain (group stage complete)
-export function tournamentPhase(snapshot) {
-  const groups = snapshot.groups || {};
-  const anyPlayed = GROUP_LETTERS.some((g) => (groups[g] || []).some((r) => (r.P || 0) > 0));
-  if (!anyPlayed) return "pre";
-  const groupRemaining = (snapshot.remainingFixtures || []).filter((f) => f.group);
-  if (groupRemaining.length === 0) return "knockout";
-  const remByGroup = {};
-  for (const f of groupRemaining) remByGroup[f.group] = (remByGroup[f.group] || 0) + 1;
-  // "Final matchday" once every group still in play is down to its last round (≤2 games).
-  const allOnFinalRound = Object.values(remByGroup).every((n) => n <= 2);
-  return allOnFinalRound ? "groupFinal" : "group";
+// Gated by DATE/TIME against the real fixture schedule (kickoff times come from the
+// data feed), not by results — so the flips are predictable and don't wait on
+// standings to propagate. The 2026 schedule is fixed, which makes this reliable.
+//   pre        — before the first match kicks off (the countdown)
+//   group      — group stage under way
+//   groupFinal — the final group-matchday window (~last 3 days of group fixtures)
+//   knockout   — from the morning after the last group game
+// Boundaries between group/groupFinal/knockout snap to ~05:00 UK — a quiet hour after
+// the prior night's games — so the app reads the right phase from first thing.
+const FLIP_HOUR = 5;            // 05:00 …
+const FLIP_TZ = "+01:00";       // …UK time; the whole tournament runs in BST (Jun–Jul)
+const GROUP_FINAL_DAYS = 3;     // groupFinal window = the last N days of group fixtures
+
+// The instant of 05:00 UK on the UK-calendar date of `ms`.
+function flipInstant(ms) {
+  const ymd = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(ms));
+  return Date.parse(`${ymd}T0${FLIP_HOUR}:00:00${FLIP_TZ}`);
+}
+
+export function tournamentPhase(snapshot, now = Date.now()) {
+  const matches = snapshot.matches || [];
+  const koOf = (m) => Date.parse(m.kickoff);
+  const groupKOs = matches.filter((m) => m.group).map(koOf).filter(Number.isFinite);
+  const allKOs = matches.map(koOf).filter(Number.isFinite);
+
+  // No schedule in the snapshot (e.g. the mock, or an early/empty poll) → fall back to
+  // the results-based signal so those still work.
+  if (!allKOs.length || !groupKOs.length) {
+    const played = GROUP_LETTERS.some((g) => (snapshot.groups?.[g] || []).some((r) => (r.P || 0) > 0));
+    if (!played) return "pre";
+    return (snapshot.remainingFixtures || []).some((f) => f.group) ? "group" : "knockout";
+  }
+
+  if (now < Math.min(...allKOs)) return "pre";                               // countdown still running
+  const lastGroupKO = Math.max(...groupKOs);
+  if (now >= flipInstant(lastGroupKO + 12 * 3600e3)) return "knockout";      // morning after the last group game
+  if (now >= flipInstant(lastGroupKO - GROUP_FINAL_DAYS * 24 * 3600e3)) return "groupFinal";
+  return "group";
 }
 
 // Count of third-placed teams currently "sweating" — drives the §12 flashbar copy.

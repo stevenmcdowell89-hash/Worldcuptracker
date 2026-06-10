@@ -369,7 +369,8 @@ export async function buildSnapshot(env, prev, liveOnly) {
 
   const squadCount = Object.values(teams).reduce((n, t) => n + (t.squad?.length || 0), 0);
   const engineSnap = { groups, remainingFixtures, teams };
-  const phase = tournamentPhase(engineSnap);                 // pre | group | groupFinal | knockout (§11)
+  // Phase is time-based off the real fixture schedule (matches carry the kickoffs).
+  const phase = tournamentPhase({ ...engineSnap, matches });  // pre | group | groupFinal | knockout (§11)
   const moving = anyPlayed ? spotsMoving(engineSnap) : 0;    // sweating thirds — drives the §12 flash copy
   return {
     meta: { stage: matches.some((m) => m.status === "live") ? "Group Stage" : (prev?.meta?.stage || "Group Stage"),
