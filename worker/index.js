@@ -691,12 +691,24 @@ export default {
           perMinuteLimit: RL.minLimit, perMinuteRemaining: RL.min };
       } catch (e) { quota = { error: e.message, perMinuteLimit: RL.minLimit }; }
       const ago = (t) => (t ? Math.round((Date.now() - new Date(t).getTime()) / 60000) + "m ago" : "never");
+      // sample an actual stored Watch player so we can see what enrichment produced
+      let samplePlayer = null;
+      try {
+        const snap = await readSnapshot(env);
+        const club = snap?.clubWatch?.["manchester-united"] || Object.values(snap?.clubWatch || {}).find((c) => c.players?.length);
+        const pid = club?.players?.[0]?.playerId;
+        const p = pid && snap?.players?.[String(pid)];
+        if (p) samplePlayer = { id: pid, name: p.name, club: p.club, league: p.league, age: p.age,
+          seasonRows: (p.season || []).length, careerRows: (p.career || []).length, honours: (p.honours || []).length,
+          enrichedVersion: p._enriched, tournamentG: p.tournament?.g };
+      } catch (e) { samplePlayer = { error: e.message }; }
       return new Response(JSON.stringify({
         now: new Date().toISOString(), quota,
         cronHeartbeat: tick ? ago(tick) : "NEVER — cron is not firing (check dashboard Triggers)",
         lastCron: cron ? { ...cron, when: ago(cron.at) } : "no full/live poll yet",
         lastRefresh: refresh ? { ...refresh, when: ago(refresh.finished) } : "none",
         pollMeta: pm ? { lastFull: ago(pm.lastFull && new Date(pm.lastFull).toISOString()), lastLive: ago(pm.lastLive && new Date(pm.lastLive).toISOString()) } : null,
+        samplePlayer, enrichVersionExpected: ENRICH_VERSION,
       }, null, 2), { headers: { "content-type": "application/json" } });
     }
 
