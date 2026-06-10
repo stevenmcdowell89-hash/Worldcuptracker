@@ -1,7 +1,7 @@
 // App shell: one white app bar everywhere, scrolling screen, bottom nav on every
 // screen (brief §9). Hash router. Detail pages push with a back arrow.
 
-import { loadAll, state } from "./data.js";
+import { loadAll, state, countdown } from "./data.js";
 import * as S from "./screens.js";
 import { registerServiceWorker } from "./notifications.js";
 
@@ -55,7 +55,8 @@ function renderAppbar(route, ctx) {
   $appbar.classList.toggle("top", !!route.top);   // top-level bars get the brand gradient
   if (route.top) {
     $appbar.innerHTML = `
-      <span class="logo"><span class="wc">WC</span><span class="yr">26</span></span>
+      <span class="logo"><span class="wc">WC</span><span class="yr">26</span>
+        <span class="masthead"><b>World Cup</b><i>2026 · Live</i></span></span>
       <span class="spacer"></span>
       <button class="iconbtn" data-nav="stats" aria-label="Stats">
         <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V11M12 20V4M19 20v-6"/></svg>
@@ -137,6 +138,11 @@ async function boot() {
   // up and scores/minute stay fresh without a manual reload. Re-render in place only
   // when the snapshot actually changed, preserving scroll so browsing isn't disturbed.
   setInterval(tick, 30000);
+  // Tick any live countdowns (e.g. the pre-tournament hero) every second so the
+  // minutes actually move between data polls.
+  setInterval(() => {
+    document.querySelectorAll("[data-countdown]").forEach((el) => { el.textContent = countdown(el.dataset.countdown); });
+  }, 1000);
   // When the tab is re-shown, refresh immediately and apply any pending code update.
   document.addEventListener("visibilitychange", () => { if (!document.hidden) { applyUpdate(); tick(); } });
   window.addEventListener("hashchange", applyUpdate);   // navigating? take the new build now

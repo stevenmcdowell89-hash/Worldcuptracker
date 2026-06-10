@@ -70,7 +70,7 @@ export function countdown(iso) {
   if (ms <= 0) return "now";
   const h = Math.floor(ms / 3.6e6), m = Math.floor((ms % 3.6e6) / 6e4);
   const d = Math.floor(h / 24);
-  if (d >= 1) return `${d}d ${h % 24}h`;
+  if (d >= 1) return `${d}d ${h % 24}h ${m}m`;
   if (h >= 1) return `${h}h ${m}m`;
   return `${m}m`;
 }

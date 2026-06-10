@@ -91,7 +91,7 @@ function matchesToggle(view) {
 // piece is deliberately kept out of here — it lives only on the Watch tab (§1a rule 3).
 function preHero(upcoming) {
   const first = upcoming[0];
-  const cd = first ? `<div class="pre-count">${countdown(first.kickoff)}</div>
+  const cd = first ? `<div class="pre-count" data-countdown="${first.kickoff}">${countdown(first.kickoff)}</div>
       <div class="pre-fix">${teamName(first.home.code)} v ${teamName(first.away.code)} · ${fmtDay(first.kickoff)}</div>` : "";
   return `<div class="prehero">
     <div class="pre-kicker">2026 FIFA World Cup</div>

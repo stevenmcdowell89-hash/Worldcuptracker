@@ -471,3 +471,24 @@ a { color:inherit; text-decoration:none; }
   border-radius:9px; padding:1px 8px; font-size:16px; letter-spacing:0;
   box-shadow:0 3px 10px rgba(63,75,224,.34);
 }
+
+/* ════ top-bar finishing touches (polish, not clutter) ════ */
+.appbar.top { position:relative; background:linear-gradient(180deg,#FFFFFF,#F6F7FC); }
+/* a thin brand accent along the bottom edge gives the bar a finished feel */
+.appbar.top::after {
+  content:""; position:absolute; left:0; right:0; bottom:0; height:2px;
+  background:linear-gradient(90deg,#4B45E0,#3F7BF6 55%,#4B45E0);
+}
+/* glossier badge */
+.appbar .logo .yr { box-shadow:0 3px 10px rgba(63,75,224,.34), inset 0 1px 0 rgba(255,255,255,.45); }
+/* compact masthead next to the wordmark */
+.appbar .logo .masthead {
+  display:flex; flex-direction:column; justify-content:center; gap:1px;
+  margin-left:9px; padding-left:10px; border-left:1.5px solid var(--divider); line-height:1.05;
+}
+.appbar .logo .masthead b { font-family:var(--body); font-weight:800; font-size:9px; letter-spacing:.13em; text-transform:uppercase; color:var(--ink-strong); }
+.appbar .logo .masthead i { font-family:var(--body); font-style:normal; font-weight:700; font-size:8.5px; letter-spacing:.11em; text-transform:uppercase;
+  background:linear-gradient(90deg,#4B45E0,#3F7BF6); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+
+/* countdown now includes minutes — keep the big number from overflowing small screens */
+.pre-count { font-size:clamp(30px,8.5vw,42px); }
