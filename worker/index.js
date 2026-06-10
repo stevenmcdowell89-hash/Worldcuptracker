@@ -27,8 +27,8 @@ const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
 // free plan, 1000 on paid). A full poll wants ~110 calls, so we count them and let
 // the enrichment steps stop before the cap — squads/stats fill in over several polls
 // (squads persist once fetched). Reset at the start of each buildSnapshot.
-let SUBREQ = 0, SUBREQ_CAP = 45;
-const budgetLeft = () => SUBREQ_CAP - SUBREQ;
+let SUBREQ = 0, SUBREQ_CAP = 45, RATE_LIMITED = false;
+const budgetLeft = () => (RATE_LIMITED ? 0 : SUBREQ_CAP - SUBREQ);   // stop enrichment once throttled
 
 // Run an async fn over items with bounded concurrency (keeps wall-clock low without
 // firing all subrequests at once). Used for the heavy per-team / per-player loops.
@@ -56,7 +56,12 @@ async function apiGet(env, path, params = {}, attempt = 0) {
   const body = await r.json();
   if (body.errors && Object.keys(body.errors).length) {
     const msg = JSON.stringify(body.errors);
-    if (/ratelimit/i.test(msg) && attempt < 3) { await sleep(6500); return apiGet(env, path, params, attempt + 1); }
+    if (/ratelimit/i.test(msg)) {
+      // Per-minute: brief retry (window resets each minute). Per-day: don't bother —
+      // it won't recover, so fail fast and stop further enrichment this run.
+      if (/per minute|requests per minute/i.test(msg) && attempt < 2) { await sleep(6000); return apiGet(env, path, params, attempt + 1); }
+      RATE_LIMITED = true;
+    }
     throw new Error(`API-Football ${path}: ${msg}`);
   }
   return body.response || [];
@@ -237,7 +242,7 @@ async function buildClubWatch(env, cfg, teams, players, remainingFixtures, prevC
 export async function buildSnapshot(env, prev, liveOnly) {
   const cfg = CFG(env);
   const base = { league: cfg.league, season: cfg.season };
-  SUBREQ = 0;
+  SUBREQ = 0; RATE_LIMITED = false;
   SUBREQ_CAP = parseInt(env.SUBREQUEST_BUDGET || "45", 10);   // < the plan's per-invocation cap
 
   // Team directory (id → code/name/logo) — standings/fixtures lack the 3-letter code.
@@ -597,12 +602,11 @@ export default {
       try {
         const snap = await buildSnapshot(env, prev, !dueFull /* liveOnly when only the live tick is due */);
         await writeSnapshot(env, snap);
-        await env.SNAPSHOT.put(META_KEY, JSON.stringify({
-          lastFull: dueFull ? now : meta.lastFull,
-          lastLive: now,
-        }));
+        await env.SNAPSHOT.put(META_KEY, JSON.stringify({ lastFull: dueFull ? now : meta.lastFull, lastLive: now }));
+        await env.SNAPSHOT.put("cron-status", JSON.stringify({ ok: true, at: new Date().toISOString(), kind: dueFull ? "full" : "live", squadCount: snap.meta.squadCount, subrequests: SUBREQ }));
       } catch (err) {
         console.error("poll failed:", err.message);
+        await env.SNAPSHOT.put("cron-status", JSON.stringify({ ok: false, at: new Date().toISOString(), error: err.message }));
         const fb = await fallbackSnapshot(env, prev);
         if (fb) await writeSnapshot(env, fb);
         // else: keep last good — never overwrite with a broken snapshot.
@@ -625,6 +629,24 @@ export default {
       });
     }
     if (path === "/healthz") return new Response("ok");
+
+    // Read-only health view: last cron run, last manual refresh, poll timing, and the
+    // API daily quota (the usual cause of a stuck refresh). One API call.
+    if (path === "/admin/status") {
+      const [cron, refresh, pm] = await Promise.all([
+        env.SNAPSHOT.get("cron-status", "json"), env.SNAPSHOT.get("refresh-status", "json"), env.SNAPSHOT.get(META_KEY, "json"),
+      ]);
+      let quota = null;
+      try { const s = await apiGet(env, "/status", {}); const o = Array.isArray(s) ? s[0] : s; quota = { plan: o?.subscription?.plan, requestsToday: o?.requests?.current, dailyLimit: o?.requests?.limit_day }; }
+      catch (e) { quota = { error: e.message }; }
+      const ago = (t) => (t ? Math.round((Date.now() - new Date(t).getTime()) / 60000) + "m ago" : "never");
+      return new Response(JSON.stringify({
+        now: new Date().toISOString(), quota,
+        lastCron: cron ? { ...cron, when: ago(cron.at) } : "no cron run recorded yet",
+        lastRefresh: refresh ? { ...refresh, when: ago(refresh.finished) } : "none",
+        pollMeta: pm ? { lastFull: ago(pm.lastFull && new Date(pm.lastFull).toISOString()), lastLive: ago(pm.lastLive && new Date(pm.lastLive).toISOString()) } : null,
+      }, null, 2), { headers: { "content-type": "application/json" } });
+    }
 
     // Probe whether /players/squads returns data for a national team vs a club, so we
     // can tell "squads not published yet" from "endpoint not returning nationals".

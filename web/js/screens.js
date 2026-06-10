@@ -65,12 +65,15 @@ export function renderMatches() {
   const firstDay = byDay.slice(0, 1).map(daySec).join("");
   const restDays = byDay.slice(1, 8).map(daySec).join("");
 
+  // The third-place race only means something once results exist; until then the
+  // group context on each fixture row is the useful information.
+  const started = S().meta?.started !== false && (S().thirdPlaceRace || []).some((t) => t.Pts > 0);
   return `
     ${stale}
     ${sec(live.length ? "● Live" : "", live)}
     ${finished.length ? sec("Latest results", finished.slice(0, 8)) : ""}
     ${firstDay}
-    ${compactRaceCard()}
+    ${started ? compactRaceCard() : ""}
     ${restDays}
     <div class="updated">Updated ${fmtTime(S().meta?.updated)} · ${S().meta?.stage}</div>`;
 }
@@ -90,23 +93,25 @@ export function renderMore() {
 }
 
 // ── Groups ──
+function groupTableHTML(letter, highlight = []) {
+  const rows = (S().groups[letter] || []).map((r, i) => {
+    const pos = i + 1;
+    const cls = (pos <= 2 ? `q${pos}` : "") + (highlight.includes(r.code) ? " hl" : "");
+    const bar = pos <= 2 ? "var(--through)" : (pos === 3 ? "var(--sweating)" : "transparent");
+    return `<tr class="${cls}" data-nav="team/${r.code}">
+      <td class="tl team"><span class="qbar" style="background:${bar}"></span>${flag(r.code)} ${r.code}</td>
+      <td>${r.P}</td><td>${r.W}</td><td>${r.D}</td><td>${r.L}</td>
+      <td>${gd(r.GD)}</td><td class="pts">${r.Pts}</td></tr>`;
+  }).join("");
+  return `<table class="gtable">
+    <thead><tr><th class="tl">Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr></thead>
+    <tbody>${rows}</tbody></table>`;
+}
+
 export function renderGroups() {
   const g = S().groups;
-  const tables = Object.keys(g).map((letter) => {
-    const rows = g[letter].map((r, i) => {
-      const pos = i + 1;
-      const statusDot = pos <= 2 ? "in" : (raceStatus(r.code) || "out");
-      const cls = pos <= 2 ? `q${pos}` : "";
-      return `<tr class="${cls}" data-nav="team/${r.code}">
-        <td class="tl team"><span class="qbar" style="background:${pos<=2?'var(--through)':(pos===3?'var(--sweating)':'transparent')}"></span>${flag(r.code)} ${r.code}</td>
-        <td>${r.P}</td><td>${r.W}</td><td>${r.D}</td><td>${r.L}</td>
-        <td>${gd(r.GD)}</td><td class="pts">${r.Pts}</td></tr>`;
-    }).join("");
-    return `<div class="sec-head"><h2>Group ${letter}</h2></div>
-      <div class="block"><table class="gtable">
-        <thead><tr><th class="tl">Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr></thead>
-        <tbody>${rows}</tbody></table></div>`;
-  }).join("");
+  const tables = Object.keys(g).map((letter) =>
+    `<div class="sec-head"><h2>Group ${letter}</h2></div><div class="block">${groupTableHTML(letter)}</div>`).join("");
   return `<div class="banner">● top two through · ● 3rd in the race · ● out</div>${tables}`;
 }
 function raceStatus(code) {
@@ -245,24 +250,33 @@ export function renderMatch(ctx) {
   const tab = ctx.query.get("t") || "facts";
   const live = m.status === "live" || m.status === "ht";
   const statusTxt = live ? (m.minute || "LIVE") : m.status === "ft" ? "Full time" : `${fmtDay(m.kickoff)} · ${fmtTime(m.kickoff)}`;
-  const rank = (code) => S().teams?.[code]?.rank ? `#${S().teams[code].rank} FIFA` : "";
+  const groupStarted = m.group && (S().groups[m.group] || []).some((r) => r.P > 0);
+  const pos = (code) => {   // current group position, once games are played (not a FIFA ranking)
+    if (!groupStarted) return "";
+    const i = (S().groups[m.group] || []).findIndex((r) => r.code === code);
+    return i >= 0 ? ["1st", "2nd", "3rd", "4th"][i] : "";
+  };
+  const ctxLabel = m.group ? `Group ${m.group}` : (m.stage && m.stage !== "Group Stage" ? m.stage : "");
   const hero = `<div class="scorehero">
     <div class="teams">
-      <div class="t" data-nav="team/${m.home.code}">${flag(m.home.code, "flag")}<span class="nm">${teamName(m.home.code)}</span><span class="rk">${rank(m.home.code)}</span></div>
+      <div class="t" data-nav="team/${m.home.code}">${flag(m.home.code, "flag")}<span class="nm">${teamName(m.home.code)}</span><span class="rk">${pos(m.home.code)}</span></div>
       <div><div class="sc">${m.home.score ?? "–"} : ${m.away.score ?? "–"}</div></div>
-      <div class="t" data-nav="team/${m.away.code}">${flag(m.away.code, "flag")}<span class="nm">${teamName(m.away.code)}</span><span class="rk">${rank(m.away.code)}</span></div>
+      <div class="t" data-nav="team/${m.away.code}">${flag(m.away.code, "flag")}<span class="nm">${teamName(m.away.code)}</span><span class="rk">${pos(m.away.code)}</span></div>
     </div>
-    <div class="status ${live ? "" : "done"}">${statusTxt}${m.venue ? ` · ${m.venue}` : ""}</div>
+    <div class="status ${live ? "" : "done"}">${statusTxt}${ctxLabel ? ` · ${ctxLabel}` : ""}${m.venue ? ` · ${m.venue}` : ""}</div>
   </div>`;
   const oneLiner = m.progressionLine
     ? `<div class="oneliner"><span class="tick"></span><p>${m.progressionLine}</p></div>` : "";
 
-  const tabBar = `<div class="tabs">${["facts", "lineup", "stats"].map((t) =>
+  const tabs = ["facts", "lineup", "stats"];
+  if (m.group) tabs.push("group");
+  const tabBar = `<div class="tabs">${tabs.map((t) =>
     `<button data-nav="match/${m.id}?t=${t}" data-replace class="${t === tab ? "active" : ""}">${t[0].toUpperCase() + t.slice(1)}</button>`).join("")}</div>`;
 
   let body = "";
   if (tab === "facts") body = matchFacts(m);
   else if (tab === "lineup") body = matchLineup(m);
+  else if (tab === "group" && m.group) body = `<div class="sec-head"><h2>Group ${m.group}</h2></div><div class="block">${groupTableHTML(m.group, [m.home.code, m.away.code])}</div>`;
   else body = matchStats(m);
 
   return { title: "Match", html: hero + oneLiner + tabBar + body };
@@ -337,15 +351,18 @@ export function renderTeam(ctx) {
       <div><div class="v">${t.cleanSheets ?? 0}</div><div class="k">Clean sh.</div></div>
     </div></div>`;
 
-  const tabBar = `<div class="tabs">${["overview", "matches", "squad"].map((tb) =>
+  const tabBar = `<div class="tabs">${["overview", "group", "matches", "squad"].map((tb) =>
     `<button data-nav="team/${code}?t=${tb}" data-replace class="${tb === tab ? "active" : ""}">${tb[0].toUpperCase() + tb.slice(1)}</button>`).join("")}</div>`;
 
   let body = "";
   if (tab === "overview") {
-    const grp = S().groups[t.group].map((r, i) => `<tr class="${i < 2 ? "q1" : ""}" data-nav="team/${r.code}">
-      <td class="tl team">${flag(r.code)} ${r.code}</td><td>${r.P}</td><td>${gd(r.GD)}</td><td class="pts">${r.Pts}</td></tr>`).join("");
-    body = `<div class="sec-head"><h2>Group ${t.group}</h2></div><div class="block"><table class="gtable">
-      <thead><tr><th class="tl">Team</th><th>P</th><th>GD</th><th>Pts</th></tr></thead><tbody>${grp}</tbody></table></div>`;
+    const ms = (S().matches || []).filter((m) => m.home.code === code || m.away.code === code)
+      .sort((a, b) => (a.kickoff || "").localeCompare(b.kickoff || ""));
+    body = `<div class="sec-head"><h2>Group ${t.group}</h2></div><div class="block">${groupTableHTML(t.group, [code])}</div>`
+      + (ms.length ? `<div class="sec-head"><h2>Fixtures</h2></div><div class="section">${ms.map(matchRow).join("")}</div>` : "");
+  } else if (tab === "group") {
+    body = `<div class="sec-head"><h2>Group ${t.group}</h2></div><div class="block">${groupTableHTML(t.group, [code])}</div>
+      <div class="updated">Top two qualify directly · 3rd may reach the R32 via the best-thirds places.</div>`;
   } else if (tab === "matches") {
     const ms = (S().matches || []).filter((m) => m.home.code === code || m.away.code === code);
     body = ms.length ? `<div class="section">${ms.map(matchRow).join("")}</div>` : emptyState("No matches");

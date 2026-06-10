@@ -227,6 +227,8 @@ a { color:inherit; text-decoration:none; }
 .gtable td .flag { width:20px; height:14px; border-radius:2px; }
 .gtable .pts { font-family:var(--display); font-weight:800; }
 .gtable tr.q1 td, .gtable tr.q2 td { background:rgba(21,168,92,.05); }
+.gtable tr.hl td { background:rgba(75,69,224,.08); }
+.gtable tr.hl td.tl { box-shadow:inset 3px 0 0 var(--brand); }
 .gtable .qbar { width:3px; height:18px; border-radius:2px; display:inline-block; vertical-align:middle; margin-right:2px; }
 
 /* ── club watch grid ── */
