@@ -349,19 +349,18 @@ export function renderMatch(ctx) {
   const oneLiner = m.progressionLine
     ? `<div class="oneliner"><span class="tick"></span><p>${m.progressionLine}</p></div>` : "";
 
-  const hasCommentary = (m.commentary && m.commentary.length) || live;
-  const tabs = [];
-  if (hasCommentary) tabs.push("live");
-  tabs.push("facts", "lineup", "stats");
+  // Commentary is a permanent tab like the others (it shows an empty state when there's
+  // nothing yet, rather than appearing/disappearing). It leads while the match is live.
+  const tabs = ["commentary", "facts", "lineup", "stats"];
   if (m.group) tabs.push("group");
-  const defaultTab = hasCommentary && m.commentary?.length ? "live" : "facts";
+  const defaultTab = live ? "commentary" : "facts";
   const cur = ctx.query.get("t") || defaultTab;
-  const label = { live: "Live", facts: "Facts", lineup: "Lineup", stats: "Stats", group: "Group" };
+  const label = { commentary: "Commentary", facts: "Facts", lineup: "Lineup", stats: "Stats", group: "Group" };
   const tabBar = `<div class="tabs">${tabs.map((t) =>
     `<button data-nav="match/${m.id}?t=${t}" data-replace class="${t === cur ? "active" : ""}">${label[t]}</button>`).join("")}</div>`;
 
   let body = "";
-  if (cur === "live") body = matchCommentary(m);
+  if (cur === "commentary") body = matchCommentary(m);
   else if (cur === "facts") body = matchFacts(m);
   else if (cur === "lineup") body = matchLineup(m);
   else if (cur === "group" && m.group) body = `<div class="sec-head"><h2>Group ${m.group}</h2></div><div class="block">${groupTableHTML(m.group, [m.home.code, m.away.code])}</div>`;
@@ -374,7 +373,11 @@ export function renderMatch(ctx) {
 function matchCommentary(m) {
   // Newest first (defensive — the Worker already sorts, but guarantee it in the view).
   const blocks = (m.commentary || []).slice().sort((a, b) => (b.at || "").localeCompare(a.at || ""));
-  if (!blocks.length) return emptyState("🎙️", "No commentary yet", "Minute-by-minute updates appear here once the match is under way.");
+  if (!blocks.length) {
+    return m.status === "ft"
+      ? emptyState("🎙️", "No commentary for this match", "Minute-by-minute wasn't available for this game.")
+      : emptyState("🎙️", "No commentary yet", "Minute-by-minute updates appear here once the match is under way.");
+  }
   const rows = blocks.map((b) => `<div class="cmt ${b.key ? "key" : ""}">
       <div class="cmt-head">${b.at ? `<span class="cmt-time">${fmtTime(b.at)}</span>` : ""}${b.title ? `<span class="cmt-title">${b.title}</span>` : ""}</div>
       <p>${b.text}</p></div>`).join("");

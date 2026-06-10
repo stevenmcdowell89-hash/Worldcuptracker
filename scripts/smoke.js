@@ -27,7 +27,7 @@ const cases = [
   ["Club(MU)", () => S.renderClub({ arg: "manchester-united", ...q() })],
   ["Club(empty)", () => S.renderClub({ arg: "cardiff-city", ...q() })],
   ["Match(live)", () => S.renderMatch({ arg: "mA1", ...q("t=lineup") })],
-  ["Match(commentary)", () => S.renderMatch({ arg: "mA1", ...q("t=live") })],
+  ["Match(commentary)", () => S.renderMatch({ arg: "mA1", ...q("t=commentary") })],
   ["Match(stats)", () => S.renderMatch({ arg: "mC0", ...q("t=stats") })],
   ["Team", () => S.renderTeam({ arg: "ARG", ...q() })],
   ["Player", () => S.renderPlayer({ arg: "150", ...q() })],

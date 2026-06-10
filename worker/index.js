@@ -271,7 +271,13 @@ export async function buildSnapshot(env, prev, liveOnly) {
   const prevMatch = Object.fromEntries((prev?.matches || []).map((m) => [m.id, m]));
   for (const m of matches) {
     const p = prevMatch[m.id];
-    if (m.status === "ft" && p?.lineups) {
+    if (!p) continue;
+    // The Guardian feed is live-only, so once a match is over keep the commentary we
+    // captured (it never changes again) — so you can look back at how the game unfolded.
+    if (m.status === "ft" && p.commentary) {
+      m.commentary = p.commentary; m.commentaryUrl = p.commentaryUrl; m.commentarySource = p.commentarySource; m._guardianId = p._guardianId;
+    }
+    if (m.status === "ft" && p.lineups) {
       m.events = p.events; m.stats = p.stats; m.lineups = p.lineups; m.progressionLine = p.progressionLine; m._final = true;
     }
   }
