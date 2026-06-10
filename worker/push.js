@@ -87,7 +87,7 @@ export async function createVapidJWT(jwk, audience, subject, now = Date.now()) {
 // Send one push. Returns the upstream Response (caller prunes on 404/410).
 export async function sendWebPush(subscription, payload, env) {
   const url = new URL(subscription.endpoint);
-  const jwt = await createVapidJWT(JSON.parse(env.VAPID_JWK), `${url.protocol}//${url.host}`, env.VAPID_SUBJECT || "mailto:admin@worldcuptracker");
+  const jwt = await createVapidJWT(JSON.parse(env.VAPID_JWK), `${url.protocol}//${url.host}`, env.VAPID_SUBJECT || "mailto:admin@example.com");
   const body = await encryptPayload(JSON.stringify(payload), subscription.keys.p256dh, subscription.keys.auth);
   return fetch(subscription.endpoint, {
     method: "POST",

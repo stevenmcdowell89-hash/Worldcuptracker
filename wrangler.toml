@@ -41,6 +41,11 @@ SUBREQUEST_BUDGET = "900"
 # News: BBC Sport World Cup RSS (no API-Football quota cost), refreshed ~every 30 min.
 NEWS_RSS = "https://feeds.bbci.co.uk/sport/football/world-cup/rss.xml"
 NEWS_INTERVAL_MIN = "30"
+# Web push public key (brief §14). This is PUBLIC by design (it's also handed to the
+# browser), so it lives here so a Git deploy can't wipe it. The matching private key
+# (VAPID_JWK) and the contact (VAPID_SUBJECT) must be set as SECRETS — secrets survive
+# deploys; plaintext dashboard Variables do NOT (this [vars] block replaces them).
+VAPID_PUBLIC_KEY = "BPfPUEER1NnhSRaHUktTYQSKKHv6cPVqokU-3iCd1wgk5K8nV13AAj5WLkeiQ0T_oS4C3eX9tpoJJwXq5WUgO40"
 
 # APIFOOTBALL_KEY is a secret:  wrangler secret put APIFOOTBALL_KEY
 # FOOTBALLDATA_KEY (fallback, optional):  wrangler secret put FOOTBALLDATA_KEY
