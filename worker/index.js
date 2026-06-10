@@ -275,7 +275,8 @@ export async function buildSnapshot(env, prev, liveOnly) {
     // The Guardian feed is live-only, so once a match is over keep the commentary we
     // captured (it never changes again) — so you can look back at how the game unfolded.
     if (m.status === "ft" && p.commentary) {
-      m.commentary = p.commentary; m.commentaryUrl = p.commentaryUrl; m.commentarySource = p.commentarySource; m._guardianId = p._guardianId;
+      m.commentary = p.commentary; m.commentaryUrl = p.commentaryUrl; m.commentarySource = p.commentarySource;
+      m._guardianId = p._guardianId; m._commentaryClosed = p._commentaryClosed;
     }
     if (m.status === "ft" && p.lineups) {
       m.events = p.events; m.stats = p.stats; m.lineups = p.lineups; m.progressionLine = p.progressionLine; m._final = true;
@@ -292,17 +293,27 @@ export async function buildSnapshot(env, prev, liveOnly) {
     if (m.status === "ft") {  // player ratings + per-match stats land at full time
       try { mergePlayerRatings(m, await apiGet(env, "/fixtures/players", { fixture: m.id })); } catch {}
     }
-    // Live commentary from The Guardian's minute-by-minute (gated on a key). Reuse the
-    // matched liveblog id across polls so we don't re-search each time.
-    if (env.GUARDIAN_KEY && (m.status === "live" || m.status === "ht")) {
+  }
+
+  // Guardian minute-by-minute (best-effort, gated on a key). Live/HT every poll; and a
+  // just-finished match keeps pulling until the liveblog actually closes, so the
+  // full-time wrap-up / report is captured. Then it's frozen and never refetched.
+  if (env.GUARDIAN_KEY) {
+    const now = Date.now();
+    for (const m of matches) {
+      const liveish = m.status === "live" || m.status === "ht";
+      const koMs = m.kickoff ? new Date(m.kickoff).getTime() : 0;
+      const justFinished = m.status === "ft" && !m._commentaryClosed && koMs && now <= koMs + 12 * 3600e3;
+      if (!liveish && !justFinished) continue;
       try {
-        let gid = prevMatch[m.id]?._guardianId;
+        let gid = m._guardianId || prevMatch[m.id]?._guardianId;
         if (!gid) gid = await findLiveblogId(env, dir.byId[m._homeId]?.name, dir.byId[m._awayId]?.name, m.kickoff);
-        if (gid) {
-          m._guardianId = gid;
-          const com = await fetchCommentary(env, gid);
-          if (com.blocks.length) { m.commentary = com.blocks; m.commentaryUrl = com.url; m.commentarySource = "The Guardian"; }
-        }
+        if (!gid) continue;
+        m._guardianId = gid;
+        const com = await fetchCommentary(env, gid);
+        if (com.blocks.length) { m.commentary = com.blocks; m.commentaryUrl = com.url; m.commentarySource = "The Guardian"; }
+        // Liveblog no longer updating → the wrap-up is in; freeze it so we stop polling.
+        if (m.status === "ft" && com.live === false) m._commentaryClosed = true;
       } catch { /* commentary is best-effort */ }
     }
   }
