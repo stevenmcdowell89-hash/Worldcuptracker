@@ -30,10 +30,14 @@ a { color:inherit; text-decoration:none; }
 
 /* ── app frame: fixed-height flex column; only the middle (.screen) scrolls. This
    keeps the bottom nav put and stops the mobile browser chrome (address/search bar)
-   from popping in and out on navigation. ── */
+   from popping in and out on navigation. Pinned with position:fixed rather than
+   sized with vh/dvh: standalone Android PWAs can carry a stale dvh value across
+   location.reload() (e.g. the new-version refresh), which sized the frame taller
+   than the screen and pushed the bottom nav out of view until the app was fully
+   closed and reopened. A fixed inset tracks the real viewport rect instead. ── */
 .app {
-  max-width:var(--maxw); margin:0 auto; background:var(--page); position:relative;
-  height:100vh; height:100dvh; display:flex; flex-direction:column; overflow:hidden;
+  position:fixed; inset:0; margin:0 auto; max-width:var(--maxw);
+  background:var(--page); display:flex; flex-direction:column; overflow:hidden;
 }
 .appbar {
   flex:none; z-index:30; height:calc(var(--appbar-h) + env(safe-area-inset-top));
