@@ -310,7 +310,7 @@ a { color:inherit; text-decoration:none; }
 .empty .big { font-size:34px; margin-bottom:8px; }
 .empty .t { font-weight:700; color:var(--text); margin-bottom:4px; }
 .spacer-sm { height:8px; }
-.toast { position:fixed; bottom:calc(var(--nav-h) + 16px); left:50%; transform:translateX(-50%); background:var(--text); color:#fff; padding:9px 16px; border-radius:var(--radius-pill); font-size:13px; font-weight:600; z-index:50; opacity:0; transition:opacity .25s; pointer-events:none; }
+.toast { position:fixed; bottom:calc(var(--nav-h) + 16px); left:50%; transform:translateX(-50%); background:var(--text); color:#fff; padding:9px 16px; border-radius:var(--radius-pill); font-size:13px; font-weight:600; z-index:50; opacity:0; transition:opacity .25s; pointer-events:none; max-width:min(92vw, calc(var(--maxw) - 24px)); width:max-content; text-align:center; }
 .toast.show { opacity:1; }
 .muted { color:var(--muted); } .faint { color:var(--faint); }
 .center { text-align:center; }
@@ -518,3 +518,10 @@ a { color:inherit; text-decoration:none; }
 .morninghead .t { font-family:var(--display); font-weight:800; font-size:15px; color:#7a4d00; }
 .morninghead .mwhen { margin-left:auto; font-size:10.5px; font-weight:700; color:#b07c1e; text-transform:uppercase; letter-spacing:.04em; }
 .flipline { font-weight:600; font-size:13.5px; }
+
+/* notification diagnostics (More → Notifications) */
+.diaglink { font-size:12px; font-weight:700; color:var(--brand); padding:0; }
+.diagbox { padding:4px 16px 12px; }
+.diagrow { display:flex; justify-content:space-between; gap:12px; padding:5px 0; font-size:12px; border-top:1px dashed var(--divider); }
+.diagrow span { color:var(--muted); font-weight:600; flex:none; }
+.diagrow b { font-weight:700; text-align:right; word-break:break-word; min-width:0; }

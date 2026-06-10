@@ -129,7 +129,9 @@ export function toast(msg) {
   let t = document.querySelector(".toast");
   if (!t) { t = document.createElement("div"); t.className = "toast"; document.body.appendChild(t); }
   t.textContent = msg; t.classList.add("show");
-  clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove("show"), 1600);
+  clearTimeout(t._t);
+  // long guidance messages (e.g. push troubleshooting) need to stay readable
+  t._t = setTimeout(() => t.classList.remove("show"), Math.min(7000, Math.max(1600, msg.length * 45)));
 }
 
 async function boot() {
