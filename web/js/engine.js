@@ -326,13 +326,14 @@ const teamOutcome = (res, code) =>
   res.home === code ? (res.hg > res.ag ? "W" : res.hg < res.ag ? "L" : "D")
                     : (res.ag > res.hg ? "W" : res.ag < res.hg ? "L" : "D");
 
-/** Does `code` reach the R32 given concrete results for its group's remaining games? */
+/** How `code` reaches the R32 given concrete results for its group's remaining games.
+ *  'top2' = secure (group-local), 'third' = depends on other groups, 'out' = not. */
 function reachesR32(snapshot, group, code, groupResults) {
   const tables = recompute(snapshot, groupResults);   // sorts groups; other groups unchanged
   const idx = tables[group].findIndex((r) => r.code === code);
-  if (idx <= 1) return true;        // top two: direct
-  if (idx === 3) return false;      // bottom: out
-  return qualifiersFrom(thirdPlaceTable(tables)).includes(code);  // 3rd: best-8 cut
+  if (idx <= 1) return "top2";
+  if (idx === 3) return "out";
+  return qualifiersFrom(thirdPlaceTable(tables)).includes(code) ? "third" : "out";
 }
 
 export function qualifyOutlook(snapshot, code, annexC = null) {
@@ -342,49 +343,54 @@ export function qualifyOutlook(snapshot, code, annexC = null) {
   if (totalPlayed(snapshot) === 0)
     return { status: "sweating", line: `The group stage hasn't kicked off — ${name}'s campaign is all to play for.` };
 
+  const globalDone = (snapshot.remainingFixtures || []).length === 0;
   const groupRem = snapshot.remainingFixtures.filter((f) => f.group === group);
 
-  // Group already finished → state the definitive result.
+  // Group finished → top-two is settled; a third-place finish only locks once EVERY
+  // group is done (it depends on the other groups' thirds).
   if (!groupRem.length) {
     const tables = recompute(snapshot, []);
     const idx = tables[group].findIndex((r) => r.code === code);
-    if (idx === 0) return { status: "qualified", line: `${name} won Group ${group} and are into the Round of 32.` };
-    if (idx === 1) return { status: "qualified", line: `${name} finished runners-up in Group ${group} — through to the Round of 32.` };
+    if (idx === 0) return { status: "qualified", line: `${name} won Group ${group} — into the Round of 32.` };
+    if (idx === 1) return { status: "qualified", line: `${name} finished runners-up in Group ${group} — into the Round of 32.` };
     if (idx === 3) return { status: "eliminated", line: `${name} finished bottom of Group ${group} and are out.` };
     const through = qualifiersFrom(thirdPlaceTable(tables)).includes(code);
+    if (globalDone) return through
+      ? { status: "qualified", line: `${name} made it as one of the eight best third-placed teams.` }
+      : { status: "eliminated", line: `${name} finished third but missed the best-thirds cut — out.` };
     return through
-      ? { status: "qualified", line: `${name} squeezed through as one of the eight best third-placed teams.` }
-      : { status: "eliminated", line: `${name} finished third but missed the third-place cut — out.` };
+      ? { status: "in", line: `${name} finished third in Group ${group} and, as it stands, sit inside the best-eight cut — but it hangs on the other groups.` }
+      : { status: "sweating", line: `${name} finished third in Group ${group} and, as it stands, are just below the best-eight cut — they'll need other results to help.` };
   }
 
-  // Too many permutations early on (cap for safety) → give a measured line.
-  if (groupRem.length > 4)
-    return { status: "sweating", line: `${name} are still in the mix in Group ${group} with plenty to play for.` };
+  if (groupRem.length > 4) return { status: "sweating", line: `${name} are still in the mix in Group ${group} with plenty to play for.` };
 
   const myNext = groupRem.find((f) => f.home === code || f.away === code);
   const oppName = myNext ? NAME(snapshot, myNext.home === code ? myNext.away : myNext.home) : "";
   const combos = enumerateWDL(groupRem);
-  const tally = { W: { q: 0, t: 0 }, D: { q: 0, t: 0 }, L: { q: 0, t: 0 } };
-  let qAll = 0;
+  const tally = { W: [], D: [], L: [] };
+  const all = [];
   for (const combo of combos) {
-    const q = reachesR32(snapshot, group, code, combo);
-    if (q) qAll++;
-    if (myNext) { const o = teamOutcome(combo.find((r) => r.id === myNext.id), code); tally[o].t++; if (q) tally[o].q++; }
+    const res = reachesR32(snapshot, group, code, combo);
+    all.push(res);
+    if (myNext) tally[teamOutcome(combo.find((r) => r.id === myNext.id), code)].push(res);
   }
-  if (qAll === combos.length) return { status: "qualified", line: `${name} are through to the Round of 32.` };
-  if (qAll === 0) return { status: "eliminated", line: `${name} can no longer reach the Round of 32.` };
+  const through = (r) => r !== "out";
 
-  const winSure = tally.W.t > 0 && tally.W.q === tally.W.t;
-  const drawSure = tally.D.t > 0 && tally.D.q === tally.D.t;
-  const lossAlive = tally.L.q > 0;
-  const winAlive = tally.W.q > 0;
-
+  if (all.every((r) => r === "top2")) return { status: "qualified", line: `${name} are guaranteed top two — through to the Round of 32.` };
+  if (all.every(through)) return { status: "in", line: `As it stands ${name} have done enough — it now rests on the best-third-place maths holding up.` };
+  if (all.every((r) => r === "out")) return { status: "eliminated", line: `${name} can no longer reach the Round of 32.` };
   if (!myNext) return { status: "sweating", line: `${name}'s fate hinges on the other games in Group ${group}.` };
-  if (drawSure && lossAlive) return { status: "in", line: `${name} reach the knockouts with at least a draw against ${oppName} — and might even survive a defeat.` };
-  if (drawSure) return { status: "in", line: `A draw against ${oppName} sends ${name} through; defeat would likely put them out.` };
-  if (winSure) return { status: "sweating", line: `${name} need to beat ${oppName} to be sure of going through.` };
-  if (winAlive) return { status: "sweating", line: `Even beating ${oppName} might not be enough for ${name} — they'll need other results to fall their way.` };
-  return { status: "out", line: `${name} can't make it on their own result against ${oppName} — they need help elsewhere.` };
+
+  // class each own-result: secure (top-2 always) > likely (always through) > alive > dead
+  const cls = (a) => a.length === 0 ? "na" : a.every((r) => r === "top2") ? "secure" : a.every(through) ? "likely" : a.some(through) ? "alive" : "dead";
+  const d = cls(tally.D), w = cls(tally.W);
+  if (d === "secure") return { status: "in", line: `A draw against ${oppName} guarantees ${name} a top-two place.` };
+  if (d === "likely") return { status: "in", line: `A draw against ${oppName} should see ${name} through, pending the third-place places.` };
+  if (w === "secure") return { status: "sweating", line: `${name} need to beat ${oppName} to be sure of going through.` };
+  if (w === "likely") return { status: "sweating", line: `A win over ${oppName} should be enough for ${name} to advance.` };
+  if (w === "alive") return { status: "sweating", line: `Even beating ${oppName} might not be enough for ${name} — they'll need other results to help.` };
+  return { status: "out", line: `${name} can't get through on their own result against ${oppName} — they need help elsewhere.` };
 }
 
 export default { resolve, verdicts, plainEnglish, qualifyOutlook, recompute, thirdPlaceTable, qualifiersFrom, annexCSlots, resultFromWDL, GROUP_LETTERS, QUALIFY_COUNT };

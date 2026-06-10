@@ -36,11 +36,7 @@ function matchRow(m) {
   else if (ft) mid = `<span class="score">${m.home.score}–${m.away.score}</span><span class="ko">FT</span>`;
   else mid = `<span class="ko">${fmtTime(m.kickoff)}</span>`;
   const stageLabel = m.group ? `Group ${m.group}` : (m.stage && m.stage !== "Group Stage" ? m.stage : "");
-  // A stake tag only when this game can actually decide a team's qualification.
-  const meta = `<div class="match-meta">
-      ${stageLabel ? `<span class="grp-pill">${stageLabel}</span>` : ""}
-      ${m.affectsCut ? `<span class="race-tag">● qualification on the line</span>` : ""}
-    </div>`;
+  const meta = stageLabel ? `<div class="match-meta"><span class="grp-pill">${stageLabel}</span></div>` : "";
   return `<div class="match-card">
     <div class="match clickable" data-nav="match/${m.id}">
       <span class="side home"><span class="nm">${teamName(m.home.code)}</span>${flag(m.home.code)}</span>
@@ -155,19 +151,18 @@ export function renderBracket(ctx) {
   const tabBar = `<div class="tabs">${b.rounds.map((r) =>
     `<button data-nav="bracket?r=${r}" data-replace class="${r === tab ? "active" : ""}">${r}</button>`).join("")}</div>`;
   const legend = !done
-    ? `<div class="bx-legend">Teams shown are <b>as it stands</b>. <span class="bx-dot solid"></span> locked in · <span class="bx-dot prov"></span> current leader (can still change) · ✓ already qualified</div>`
+    ? `<div class="bx-legend"><span class="bx-tag in">QUALIFIED</span> already through · <span class="bx-tag cur">CURRENT</span> leads the slot as it stands, can still change</div>`
     : "";
 
   const teamSide = (s) => {
     if (!s) return `<div class="bx-team ph"><span class="nm">TBD</span></div>`;
     if (s.code) {
-      // locked = the group is finished; otherwise this is the current occupant. A ✓
-      // marks a team already through even if its exact slot can still shift.
-      const qualified = !done && qualifyOutlook(S(), s.code, state.annexC).status === "qualified";
-      const cls = done ? "locked" : "prov";
-      return `<div class="bx-team ${cls} clickable" data-nav="team/${s.code}">${flag(s.code)}
-        <span class="nm">${teamName(s.code)}</span>${qualified ? `<span class="bx-q">✓</span>` : ""}
-        ${s.pos ? `<span class="bx-pos">${s.pos}</span>` : ""}<span class="sc">${s.score ?? ""}</span></div>`;
+      // locked = group finished, or the team is already mathematically qualified.
+      const locked = done || qualifyOutlook(S(), s.code, state.annexC).status === "qualified";
+      const tag = done ? "" : (locked ? `<span class="bx-tag in">QUALIFIED</span>` : `<span class="bx-tag cur">CURRENT</span>`);
+      return `<div class="bx-team ${locked ? "locked" : "prov"} clickable" data-nav="team/${s.code}">${flag(s.code)}
+        <span class="nm">${teamName(s.code)}</span>${s.pos ? `<span class="bx-pos">${s.pos}</span>` : ""}${tag}
+        <span class="sc">${s.score ?? ""}</span></div>`;
     }
     const third = !!s.thirdPlaceSlot;
     return `<div class="bx-team ph ${third ? "third" : ""}">
@@ -384,7 +379,7 @@ export function renderPlayer(ctx) {
   const season = (p.season || []).length ? `<div class="sec-head"><h2>Club &amp; season</h2></div><div class="block">
     ${p.season.map((s) => `<div class="lrow"><span class="nm">${s.comp}</span>
       <span class="sub">${s.apps} apps · ${s.g}G ${s.a}A · ${s.yellow}🟨${s.red ? ` ${s.red}🟥` : ""}${s.rating ? ` · ${s.rating}` : ""}</span></div>`).join("")}
-    </div>` : `<div class="banner">Club-season detail isn't covered for this league — showing tournament stats only.</div>`;
+    </div>` : `<div class="banner">Club-season stats haven't loaded for this player yet — tournament stats shown for now.</div>`;
 
   const career = (p.career || []).length ? `<div class="sec-head"><h2>Career</h2></div><div class="block">
     ${p.career.map((t) => `<div class="lrow"><span class="nm">${t.from} → ${t.to}</span><span class="sub">${t.year}</span></div>`).join("")}</div>` : "";

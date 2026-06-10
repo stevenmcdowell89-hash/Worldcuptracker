@@ -71,5 +71,5 @@ export function renderRace() {
       <p>${o.line}</p></div>`).join("");
   const peCard = `<div class="sec-head"><h2>What does my team need?</h2></div><div class="block">${peList}</div>`;
 
-  return { title: "Race", html: preBanner + peCard + cutCard + annexCHandoff(out) };
+  return { title: "Race", html: preBanner + cutCard + peCard + annexCHandoff(out) };
 }
