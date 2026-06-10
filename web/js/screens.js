@@ -396,7 +396,9 @@ export function renderPlayer(ctx) {
   const season = (p.season || []).length ? `<div class="sec-head"><h2>Club &amp; season</h2></div><div class="block">
     ${p.season.map((s) => `<div class="lrow"><span class="nm">${s.comp}</span>
       <span class="sub">${s.apps} apps · ${s.g}G ${s.a}A · ${s.yellow}🟨${s.red ? ` ${s.red}🟥` : ""}${s.rating ? ` · ${s.rating}` : ""}</span></div>`).join("")}
-    </div>` : `<div class="banner">Club-season stats haven't loaded for this player yet — tournament stats shown for now.</div>`;
+    </div>` : (p._enriched
+      ? `<div class="banner">No club-season data for ${p.name || "this player"} — their domestic league isn't covered by the data feed.</div>`
+      : `<div class="banner">Loading club &amp; season stats…</div>`);
 
   const career = (p.career || []).length ? `<div class="sec-head"><h2>Career</h2></div><div class="block">
     ${p.career.map((t) => `<div class="lrow"><span class="nm">${t.from} → ${t.to}</span><span class="sub">${t.year}</span></div>`).join("")}</div>` : "";
