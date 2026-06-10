@@ -755,7 +755,11 @@ export default {
       return new Response(JSON.stringify(res, null, 2), { headers: { "content-type": "application/json" } });
     }
 
-    // Everything else: the static /web app.
-    return env.ASSETS.fetch(request);
+    // Everything else: the static /web app. Force revalidation so a deploy reaches
+    // already-loaded browsers (the assets aren't content-hashed).
+    const res = await env.ASSETS.fetch(request);
+    const out = new Response(res.body, res);
+    out.headers.set("cache-control", "no-cache");
+    return out;
   },
 };
