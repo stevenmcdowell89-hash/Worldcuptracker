@@ -282,6 +282,17 @@ a { color:inherit; text-decoration:none; }
 .bx-v span { font-size:9.5px; font-weight:800; color:var(--faint); text-transform:uppercase; letter-spacing:.08em; }
 .bx-legend { padding:2px 16px 8px; font-size:11px; color:var(--muted); line-height:1.7; }
 
+/* ── news ── */
+.newslist { background:var(--card); }
+.newscard { display:flex; gap:12px; padding:13px 14px; align-items:flex-start; }
+.newscard + .newscard { border-top:1px solid var(--divider); }
+.newscard:active { background:var(--raised); }
+.newsimg { flex:none; width:84px; height:60px; border-radius:10px; background-size:cover; background-position:center; background-color:var(--raised); }
+.newstxt { display:flex; flex-direction:column; gap:3px; min-width:0; }
+.newstitle { font-weight:700; font-size:14.5px; line-height:1.3; }
+.newssum { font-size:12.5px; color:var(--muted); line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.newsmeta { font-size:11px; color:var(--faint); font-weight:600; margin-top:2px; }
+
 /* ── misc ── */
 .banner { margin:10px; padding:11px 14px; border-radius:12px; background:rgba(243,155,27,.12); color:#8a5a00; font-size:12.5px; font-weight:600; display:flex; gap:8px; }
 .empty { text-align:center; padding:40px 24px; color:var(--muted); }

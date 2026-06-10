@@ -34,7 +34,10 @@ function annexCHandoff(out) {
   return `<div class="sec-head"><h2>${head}</h2></div><div class="block">${rows}</div>`;
 }
 
-export function renderRace() {
+// Full Race tab (kept for deep-links). The content also embeds as a sub-tab of Groups.
+export function renderRace() { return { title: "Race", html: raceContent() }; }
+
+export function raceContent() {
   const started = S().meta?.started !== false && S().thirdPlaceRace?.some((t) => t.Pts > 0);
   const out = resolve(S(), [], state.annexC);
   const byStatus = Object.fromEntries(verdicts(S()).map((t) => [t.code, t.status]));
@@ -71,5 +74,5 @@ export function renderRace() {
       <p>${o.line}</p></div>`).join("");
   const peCard = `<div class="sec-head"><h2>What does my team need?</h2></div><div class="block">${peList}</div>`;
 
-  return { title: "Race", html: preBanner + cutCard + peCard + annexCHandoff(out) };
+  return preBanner + cutCard + peCard + annexCHandoff(out);
 }

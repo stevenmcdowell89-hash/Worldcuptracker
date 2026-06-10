@@ -1,9 +1,10 @@
 {
   "meta": {
     "stage": "Group Stage",
-    "updated": "2026-06-09T20:41:55.016Z",
+    "updated": "2026-06-10T12:09:07.672Z",
     "groupStageComplete": false,
-    "dataSource": "mock"
+    "dataSource": "mock",
+    "started": true
   },
   "groups": {
     "A": [
@@ -4803,5 +4804,31 @@
         }
       ]
     }
-  }
+  },
+  "news": [
+    {
+      "title": "Mexico hold off Saudi Arabia in Azteca opener",
+      "summary": "Santiago Giménez's brace settles a nervy hosts' opener as the 2026 World Cup gets under way.",
+      "link": "https://www.bbc.com/sport/football",
+      "published": "2026-06-10T11:34:07.672Z",
+      "image": null,
+      "source": "BBC Sport"
+    },
+    {
+      "title": "Argentina cruise as Messi pulls the strings",
+      "summary": "Holders Argentina look ominous after a comfortable win in New Jersey.",
+      "link": "https://www.bbc.com/sport/football",
+      "published": "2026-06-10T09:09:07.672Z",
+      "image": null,
+      "source": "BBC Sport"
+    },
+    {
+      "title": "Third-place race: who's still in the hunt?",
+      "summary": "With the final group games to come, the eight best third-placed spots are wide open.",
+      "link": "https://www.bbc.com/sport/football",
+      "published": "2026-06-10T06:09:07.672Z",
+      "image": null,
+      "source": "BBC Sport"
+    }
+  ]
 }

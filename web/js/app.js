@@ -3,12 +3,11 @@
 
 import { loadAll, state } from "./data.js";
 import * as S from "./screens.js";
-import { renderRace } from "./race.js";
 
 const TABS = [
   { id: "matches", label: "Matches", ico: "⚽" },
   { id: "groups", label: "Groups", ico: "▦" },
-  { id: "race", label: "Race", ico: "📊" },
+  { id: "news", label: "News", ico: "📰" },
   { id: "watch", label: "Watch", ico: "★" },
   { id: "more", label: "More", ico: "≡" },
 ];
@@ -18,7 +17,9 @@ const TABS = [
 const ROUTES = {
   matches: { render: S.renderMatches, tab: "matches", top: true },
   groups: { render: S.renderGroups, tab: "groups", top: true },
-  race: { render: renderRace, tab: "race", top: true },
+  // Race lives as a sub-tab of Groups; the /race deep-link opens that sub-tab.
+  race: { render: (ctx) => S.renderGroups({ ...ctx, forceTab: "race" }), tab: "groups", top: true },
+  news: { render: S.renderNews, tab: "news", top: true },
   watch: { render: S.renderWatch, tab: "watch", top: true },
   more: { render: S.renderMore, tab: "more", top: true },
   bracket: { render: S.renderBracket, tab: "more", title: "Bracket" },

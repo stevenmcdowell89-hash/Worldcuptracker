@@ -38,6 +38,9 @@ LIVE_INTERVAL_SEC = "75"        # ~60-90s while live
 # On Workers Paid: a full poll (~110 calls) fits comfortably, so everything fills in
 # a single poll. (On Free, set this to ~45 so heavy enrichment spreads across polls.)
 SUBREQUEST_BUDGET = "900"
+# News: BBC Sport World Cup RSS (no API-Football quota cost), refreshed ~every 30 min.
+NEWS_RSS = "https://feeds.bbci.co.uk/sport/football/world-cup/rss.xml"
+NEWS_INTERVAL_MIN = "30"
 
 # APIFOOTBALL_KEY is a secret:  wrangler secret put APIFOOTBALL_KEY
 # FOOTBALLDATA_KEY (fallback, optional):  wrangler secret put FOOTBALLDATA_KEY

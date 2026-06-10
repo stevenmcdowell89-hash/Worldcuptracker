@@ -16,6 +16,8 @@ const q = (s = "") => ({ query: new URLSearchParams(s) });
 const cases = [
   ["Matches", () => S.renderMatches(q())],
   ["More", () => S.renderMore(q())],
+  ["News", () => S.renderNews(q())],
+  ["Groups(race)", () => S.renderGroups({ forceTab: "race", ...q() })],
   ["Groups", () => S.renderGroups(q())],
   ["Stats", () => S.renderStats(q("t=discipline"))],
   ["Bracket", () => S.renderBracket(q("r=R32"))],

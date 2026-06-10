@@ -361,15 +361,21 @@ const clubWatch = {
   "juventus": clubEntry("Juventus", "", ["406"]),
 };
 
+const news = [
+  { title: "Mexico hold off Saudi Arabia in Azteca opener", summary: "Santiago Giménez's brace settles a nervy hosts' opener as the 2026 World Cup gets under way.", link: "https://www.bbc.com/sport/football", published: new Date(Date.now() - 35 * 6e4).toISOString(), image: null, source: "BBC Sport" },
+  { title: "Argentina cruise as Messi pulls the strings", summary: "Holders Argentina look ominous after a comfortable win in New Jersey.", link: "https://www.bbc.com/sport/football", published: new Date(Date.now() - 3 * 36e5).toISOString(), image: null, source: "BBC Sport" },
+  { title: "Third-place race: who's still in the hunt?", summary: "With the final group games to come, the eight best third-placed spots are wide open.", link: "https://www.bbc.com/sport/football", published: new Date(Date.now() - 6 * 36e5).toISOString(), image: null, source: "BBC Sport" },
+];
+
 const snapshot = {
-  meta: { stage: "Group Stage", updated: new Date().toISOString(), groupStageComplete: false, dataSource: "mock" },
+  meta: { stage: "Group Stage", updated: new Date().toISOString(), groupStageComplete: false, dataSource: "mock", started: true },
   groups: sortedGroups,
   thirdPlaceRace: race,
   remainingFixtures,
   matches,
   bracket,
   scorers, assists, discipline,
-  teams, players, clubWatch,
+  teams, players, clubWatch, news,
 };
 
 mkdirSync(dirname(OUT), { recursive: true });

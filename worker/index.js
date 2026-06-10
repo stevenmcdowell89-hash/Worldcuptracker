@@ -323,6 +323,8 @@ export async function buildSnapshot(env, prev, liveOnly) {
   if (!liveOnly) {
     try { clubWatch = await buildClubWatch(env, cfg, teams, players, remainingFixtures, prev?.clubWatch || {}); } catch {}
   }
+  let news = prev?.news || [];
+  if (!liveOnly) { try { news = await fetchNews(env); } catch {} }   // BBC RSS — refreshed on full polls + the news cadence
   for (const m of matches) { delete m._homeId; delete m._awayId; delete m._final; }  // strip internals
   for (const g of Object.keys(groups)) groups[g].forEach((r) => delete r._id);
   for (const t of Object.values(teams)) delete t._id;
@@ -343,7 +345,7 @@ export async function buildSnapshot(env, prev, liveOnly) {
     matches,
     bracket,
     scorers, assists, discipline,
-    teams, players, clubWatch,
+    teams, players, clubWatch, news,
     crests: dir.crests,           // code -> official crest/flag image URL
   };
 }
@@ -574,6 +576,29 @@ function annotateProgression(matches, groups, remainingFixtures, teams, race, an
   }
 }
 
+// ── news: BBC Sport World Cup RSS → headlines in the snapshot (no API quota cost) ──
+function parseNews(xml) {
+  const items = [];
+  const pick = (block, tag) => {
+    const r = new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`).exec(block);
+    return r ? r[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1").replace(/&amp;/g, "&").trim() : "";
+  };
+  const re = /<item>([\s\S]*?)<\/item>/g; let m;
+  while ((m = re.exec(xml)) && items.length < 24) {
+    const b = m[1];
+    const img = (/<media:thumbnail[^>]*url="([^"]+)"/.exec(b) || [])[1] || null;
+    const title = pick(b, "title");
+    if (title) items.push({ title, summary: pick(b, "description"), link: pick(b, "link"), published: pick(b, "pubDate"), image: img, source: "BBC Sport" });
+  }
+  return items;
+}
+async function fetchNews(env) {
+  const url = env.NEWS_RSS || "https://feeds.bbci.co.uk/sport/football/world-cup/rss.xml";
+  const r = await fetch(url, { headers: { "user-agent": "wc26-tracker/1.0", accept: "application/rss+xml,text/xml" } });
+  if (!r.ok) throw new Error(`news ${r.status}`);
+  return parseNews(await r.text());
+}
+
 // ── football-data.org fallback (fixtures/standings only — resilience, never primary) ──
 async function fallbackSnapshot(env, prev) {
   if (!env.FOOTBALLDATA_KEY) return null;
@@ -643,14 +668,24 @@ export default {
       })();
       const effectiveBaseline = backlog ? 4 * 60e3 : baselineMs;   // 4 min while catching up
 
+      const newsMs = (parseInt(env.NEWS_INTERVAL_MIN || "30", 10)) * 60e3;
       const dueFull = now - meta.lastFull >= effectiveBaseline;
       const dueLive = live && now - meta.lastLive >= liveMs;
-      if (!dueFull && !dueLive) return; // cheap skip — no API calls
+      const dueNews = now - (meta.lastNews || 0) >= newsMs;
+      if (!dueFull && !dueLive) {
+        // No data poll due — but keep the news fresh on its own ~30-min cadence (cheap,
+        // no API-Football quota, doesn't touch lastFull/lastLive).
+        if (dueNews && prev) {
+          try { prev.news = await fetchNews(env); await writeSnapshot(env, prev);
+            await env.SNAPSHOT.put(META_KEY, JSON.stringify({ ...meta, lastNews: now })); } catch {}
+        }
+        return;
+      }
 
       try {
         const snap = await buildSnapshot(env, prev, !dueFull /* liveOnly when only the live tick is due */);
         await writeSnapshot(env, snap);
-        await env.SNAPSHOT.put(META_KEY, JSON.stringify({ lastFull: dueFull ? now : meta.lastFull, lastLive: now }));
+        await env.SNAPSHOT.put(META_KEY, JSON.stringify({ lastFull: dueFull ? now : meta.lastFull, lastLive: now, lastNews: dueFull ? now : (meta.lastNews || 0) }));
         await env.SNAPSHOT.put("cron-status", JSON.stringify({ ok: true, at: new Date().toISOString(), kind: dueFull ? "full" : "live", squadCount: snap.meta.squadCount, subrequests: SUBREQ }));
       } catch (err) {
         console.error("poll failed:", err.message);

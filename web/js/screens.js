@@ -2,8 +2,9 @@
 // Progression intelligence is woven in: the "affects the race" marker on match
 // rows, the one-liner on match pages, the verdict chip on team pages (brief §7).
 
-import { state, colour, teamName, player, flag, statusChip, fmtTime, fmtDay, countdown, gd } from "./data.js";
+import { state, colour, teamName, player, flag, statusChip, fmtTime, fmtDay, countdown, gd, timeAgo } from "./data.js";
 import { qualifyOutlook } from "./engine.js";
+import { raceContent } from "./race.js";
 
 const S = () => state.snap;
 
@@ -20,7 +21,7 @@ function compactRaceCard() {
     </div>${t.rank === 8 ? cutLineHTML() : ""}`;
   }).join("");
   return `<div class="racecard">
-    <div class="head"><h3>Third-place race <span class="faint" style="font-weight:600;text-transform:none">· 8 of 12 reach R32</span></h3><span class="go" data-nav="race">Full table ›</span></div>
+    <div class="head"><h3>Third-place race <span class="faint" style="font-weight:600;text-transform:none">· 8 of 12 reach R32</span></h3><span class="go" data-nav="groups?t=race">Full table ›</span></div>
     <div class="cutlist">${rows}</div>
   </div>`;
 }
@@ -92,6 +93,20 @@ export function renderMore() {
     <div class="updated">Snapshot ${fmtDay(S().meta?.updated)} ${fmtTime(S().meta?.updated)} · source: ${S().meta?.dataSource}</div>`;
 }
 
+// ── News (BBC Sport World Cup headlines; tap opens the article) ──
+export function renderNews() {
+  const news = S().news || [];
+  if (!news.length) return emptyState("📰", "No headlines yet", "World Cup news from BBC Sport will appear here.");
+  const cards = news.map((n) => `<a class="newscard" href="${n.link}" target="_blank" rel="noopener noreferrer">
+      ${n.image ? `<span class="newsimg" style="background-image:url('${n.image}')"></span>` : ""}
+      <span class="newstxt">
+        <span class="newstitle">${n.title}</span>
+        ${n.summary ? `<span class="newssum">${n.summary}</span>` : ""}
+        <span class="newsmeta">${n.source || "News"} · ${timeAgo(n.published)}</span>
+      </span></a>`).join("");
+  return `<div class="newslist">${cards}</div><div class="updated">Headlines from BBC Sport — tap to read the full story.</div>`;
+}
+
 // ── Groups ──
 function groupTableHTML(letter, highlight = []) {
   const rows = (S().groups[letter] || []).map((r, i) => {
@@ -108,11 +123,17 @@ function groupTableHTML(letter, highlight = []) {
     <tbody>${rows}</tbody></table>`;
 }
 
-export function renderGroups() {
-  const g = S().groups;
-  const tables = Object.keys(g).map((letter) =>
+// Groups screen with two sub-tabs: the 12 tables, and the third-place Race (both are
+// group-stage concerns). The Race route deep-links straight to the Race sub-tab.
+export function renderGroups(ctx = {}) {
+  const tab = ctx.forceTab || ctx.query?.get("t") || "tables";
+  const tabBar = `<div class="tabs">
+    <button data-nav="groups?t=tables" data-replace class="${tab === "tables" ? "active" : ""}">Tables</button>
+    <button data-nav="groups?t=race" data-replace class="${tab === "race" ? "active" : ""}">Race for R32</button></div>`;
+  if (tab === "race") return { title: "Groups", html: tabBar + raceContent() };
+  const tables = Object.keys(S().groups).map((letter) =>
     `<div class="sec-head"><h2>Group ${letter}</h2></div><div class="block">${groupTableHTML(letter)}</div>`).join("");
-  return `<div class="banner">● top two through · ● 3rd in the race · ● out</div>${tables}`;
+  return { title: "Groups", html: tabBar + `<div class="banner">● top two through · ● 3rd in the race · ● out</div>${tables}` };
 }
 function raceStatus(code) {
   const t = (S().thirdPlaceRace || []).find((x) => x.code === code);
