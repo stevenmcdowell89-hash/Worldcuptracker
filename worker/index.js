@@ -290,7 +290,7 @@ export async function buildSnapshot(env, prev, liveOnly) {
     if (env.GUARDIAN_KEY && (m.status === "live" || m.status === "ht")) {
       try {
         let gid = prevMatch[m.id]?._guardianId;
-        if (!gid) gid = await findLiveblogId(env, dir.byId[m._homeId]?.name, dir.byId[m._awayId]?.name);
+        if (!gid) gid = await findLiveblogId(env, dir.byId[m._homeId]?.name, dir.byId[m._awayId]?.name, m.kickoff);
         if (gid) {
           m._guardianId = gid;
           const com = await fetchCommentary(env, gid);
@@ -626,19 +626,34 @@ async function guardianGet(env, path, params = {}) {
   if (!r.ok) throw new Error(`Guardian ${path} ${r.status}`);
   return (await r.json()).response || {};
 }
-// Find the minute-by-minute liveblog id for a fixture (best-effort name match).
-async function findLiveblogId(env, home, away) {
-  if (!home || !away) return null;
-  const res = await guardianGet(env, "/search", {
-    q: `${home} ${away}`, tag: "tone/minutebyminute", "order-by": "newest",
-    "page-size": "8", "show-fields": "liveBloggingNow",
-  });
-  const results = res.results || [];
-  const wanted = (s) => (s || "").toLowerCase();
-  const match = results.find((r) => r.type === "liveblog"
-    && wanted(r.webTitle).includes(wanted(home).split(" ").pop())
-    && wanted(r.webTitle).includes(wanted(away).split(" ").pop()));
-  return (match || results.find((r) => r.type === "liveblog") || results[0])?.id || null;
+// Find the minute-by-minute liveblog for a fixture. Primary signal is PUBLICATION
+// TIME vs kickoff (WC kickoffs are mostly staggered, and a match's MBM publishes
+// around kickoff); team-name + "live now" only disambiguate the few concurrent slots.
+async function findLiveblogId(env, home, away, kickoffIso) {
+  const koMs = Date.parse(kickoffIso || "");
+  const day = (d) => new Date(d).toISOString().slice(0, 10);
+  const fromDay = isNaN(koMs) ? undefined : day(koMs - 864e5);   // ±1 day window
+  const toDay = isNaN(koMs) ? undefined : day(koMs + 864e5);
+  const params = { tag: "tone/minutebyminute", section: "football", "order-by": "newest", "page-size": "40", "show-fields": "liveBloggingNow" };
+  if (fromDay) { params["from-date"] = fromDay; params["to-date"] = toDay; }
+  const res = await guardianGet(env, "/search", params);
+  const results = (res.results || []).filter((r) => r.type === "liveblog");
+  if (!results.length) return null;
+
+  const lower = (s) => (s || "").toLowerCase();
+  const tokens = [home, away].filter(Boolean).map((n) => lower(n).split(/\s+/).pop()).filter((t) => t.length > 2);
+  const nameHit = (title) => tokens.some((t) => lower(title).includes(t));
+
+  let best = null, bestScore = Infinity;
+  for (const r of results) {
+    const pub = Date.parse(r.webPublicationDate || "");
+    let score = (isNaN(pub) || isNaN(koMs)) ? 6 * 36e5 : Math.abs(pub - koMs);   // closeness to kickoff
+    if (nameHit(r.webTitle)) score -= 3 * 36e5;                                   // strong: a team name appears
+    if (r.fields?.liveBloggingNow === "true") score -= 1 * 36e5;                  // mild: still live
+    if (score < bestScore) { bestScore = score; best = r; }
+  }
+  // accept only a confident match: within ~4h of kickoff, or a name matched outright
+  return best && (bestScore < 4 * 36e5 || nameHit(best.webTitle)) ? best.id : null;
 }
 // Pull the latest timestamped commentary blocks for a liveblog id.
 async function fetchCommentary(env, id) {

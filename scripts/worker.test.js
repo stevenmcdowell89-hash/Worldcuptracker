@@ -81,8 +81,11 @@ function cannedFetch(url) {
   const team = +q.get("team");
   // Guardian Open Platform (live commentary) — separate host
   if (u.hostname === "content.guardianapis.com") {
-    if (p === "/search") return { results: [{ id: "football/live/2026/argentina-v-australia", type: "liveblog", webTitle: "Argentina v Australia: World Cup 2026 – live", webUrl: "https://www.theguardian.com/x", fields: { liveBloggingNow: "true" } }] };
-    return { content: { webUrl: "https://www.theguardian.com/x", fields: { liveBloggingNow: "true" }, blocks: { body: [
+    if (p === "/search") return { results: [
+      { id: "football/live/2026/spain-v-brazil", type: "liveblog", webTitle: "Spain v Brazil: World Cup 2026 – live", webUrl: "https://www.theguardian.com/y", webPublicationDate: "2026-06-25T13:00:00Z", fields: { liveBloggingNow: "false" } },
+      { id: "football/live/2026/argentina-v-australia", type: "liveblog", webTitle: "Argentina v Australia: World Cup 2026 – live", webUrl: "https://www.theguardian.com/x", webPublicationDate: "2026-06-25T15:30:00Z", fields: { liveBloggingNow: "true" } },
+    ] };
+    return { content: { webUrl: "https://www.theguardian.com" + p, fields: { liveBloggingNow: "true" }, blocks: { body: [
       { firstPublishedDate: "2026-06-25T16:20:00Z", title: "GOAL!", bodyTextSummary: "Argentina lead.", attributes: { keyEvent: true } },
       { firstPublishedDate: "2026-06-25T16:05:00Z", title: "", bodyHtml: "<p>Lively start in New Jersey.</p>", attributes: {} },
     ] } } };
@@ -199,7 +202,7 @@ test("guardian commentary attaches to live matches when GUARDIAN_KEY is set", as
   assert.equal(live.commentary[0].title, "GOAL!");           // newest-first
   assert.equal(live.commentary[0].key, true);
   assert.equal(live.commentarySource, "The Guardian");
-  assert.ok(live.commentaryUrl);
+  assert.match(live.commentaryUrl, /argentina-v-australia/);   // time+name matching beat the 13:00 decoy
 });
 
 test("no GUARDIAN_KEY → no commentary (graceful)", async () => {
