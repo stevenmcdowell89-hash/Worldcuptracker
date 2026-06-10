@@ -1,41 +1,54 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#5650F0"/><stop offset="1" stop-color="#322CB0"/>
+    <linearGradient id="bg" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#2A2597"/><stop offset="0.55" stop-color="#4B45E0"/><stop offset="1" stop-color="#6F69FF"/>
     </linearGradient>
-    <filter id="glow" x="-20%" y="-60%" width="140%" height="220%">
-      <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#F7A52B" flood-opacity="0.55"/>
+    <radialGradient id="spark" cx="0.78" cy="0.32" r="0.6">
+      <stop offset="0" stop-color="#FBB034" stop-opacity="0.45"/><stop offset="1" stop-color="#FBB034" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="0" stdDeviation="7" flood-color="#FBB034" flood-opacity="0.6"/>
     </filter>
-    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#15116A" flood-opacity="0.45"/>
+    <filter id="soft" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="7" stdDeviation="9" flood-color="#140F58" flood-opacity="0.5"/>
     </filter>
+    <clipPath id="belowLine"><polygon points="0.0,434.2 512.0,148.1 512,512 0,512"/></clipPath>
   </defs>
 
   <rect width="512" height="512" rx="116" fill="url(#bg)"/>
+  <rect width="512" height="512" rx="116" fill="url(#spark)"/>
 
-  <!-- signature: amber dashed cut line, behind the numerals -->
-  <line x1="70" y1="296" x2="442" y2="296" stroke="#F7A52B" stroke-width="11"
-        stroke-linecap="round" stroke-dasharray="2 26" filter="url(#glow)"/>
+  <!-- signature: the rising amber cut line, glowing -->
+  <line x1="54" y1="404" x2="462" y2="176" stroke="#FBB034" stroke-width="12"
+        stroke-linecap="round" stroke-dasharray="2 24" filter="url(#glow)"/>
 
-  <!-- the lean 26, drawn over the cut line so the line reads as passing behind it -->
+  <!-- 26: white above the cut line, amber below it (the line slices the score) -->
   <g filter="url(#soft)">
-    <text x="224" y="350" text-anchor="middle" fill="#FFFFFF"
+    <text x="208" y="352" text-anchor="middle" fill="#FFFFFF"
           font-family="'Bricolage Grotesque','Archivo','Helvetica Neue',Arial,sans-serif"
-          font-weight="700" font-size="240" letter-spacing="-12">26</text>
+          font-weight="800" font-size="250" letter-spacing="-14">26</text>
+  </g>
+  <g clip-path="url(#belowLine)">
+    <text x="208" y="352" text-anchor="middle" fill="#FBB034"
+          font-family="'Bricolage Grotesque','Archivo','Helvetica Neue',Arial,sans-serif"
+          font-weight="800" font-size="250" letter-spacing="-14">26</text>
   </g>
 
-  <!-- football resting on the cut line, to the right -->
-  
+  <!-- football launching off the top of the line, with a motion trail -->
+  <line x1="369.8" y1="197.5" x2="319.2" y2="225.8"
+     stroke="#FBB034" stroke-width="9" stroke-linecap="round" opacity="0.9"/>
+  <line x1="382.4" y1="207.7" x2="331.8" y2="236.0"
+     stroke="#FBB034" stroke-width="7" stroke-linecap="round" opacity="0.55"/>
+  <line x1="367.8" y1="181.5" x2="317.1" y2="209.8"
+     stroke="#FBB034" stroke-width="7" stroke-linecap="round" opacity="0.55"/>
+  <ellipse cx="410" cy="219.1" rx="29.6" ry="6.66" fill="#140F58" opacity="0.4"/>
   <g>
-    <ellipse cx="392" cy="344" rx="32.3" ry="7.6000000000000005" fill="#16115E" opacity="0.45"/>
-    <circle cx="392" cy="296" r="38" fill="#FFFFFF"/>
-    <clipPath id="b1"><circle cx="392" cy="296" r="38"/></clipPath>
-    <g clip-path="url(#b1)">
-      <g fill="#2A2597"><polygon points="392.0,280.0 407.2,291.1 401.4,308.9 382.6,308.9 376.8,291.1"/><polygon points="392.0,267.1 383.3,260.8 386.6,250.6 397.4,250.6 400.7,260.8"/><polygon points="419.5,287.1 422.8,276.9 433.5,276.9 436.8,287.1 428.1,293.4"/><polygon points="409.0,319.4 419.7,319.4 423.0,329.6 414.3,335.9 405.7,329.6"/><polygon points="375.0,319.4 378.3,329.6 369.7,335.9 361.0,329.6 364.3,319.4"/><polygon points="364.5,287.1 355.9,293.4 347.2,287.1 350.5,276.9 361.2,276.9"/></g>
-      <g fill="none" stroke="#2A2597" stroke-width="4.94" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M 392.0,280.0 L 392.0,266.4 M 407.2,291.1 L 420.2,286.8 M 401.4,308.9 L 409.4,320.0 M 382.6,308.9 L 374.6,320.0 M 376.8,291.1 L 363.8,286.8"/><path d="M 392.0,258.0 L 428.1,284.3 L 414.3,326.7 L 369.7,326.7 L 355.9,284.3 Z" stroke-width="3.8000000000000003"/>
-      </g>
+    <circle cx="410" cy="175.05882352941177" r="37" fill="#FFFFFF"/>
+    <clipPath id="bclip"><circle cx="410" cy="175.05882352941177" r="37"/></clipPath>
+    <g clip-path="url(#bclip)">
+      <g fill="#2A2597"><polygon points="410.0,159.5 424.8,170.3 419.1,187.6 400.9,187.6 395.2,170.3"/><polygon points="410.0,146.9 401.6,140.8 404.8,130.9 415.2,130.9 418.4,140.8"/><polygon points="436.7,166.4 440.0,156.4 450.4,156.4 453.6,166.4 445.2,172.5"/><polygon points="426.5,197.8 437.0,197.8 440.2,207.7 431.7,213.9 423.3,207.7"/><polygon points="393.5,197.8 396.7,207.7 388.3,213.9 379.8,207.7 383.0,197.8"/><polygon points="383.3,166.4 374.8,172.5 366.4,166.4 369.6,156.4 380.0,156.4"/></g>
+      <path d="M 410.0,159.5 L 410.0,145.5 M 424.8,170.3 L 438.2,165.9 M 419.1,187.6 L 427.4,199.0 M 400.9,187.6 L 392.6,199.0 M 395.2,170.3 L 381.8,165.9" fill="none" stroke="#2A2597" stroke-width="4.4399999999999995" stroke-linecap="round"/>
     </g>
-    <circle cx="392" cy="296" r="38" fill="none" stroke="#16115E" stroke-opacity="0.12" stroke-width="2"/>
+    <circle cx="410" cy="175.05882352941177" r="37" fill="none" stroke="#16115E" stroke-opacity="0.14" stroke-width="2"/>
   </g>
 </svg>
