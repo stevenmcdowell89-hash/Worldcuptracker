@@ -583,10 +583,14 @@ function normPlayerClub(resp) {
     })),
   };
 }
-function normPlayer(resp, leagueId, dir) {
+export function normPlayer(resp, leagueId, dir) {
   const p = resp?.[0]; if (!p) return null;
   const stats = p.statistics || [];
-  const wc = stats.find((s) => String(s.league?.id) === String(leagueId)) || stats[0] || {};
+  // Tournament stats come ONLY from the World Cup league entry. Before kickoff (or
+  // any time a player has no WC competition row yet) there is no such entry — leave
+  // the tournament block empty so it reads 0, rather than falling back to stats[0],
+  // which is a club competition and would leak club apps/goals into "tournament".
+  const wc = stats.find((s) => String(s.league?.id) === String(leagueId)) || {};
   const club = stats.find((s) => String(s.league?.id) !== String(leagueId));
   const season = stats.filter((s) => String(s.league?.id) !== String(leagueId)).map((s) => ({
     comp: s.league?.name, apps: s.games?.appearences ?? 0, g: s.goals?.total ?? 0, a: s.goals?.assists ?? 0,

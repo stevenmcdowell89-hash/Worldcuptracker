@@ -3,7 +3,7 @@
 // end, asserting the snapshot shape the frontend depends on. Run: npm test
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildSnapshot, resultsDigest, todayDigest, fixtureLabel } from "../worker/index.js";
+import { buildSnapshot, resultsDigest, todayDigest, fixtureLabel, normPlayer } from "../worker/index.js";
 
 // ── canned API-Football responses keyed by path (+ a little param awareness) ──
 const NATIONS = {
@@ -199,6 +199,23 @@ test("deep player enrichment: tournament + season + career + honours", () => {
   assert.ok(p.career.length > 0);
   assert.ok(p.honours.some((h) => h.title === "Premier League"));   // only "Winner" trophies
   assert.ok(!p.honours.some((h) => h.title === "FA Cup"));          // 2nd place excluded
+});
+
+test("pre-kickoff: no World Cup entry → tournament stats are zero, club stats never leak", () => {
+  // A player who has only club competitions on record (no WC league row yet, as is
+  // the case before the tournament starts). The tournament block must NOT borrow the
+  // club numbers — everyone should read 0 apps / 0 goals until they actually play.
+  const resp = [{
+    player: { id: 999, name: "Jonathan David", age: 26, position: "Attacker" },
+    statistics: [
+      { league: { id: 39, name: "Premier League" }, team: { name: "Lille" }, games: { appearences: 4, position: "Attacker" }, goals: { total: 2, assists: 1 } },
+    ],
+  }];
+  const p = normPlayer(resp, "1", {});             // WC_LEAGUE_ID = "1"
+  assert.equal(p.tournament.apps, 0);
+  assert.equal(p.tournament.g, 0);
+  assert.equal(p.tournament.a, 0);
+  assert.ok(p.season.some((s) => s.comp === "Premier League" && s.apps === 4));   // club stats still surface under season
 });
 
 test("bracket built with full structure", () => {
