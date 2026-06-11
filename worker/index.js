@@ -1277,6 +1277,22 @@ export default {
 
     // Probe whether /players/squads returns data for a national team vs a club, so we
     // can tell "squads not published yet" from "endpoint not returning nationals".
+    if (path === "/debug/standings") {
+      const base = { league: CFG(env).league, season: CFG(env).season };
+      const out = { league: base.league, season: base.season };
+      try {
+        const resp = await apiGet(env, "/standings", base);
+        const standings = resp?.[0]?.league?.standings;
+        out.responseLen = Array.isArray(resp) ? resp.length : typeof resp;
+        out.hasLeague = !!resp?.[0]?.league;
+        out.standingsBlocks = Array.isArray(standings) ? standings.length : null;
+        out.groupLabels = Array.isArray(standings) ? standings.map((g) => g?.[0]?.group).slice(0, 14) : null;
+        const dir = await buildTeamDir(env, base);
+        out.parsedGroups = Object.keys(normStandings(resp, dir));
+        out.cached = Object.keys((await env.SNAPSHOT?.get(STANDINGS_KEY, "json")) || {});
+      } catch (e) { out.error = e.message; }
+      return new Response(JSON.stringify(out, null, 2), { headers: { "content-type": "application/json" } });
+    }
     if (path === "/debug/squad") {
       if (env.DEBUG_TOKEN && url.searchParams.get("t") !== env.DEBUG_TOKEN) {
         return new Response(JSON.stringify({ error: "forbidden" }), { status: 403, headers: { "content-type": "application/json" } });
