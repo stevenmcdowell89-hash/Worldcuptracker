@@ -337,6 +337,17 @@ test("empty /fixtures with a schedule on record → poll fails (last good kept)"
   );
 });
 
+test("empty /standings with groups on record → poll fails (last good kept)", async () => {
+  // API-Football briefly serves an empty standings table while rebuilding after a
+  // result; it must not blank out the groups (tables, race, bracket seeding).
+  globalThis.fetch = async (url) => ({ ok: true, status: 200, headers: { get: () => null },
+    json: async () => ({ response: new URL(url).pathname === "/standings" ? [] : cannedFetch(url) }) });
+  await assert.rejects(
+    buildSnapshot({ APIFOOTBALL_KEY: "t", WC_LEAGUE_ID: "1", WC_SEASON: "2026" }, snap, false),
+    /standings returned empty/,
+  );
+});
+
 test("tight subrequest budget degrades gracefully (no crash)", async () => {
   globalThis.fetch = async (url) => ({ ok: true, status: 200, headers: { get: () => null }, json: async () => ({ response: cannedFetch(url) }) });
   const s = await buildSnapshot({ APIFOOTBALL_KEY: "t", WC_LEAGUE_ID: "1", WC_SEASON: "2026", SUBREQUEST_BUDGET: "5" }, null, false);

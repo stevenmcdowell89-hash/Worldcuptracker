@@ -293,6 +293,13 @@ export async function buildSnapshot(env, prev, liveOnly) {
 
   // Standings + all fixtures (cheap, every poll).
   const groups = normStandings(await apiGet(env, "/standings", base), dir);
+  // API-Football briefly serves an EMPTY standings table while it rebuilds after a
+  // result. The whole app keys off groups (tables, race, bracket seeding, the
+  // fixture→group mapping), so never overwrite a good table with nothing — fail the
+  // poll and keep the last good snapshot, exactly as we do for an empty fixtures list.
+  if (!Object.keys(groups).length && Object.keys(prev?.groups || {}).length) {
+    throw new Error("standings returned empty with groups on record — keeping the last good snapshot");
+  }
   const idToGroup = {};
   for (const [g, rows] of Object.entries(groups)) rows.forEach((r) => (idToGroup[r._id] = g));
   const fixturesResp = await apiGet(env, "/fixtures", base);
