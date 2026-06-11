@@ -3,7 +3,7 @@
 // end, asserting the snapshot shape the frontend depends on. Run: npm test
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildSnapshot } from "../worker/index.js";
+import { buildSnapshot, resultsDigest, todayDigest, fixtureLabel } from "../worker/index.js";
 
 // ── canned API-Football responses keyed by path (+ a little param awareness) ──
 const NATIONS = {
@@ -239,4 +239,44 @@ test("tight subrequest budget degrades gracefully (no crash)", async () => {
   const s = await buildSnapshot({ APIFOOTBALL_KEY: "t", WC_LEAGUE_ID: "1", WC_SEASON: "2026", SUBREQUEST_BUDGET: "5" }, null, false);
   assert.equal(Object.keys(s.groups).length, 2);          // core still works under a tiny budget
   assert.ok(typeof s.meta.squadCount === "number");       // no throw; just fewer enriched
+});
+
+// ── push digest copy ──────────────────────────────────────────────────────────
+const digestSnap = {
+  teams: { MEX: { name: "Mexico" }, RSA: { name: "South Africa" }, FRA: { name: "France" }, ESP: { name: "Spain" } },
+  matches: [
+    // two scheduled "today" fixtures, deliberately out of kick-off order
+    { id: "t2", status: "scheduled", group: "C", kickoff: "2026-06-20T19:00:00Z", home: { code: "FRA" }, away: { code: "ESP" }, tv: { channel: "BBC One" } },
+    { id: "t1", status: "scheduled", group: "F", kickoff: "2026-06-20T12:00:00Z", home: { code: "MEX" }, away: { code: "RSA" }, tv: { channel: "ITV1" } },
+    // a finished knockout tie in the overnight window, decided on penalties
+    { id: "r1", status: "ft", stage: "Round of 16", kickoff: new Date(Date.now() - 3 * 3600e3).toISOString(),
+      home: { code: "MEX", score: 1 }, away: { code: "FRA", score: 1 }, pens: { h: 4, a: 3 } },
+    // an old finished match, outside the 16h catch-up window — must be excluded
+    { id: "r0", status: "ft", group: "A", kickoff: new Date(Date.now() - 40 * 3600e3).toISOString(),
+      home: { code: "ESP", score: 2 }, away: { code: "RSA", score: 0 } },
+  ],
+};
+
+test("fixtureLabel: group letter for the group stage, the round otherwise", () => {
+  assert.equal(fixtureLabel({ group: "F", stage: "Group Stage" }), "Group F");
+  assert.equal(fixtureLabel({ stage: "Round of 16" }), "Round of 16");
+  assert.equal(fixtureLabel({ stage: "Group Stage" }), "");   // no group, nothing to show
+});
+
+test("todayDigest: full names, UK kick-off, group + channel, earliest first", () => {
+  const d = todayDigest(digestSnap, "2026-06-20");
+  assert.equal(d.count, 2);
+  const lines = d.body.split("\n");
+  assert.match(lines[0], /^13:00 Mexico v South Africa · Group F · ITV1$/);  // 12:00Z → 13:00 BST, sorted ahead
+  assert.match(lines[1], /^20:00 France v Spain · Group C · BBC One$/);
+});
+
+test("todayDigest: null when nothing is on", () => {
+  assert.equal(todayDigest(digestSnap, "2026-07-01"), null);
+});
+
+test("resultsDigest: scoreline, penalties, round; old match outside window dropped", () => {
+  const d = resultsDigest(digestSnap);
+  assert.equal(d.count, 1);
+  assert.equal(d.body, "Mexico 1-1 France (4-3 pens) · Round of 16");
 });
