@@ -52,7 +52,7 @@ function matchRow(m, opts = {}) {
   const live = m.status === "live" || m.status === "ht";
   const ft = m.status === "ft";
   let mid;
-  if (live) mid = `<span class="score">${m.home.score}–${m.away.score}</span><span class="min">${liveMinute(m)}</span>`;
+  if (live) mid = `<span class="score">${m.home.score}–${m.away.score}</span><span class="min"><span class="livedot"></span>${liveMinute(m)}</span>`;
   else if (ft) mid = `<span class="score">${m.home.score}–${m.away.score}</span><span class="ko">${m.pens ? `${m.pens.h}–${m.pens.a} pens` : "FT"}</span>`;
   else mid = `<span class="ko">${fmtTime(m.kickoff)}</span>`;
   const stageLabel = m.group ? `Group ${m.group}` : (m.stage && m.stage !== "Group Stage" ? m.stage : "");
@@ -67,7 +67,7 @@ function matchRow(m, opts = {}) {
   ].filter(Boolean).join("");
   const bell = bellHTML(m);   // reminder bell (feature 3) — scheduled fixtures only
   const meta = tags || bell ? `<div class="match-meta">${tags}${bell}</div>` : "";
-  return `<div class="match-card">
+  return `<div class="match-card${live ? " live-card" : ""}">
     <div class="match clickable" data-nav="match/${m.id}">
       <span class="side home"><span class="nm">${teamName(m.home.code)}</span>${flag(m.home.code)}</span>
       <span class="mid">${mid}</span>

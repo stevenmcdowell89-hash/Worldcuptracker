@@ -113,9 +113,16 @@ a { color:inherit; text-decoration:none; }
 .match .mid { display:flex; flex-direction:column; align-items:center; min-width:54px; }
 .match .score { font-family:var(--display); font-weight:800; font-size:18px; letter-spacing:.01em; }
 .match .ko { font-size:12px; color:var(--faint); font-weight:600; }
-.match .min { font-size:11px; font-weight:700; color:var(--live); }
+.match .min { display:flex; align-items:center; gap:4px; font-size:11px; font-weight:700; color:var(--live); }
 .match.clickable:active { background:var(--raised); }
 .match-card + .match-card { border-top:1px solid var(--divider); }
+/* Live match accent — per-card, so concurrent live games each light up. A red rail
+   down the left edge + a faint wash, and a pulsing dot beside the minute. */
+.match-card.live-card { position:relative; background:linear-gradient(90deg, rgba(226,55,68,.06), rgba(226,55,68,0) 60%); box-shadow:inset 3px 0 0 var(--live); }
+.match-card.live-card .score { color:var(--live); }
+.livedot { width:7px; height:7px; border-radius:50%; background:var(--live); flex:none; box-shadow:0 0 0 0 rgba(226,55,68,.5); animation:livepulse 1.6s ease-out infinite; }
+@keyframes livepulse { 0% { box-shadow:0 0 0 0 rgba(226,55,68,.5); } 70% { box-shadow:0 0 0 6px rgba(226,55,68,0); } 100% { box-shadow:0 0 0 0 rgba(226,55,68,0); } }
+@media (prefers-reduced-motion: reduce) { .livedot { animation:none; } }
 .match-meta { display:flex; align-items:center; gap:8px; padding:0 14px 9px; margin-top:-3px; }
 .match-meta:empty { display:none; }
 .grp-pill { font-size:11px; font-weight:700; color:var(--muted); background:var(--raised); padding:2px 8px; border-radius:8px; }
@@ -201,13 +208,35 @@ a { color:inherit; text-decoration:none; }
 .statbar { display:flex; height:6px; border-radius:3px; overflow:hidden; background:var(--raised); }
 .statbar .h, .statbar .a { height:100%; }
 
-/* ── lineup pitch ── */
-.pitch { background:linear-gradient(#1f7a44,#1b6b3c); border-radius:14px; margin:12px 14px; padding:14px 8px; position:relative; }
-.pitch .formrow { display:flex; justify-content:space-around; margin:14px 0; }
-.player-dot { display:flex; flex-direction:column; align-items:center; gap:3px; width:58px; }
-.player-dot .circ { width:34px; height:34px; border-radius:50%; background:rgba(255,255,255,.92); display:grid; place-items:center; font-family:var(--display); font-weight:800; font-size:13px; color:#15161B; position:relative; }
-.player-dot .rt { position:absolute; top:-6px; right:-8px; background:var(--through); color:#fff; font-size:9.5px; font-weight:800; padding:1px 4px; border-radius:6px; }
-.player-dot .nm { font-size:10px; color:#fff; font-weight:600; max-width:58px; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+/* ── lineup pitch — a half-pitch: mowing stripes, a boundary, the penalty box at
+   the keeper's end (top) and the centre circle straddling the halfway line (bottom). */
+.pitch {
+  position:relative; overflow:hidden; border-radius:14px; margin:12px 14px; padding:30px 8px 20px;
+  background:
+    repeating-linear-gradient(180deg, rgba(255,255,255,.045) 0 30px, rgba(0,0,0,.05) 30px 60px),
+    linear-gradient(165deg, #2c8b50 0%, #1d6c3d 100%);
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.18), inset 0 0 40px rgba(0,0,0,.22);
+}
+/* penalty box + goal mouth at the top (the GK's end) */
+.pitch::before {
+  content:""; position:absolute; top:-2px; left:50%; transform:translateX(-50%);
+  width:48%; height:30px; border:2px solid rgba(255,255,255,.32); border-top:none; border-radius:0 0 3px 3px;
+}
+/* centre circle on the halfway line at the bottom edge */
+.pitch::after {
+  content:""; position:absolute; bottom:-33px; left:50%; transform:translateX(-50%);
+  width:66px; height:66px; border:2px solid rgba(255,255,255,.28); border-radius:50%;
+  background:linear-gradient(rgba(255,255,255,.28),rgba(255,255,255,.28)) top/100% 2px no-repeat;
+}
+.pitch .formrow { position:relative; z-index:2; display:flex; justify-content:space-around; margin:16px 0; }
+.player-dot { display:flex; flex-direction:column; align-items:center; gap:4px; width:58px; }
+.player-dot .circ {
+  width:36px; height:36px; border-radius:50%; display:grid; place-items:center;
+  font-family:var(--display); font-weight:800; font-size:13px; color:#15161B; position:relative;
+  background:linear-gradient(#ffffff,#e9ebf0); box-shadow:0 2px 5px rgba(0,0,0,.3), inset 0 0 0 1px rgba(255,255,255,.6);
+}
+.player-dot .rt { position:absolute; top:-6px; right:-9px; background:var(--through); color:#fff; font-size:9.5px; font-weight:800; padding:1px 5px; border-radius:7px; box-shadow:0 1px 3px rgba(0,0,0,.35); }
+.player-dot .nm { font-size:10px; color:#fff; font-weight:700; max-width:58px; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-shadow:0 1px 2px rgba(0,0,0,.45); }
 .formhead { display:flex; justify-content:space-between; padding:0 16px; }
 .formhead .f { font-family:var(--display); font-weight:800; }
 .formhead .c { font-size:12px; color:var(--muted); }
@@ -287,15 +316,21 @@ a { color:inherit; text-decoration:none; }
 .bx-v span { font-size:9.5px; font-weight:800; color:var(--faint); text-transform:uppercase; letter-spacing:.08em; }
 .bx-legend { padding:2px 16px 8px; font-size:11px; color:var(--muted); line-height:1.7; }
 
-/* ── live commentary ── */
-.cmts { padding:2px 0; }
-.cmt { padding:11px 15px; }
-.cmt + .cmt { border-top:1px solid var(--divider); }
-.cmt.key { background:rgba(75,69,224,.05); box-shadow:inset 3px 0 0 var(--brand); }
-.cmt-head { display:flex; align-items:center; gap:8px; margin-bottom:3px; }
-.cmt-time { font-family:var(--display); font-weight:800; font-size:12px; color:var(--faint); }
+/* ── live commentary — a left timeline rail with a node per entry; the time reads
+   as a chip so each block has a clear anchor and the entries separate cleanly. ── */
+.cmts { padding:4px 0; }
+.cmt { position:relative; padding:13px 15px 13px 34px; }
+.cmt::before { content:""; position:absolute; left:18px; top:0; bottom:0; width:2px; background:var(--divider); }
+.cmt::after { content:""; position:absolute; left:14px; top:17px; width:10px; height:10px; border-radius:50%; background:var(--card); box-shadow:inset 0 0 0 2px var(--faint); }
+.cmt:first-child::before { top:17px; }
+.cmt:last-child::before { bottom:auto; height:17px; }
+.cmt.key { background:rgba(75,69,224,.05); }
+.cmt.key::after { background:var(--brand); box-shadow:inset 0 0 0 2px var(--brand), 0 0 0 3px rgba(75,69,224,.18); }
+.cmt-head { display:flex; align-items:center; gap:8px; margin-bottom:4px; }
+.cmt-time { font-family:var(--display); font-weight:800; font-size:11px; color:var(--muted); background:var(--raised); padding:2px 7px; border-radius:7px; letter-spacing:.01em; }
+.cmt.key .cmt-time { color:#fff; background:var(--brand); }
 .cmt-title { font-size:11px; font-weight:800; letter-spacing:.03em; text-transform:uppercase; color:var(--brand); }
-.cmt p { font-size:13.5px; line-height:1.45; color:var(--text); }
+.cmt p { font-size:13.5px; line-height:1.5; color:var(--text); }
 
 /* ── news ── */
 .newslist { background:var(--card); }
