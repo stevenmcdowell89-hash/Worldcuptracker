@@ -19,10 +19,12 @@ function standings() {
   const mk = (id, pts, gf, ga) => ({ team: { id, name: CODES[id], logo: `https://logo/${CODES[id]}.png` }, points: pts, goalsDiff: gf - ga,
     all: { played: 2, win: pts >= 4 ? 2 : pts >= 3 ? 1 : 0, draw: pts === 1 ? 1 : 0, lose: pts === 0 ? 2 : 0, goals: { for: gf, against: ga } } });
   const table = [
-    [mk(100, 6, 4, 1), mk(101, 3, 3, 2), mk(102, 3, 3, 3), mk(103, 0, 1, 5)].map((r) => ({ ...r, group: "Group A" })),
-    [mk(110, 6, 5, 1), mk(111, 3, 2, 2), mk(112, 1, 2, 3), mk(113, 1, 1, 4)].map((r) => ({ ...r, group: "Group B" })),
-    // the meta block the live API includes — must be skipped, not treated as a 3rd group
+    // live API label format once the tournament is under way: "Group Stage - Group X"
+    [mk(100, 6, 4, 1), mk(101, 3, 3, 2), mk(102, 3, 3, 3), mk(103, 0, 1, 5)].map((r) => ({ ...r, group: "Group Stage - Group A" })),
+    [mk(110, 6, 5, 1), mk(111, 3, 2, 2), mk(112, 1, 2, 3), mk(113, 1, 1, 4)].map((r) => ({ ...r, group: "Group Stage - Group B" })),
+    // the meta blocks the live API includes — must be skipped, not treated as groups
     [{ team: { id: 102, name: "SEN" }, group: "Ranking of third-placed teams", points: 3, all: { played: 2, goals: { for: 3, against: 3 } } }],
+    [{ team: { id: 100, name: "ENG" }, group: "Group Stage", points: 6, all: { played: 2, goals: { for: 4, against: 1 } } }],
   ];
   return [{ league: { standings: table } }];
 }
