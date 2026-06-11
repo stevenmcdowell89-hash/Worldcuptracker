@@ -656,7 +656,10 @@ function applyTeamVerdicts(teams, groups, race) {
 // team's qualification, and only once the tournament is under way. The one-liner uses
 // the full qualification outlook (top-two OR third place), not just the third-place race. ──
 function annotateProgression(matches, groups, remainingFixtures, teams, race, anyPlayed) {
-  const engineSnap = { groups, remainingFixtures, teams };
+  // meta.started lets the engine's played===0 narratives distinguish "live but no
+  // results yet" from genuinely pre-tournament — without it the opening match's
+  // one-liner reads "the group stage hasn't kicked off" while the game is in play.
+  const engineSnap = { groups, remainingFixtures, teams, meta: { started: anyPlayed } };
   const outlookCache = {};
   const outlook = (code) => (outlookCache[code] = outlookCache[code] || qualifyOutlook(engineSnap, code, ANNEXC));
   for (const m of matches) {
