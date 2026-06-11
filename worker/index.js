@@ -825,9 +825,24 @@ async function claimDaily(env, key, date) {
   await env.SNAPSHOT.put(key, date);
   return true;
 }
+// ── notification copy helpers ────────────────────────────────────────────────
+// Digests and reminders read better with the full nation name, where the fixture
+// sits in the draw, and the UK kick-off time — so each push carries the context the
+// app would, not just two three-letter codes. Push bodies render "\n", so we give
+// every fixture its own line rather than cramming them onto one " · "-joined row.
+
+// Full nation name from the snapshot directory, falling back to the 3-letter code.
+export const teamName = (snap, code) => snap?.teams?.[code]?.name || code;
+// Where a fixture sits: "Group F" in the group stage, else the knockout round as the
+// API already names it ("Round of 16", "Quarter-finals", …). "" when we can't tell.
+export function fixtureLabel(m) {
+  if (m.group) return `Group ${m.group}`;
+  return m.stage && m.stage !== "Group Stage" ? m.stage : "";
+}
+
 // Verdict flips between two snapshots (brief §14): qualified / eliminated / cut-line
 // crossings. Batched into one line per group so simultaneous flips don't spam.
-function detectFlips(prev, snap) {
+export function detectFlips(prev, snap) {
   if (!prev?.teams) return [];
   const interesting = (v) => v === "qualified" || v === "eliminated";
   const byGroup = {};
@@ -843,17 +858,36 @@ function detectFlips(prev, snap) {
   }
   return Object.entries(byGroup).map(([g, list]) => `Group ${g}: ${list.join(", ")}`);
 }
-function resultsDigest(snap) {
+// Overnight results, one line each: "Mexico 2-1 South Africa (4-3 pens) · Group F".
+// Earliest kick-off first; returns { count, body } or null when nothing's finished.
+export function resultsDigest(snap) {
   const since = Date.now() - 16 * 3600e3;   // overnight catch-up window
-  const ft = (snap.matches || []).filter((m) => m.status === "ft" && m.kickoff && new Date(m.kickoff).getTime() >= since);
+  const ft = (snap.matches || [])
+    .filter((m) => m.status === "ft" && m.kickoff && new Date(m.kickoff).getTime() >= since)
+    .sort((a, b) => Date.parse(a.kickoff) - Date.parse(b.kickoff));
   if (!ft.length) return null;
-  return ft.slice(0, 8).map((m) =>
-    `${m.home.code} ${m.home.score}-${m.away.score} ${m.away.code}${m.pens ? ` (${m.pens.h}-${m.pens.a}p)` : ""}`).join(" · ");
+  const lines = ft.slice(0, 8).map((m) => {
+    const where = fixtureLabel(m);
+    const pens = m.pens ? ` (${m.pens.h}-${m.pens.a} pens)` : "";
+    return `${teamName(snap, m.home.code)} ${m.home.score}-${m.away.score} ${teamName(snap, m.away.code)}${pens}${where ? ` · ${where}` : ""}`;
+  });
+  if (ft.length > 8) lines.push(`+${ft.length - 8} more`);
+  return { count: ft.length, body: lines.join("\n") };
 }
-function todayDigest(snap, date) {
-  const today = (snap.matches || []).filter((m) => m.status === "scheduled" && (m.kickoff || "").slice(0, 10) === date);
+// Today's fixtures, one line each: "13:00 Mexico v South Africa · Group F · ITV1".
+// Earliest kick-off first; returns { count, body } or null when there's nothing on.
+export function todayDigest(snap, date) {
+  const today = (snap.matches || [])
+    .filter((m) => m.status === "scheduled" && (m.kickoff || "").slice(0, 10) === date)
+    .sort((a, b) => Date.parse(a.kickoff) - Date.parse(b.kickoff));
   if (!today.length) return null;
-  return today.slice(0, 8).map((m) => `${m.home.code} v ${m.away.code}`).join(" · ");
+  const lines = today.slice(0, 8).map((m) => {
+    const where = fixtureLabel(m);
+    const tv = m.tv?.channel ? ` · ${m.tv.channel}` : "";
+    return `${ukTimeOf(m.kickoff)} ${teamName(snap, m.home.code)} v ${teamName(snap, m.away.code)}${where ? ` · ${where}` : ""}${tv}`;
+  });
+  if (today.length > 8) lines.push(`+${today.length - 8} more`);
+  return { count: today.length, body: lines.join("\n") };
 }
 
 // ── per-match reminders (feature 3) ──────────────────────────────────────────────
@@ -882,9 +916,15 @@ async function runReminders(env, snap) {
       if (!Number.isFinite(ko) || now > ko + 10 * 60e3) { delete rem[fid]; changed = true; continue; }   // stale — prune
       if (r.sent || now < ko - clampLead(r.lead) * 60e3) continue;
       const m = (snap.matches || []).find((x) => x.id === fid);
-      const body = m
-        ? `${name(m.home.code)} v ${name(m.away.code)} · ${ukTimeOf(m.kickoff)} UK${m.tv ? ` · ${m.tv.channel}` : ""}`
-        : `Kick-off at ${ukTimeOf(r.at)} UK`;
+      let body;
+      if (m) {
+        const where = fixtureLabel(m);
+        const tv = m.tv?.channel ? ` · ${m.tv.channel}` : "";
+        const venue = m.venue ? `\n${m.venue}` : "";
+        body = `${name(m.home.code)} v ${name(m.away.code)}${where ? ` · ${where}` : ""}\n${ukTimeOf(m.kickoff)} UK${tv}${venue}`;
+      } else {
+        body = `Kick-off at ${ukTimeOf(r.at)} UK`;
+      }
       try {
         const res = await sendWebPush(s.subscription, { title: "⏰ Kick-off soon", body, tag: "wc26-rem-" + fid, url: "/#/match/" + fid }, env);
         if (res.status === 404 || res.status === 410) { await env.SNAPSHOT.delete(s.key); gone = true; break; }
@@ -942,13 +982,13 @@ async function runNotifications(env, prev, snap) {
   }
   // Morning results digest (~8am UK) + the overnight catch-up.
   if (hour === 8 && await claimDaily(env, "digest-results", date)) {
-    const body = resultsDigest(snap);
-    if (body) await broadcast(env, "results", { title: "Last night's results", body, tag: "wc26-results", url: "/#/matches" });
+    const d = resultsDigest(snap);
+    if (d) await broadcast(env, "results", { title: d.count === 1 ? "Last night's result" : `Last night's results · ${d.count} games`, body: d.body, tag: "wc26-results", url: "/#/matches" });
   }
   // Today's matches (~midday UK).
   if (hour === 12 && await claimDaily(env, "digest-today", date)) {
-    const body = todayDigest(snap, date);
-    if (body) await broadcast(env, "today", { title: "Today's matches", body, tag: "wc26-today", url: "/#/matches" });
+    const d = todayDigest(snap, date);
+    if (d) await broadcast(env, "today", { title: d.count === 1 ? "1 match today" : `${d.count} matches today`, body: d.body, tag: "wc26-today", url: "/#/matches" });
   }
 }
 
