@@ -163,8 +163,10 @@ export function renderMatches(ctx = {}) {
 
   // ── GROUP (everyday): feed with the race card embedded once it has meaning ──
   const byDay = upcomingByDay(upcoming);
-  // Flip at the first whistle (meta.started), not the first result — see race.js.
-  const started = S().meta?.started === true || (S().thirdPlaceRace || []).some((t) => t.Pts > 0);
+  // Embed the race card only once there are actual RESULTS — with zero games played
+  // the third-place table is all zeros and just adds noise to the Matches feed.
+  // (Distinct from the Race tab's banner copy, which flips at the first whistle.)
+  const started = S().meta?.started !== false && (S().thirdPlaceRace || []).some((t) => t.Pts > 0);
   const firstDay = byDay.slice(0, 1).map(daySec).join("");
   const restDays = byDay.slice(1).map(daySec).join("");
   return `${toggle}${head}${firstDay}${started ? compactRaceCard() : ""}${restDays}${foot}`;
