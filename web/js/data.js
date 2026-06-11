@@ -45,6 +45,16 @@ export function flag(code, cls = "flag") {
   return `<span class="${cls}" style="background:${bg}" title="${code}" aria-label="${code}"></span>`;
 }
 
+/** Live match minute that keeps moving between data polls. The worker refreshes
+ *  roughly once a minute (cron granularity), so a static minute skips values;
+ *  render the anchor (minute + when the snapshot was built) and let app.js's 1s
+ *  UI ticker advance it locally. HT and "Pens" pass through untouched. */
+export function liveMinute(m) {
+  const n = parseInt(m.minute);
+  if (m.status !== "live" || !Number.isFinite(n)) return m.minute || "LIVE";
+  return `<span data-livemin="${n}" data-anchor="${state.snap?.meta?.updated || ""}">${n}'</span>`;
+}
+
 // ── status helpers ──
 // "out" = currently below the qualification cut but still mathematically alive;
 // "eliminated" = actually out. Keep these visibly distinct (label + colour).

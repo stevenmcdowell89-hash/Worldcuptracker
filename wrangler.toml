@@ -37,7 +37,11 @@ crons = ["* * * * *"]
 WC_LEAGUE_ID = "1"          # VERIFY: API-Football league id for the FIFA World Cup
 WC_SEASON = "2026"          # VERIFY: season value for WC 2026
 BASELINE_INTERVAL_MIN = "360"   # 6h baseline refresh
-LIVE_INTERVAL_SEC = "75"        # ~60-90s while live
+# Live cadence: cron only fires once a minute, so this must sit comfortably BELOW 60
+# for a poll to qualify on every tick. At 75 the check "now - lastLive >= 75s" failed
+# on the next tick (~60s later) and the poll actually landed every 2 MINUTES — the
+# match minute visibly skipped. 45 ⇒ a live poll every cron minute (~6-10 API calls).
+LIVE_INTERVAL_SEC = "45"
 # Max API subrequests per poll. Keep under the Workers plan cap (Free=50, Paid=1000).
 # On Workers Paid: a full poll (~110 calls) fits comfortably, so everything fills in
 # a single poll. (On Free, set this to ~45 so heavy enrichment spreads across polls.)

@@ -8,7 +8,7 @@
 // Plus bracketEmbed(): a compact inline version surfaced on the Matches feed during
 // the knockout phase (§11), so progression is visible without leaving Matches.
 
-import { state, teamName, flag } from "./data.js";
+import { state, teamName, flag, liveMinute } from "./data.js";
 import { qualifyOutlook } from "./engine.js";
 
 const ROUND_LABEL = { R32: "Round of 32", R16: "Round of 16", QF: "Quarter-finals", SF: "Semi-finals", Final: "Final" };
@@ -70,7 +70,7 @@ function tieHTML(snap, annexC, m, opts = {}) {
   const lm = liveMatch(snap, m.id);
   const a = sideView(snap, annexC, m.a, lm, "a");
   const b = sideView(snap, annexC, m.b, lm, "b");
-  const status = lm && (lm.status === "live" || lm.status === "ht") ? `<span class="bx-live">${lm.minute || "LIVE"}</span>`
+  const status = lm && (lm.status === "live" || lm.status === "ht") ? `<span class="bx-live">${liveMinute(lm)}</span>`
     : lm && lm.status === "ft" ? `<span class="bx-ft">${lm.pens ? "FT · PENS" : "FT"}</span>` : "";
   const nav = lm ? `data-nav="match/${lm.id}"` : "";
   return `<div class="bx ${opts.here ? "here" : ""} clickable" ${nav}>
