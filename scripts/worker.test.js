@@ -243,6 +243,30 @@ test("bracket built with full structure", () => {
   assert.equal(snap.bracket.matches.length, 31);
 });
 
+test("team directory survives a /teams outage via the cached copy (no grey-square ids)", async () => {
+  const store = new Map();
+  const kv = {
+    get: async (k, t) => { const v = store.get(k); return v == null ? null : (t === "json" ? JSON.parse(v) : v); },
+    put: async (k, v) => { store.set(k, v); },
+    list: async () => ({ keys: [] }),
+  };
+  const env = { APIFOOTBALL_KEY: "t", WC_LEAGUE_ID: "1", WC_SEASON: "2026", SNAPSHOT: kv };
+  // Poll 1: /teams healthy → directory (codes + crests) seeded into KV.
+  globalThis.fetch = async (url) => ({ ok: true, status: 200, headers: { get: () => null }, json: async () => ({ response: cannedFetch(url) }) });
+  const good = await buildSnapshot(env, null, false);
+  assert.equal(good.crests.ENG, "https://logo/ENG.png");
+
+  // Poll 2: /teams fails (rate-limit/outage). Must reuse the cached directory rather
+  // than collapse every team to a bare numeric id with no crest.
+  globalThis.fetch = async (url) => {
+    if (new URL(url).pathname === "/teams") return { ok: false, status: 503, headers: { get: () => null }, json: async () => ({}) };
+    return { ok: true, status: 200, headers: { get: () => null }, json: async () => ({ response: cannedFetch(url) }) };
+  };
+  const degraded = await buildSnapshot(env, good, false);
+  assert.equal(degraded.crests.ENG, "https://logo/ENG.png", "crest survived the /teams outage");
+  assert.ok(Object.values(degraded.groups).flat().some((r) => r.code === "ENG"), "codes still resolve — not numeric ids");
+});
+
 test("guardian commentary attaches to live matches when GUARDIAN_KEY is set", async () => {
   globalThis.fetch = async (url) => ({ ok: true, status: 200, headers: { get: () => null }, json: async () => ({ response: cannedFetch(url) }) });
   const s = await buildSnapshot({ APIFOOTBALL_KEY: "t", WC_LEAGUE_ID: "1", WC_SEASON: "2026", GUARDIAN_KEY: "g" }, null, false);
