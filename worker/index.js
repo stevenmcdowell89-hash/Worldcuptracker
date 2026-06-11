@@ -1099,6 +1099,15 @@ export default {
         return;
       }
 
+      // Never let polls stack. Cron fires every minute, but a poll that runs into
+      // per-minute 429s sleeps/retries and can run well past 60s — without a lock the
+      // next ticks pile concurrent full polls on top (each ~75 calls once the
+      // tournament is live), which is exactly what exhausts the per-minute allowance
+      // and starves the live calls. Same pattern as runRefresh's refresh-lock; the
+      // TTL caps the damage if an invocation dies without releasing.
+      const pollLock = await env.SNAPSHOT.get("poll-lock");
+      if (pollLock && now - +pollLock < 150000) return;
+      await env.SNAPSHOT.put("poll-lock", String(now), { expirationTtl: 180 });
       try {
         const snap = await buildSnapshot(env, prev, !dueFull /* liveOnly when only the live tick is due */);
         await writeSnapshot(env, snap);
@@ -1112,6 +1121,8 @@ export default {
         const fb = await fallbackSnapshot(env, prev);
         if (fb) await writeSnapshot(env, fb);
         // else: keep last good — never overwrite with a broken snapshot.
+      } finally {
+        await env.SNAPSHOT.delete("poll-lock");
       }
     })();
     ctx.waitUntil(work);
