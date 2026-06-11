@@ -79,6 +79,11 @@ export interface MatchEvent {
 
 export interface StatRow { k: string; h: number | null; a: number | null; unit?: string; }
 
+// A single commentary entry. Used by both feeds: The Guardian minute-by-minute (title
+// is the moment, e.g. "GOAL!") and the r/soccer match thread (title is the upvote tally
+// + author, e.g. "▲ 412 · u/name"). `key` flags a key event / heavily-upvoted reaction.
+export interface CommentaryBlock { at: string; title: string; text: string; key: boolean; }
+
 export interface LineupPlayer {
   num: number; name: string; pos: string;
   rating?: number;            // lands at FT only
@@ -107,6 +112,12 @@ export interface Match {
   events?: MatchEvent[];
   stats?: StatRow[];
   lineups?: { h?: SideLineup; a?: SideLineup };
+  // Live commentary — two user-selectable feeds (the user picks; not one or the other).
+  commentary?: CommentaryBlock[];     // The Guardian minute-by-minute (newest first)
+  commentaryUrl?: string;             // link back to the Guardian liveblog
+  commentarySource?: string;          // attribution, e.g. "The Guardian"
+  redditCommentary?: CommentaryBlock[];   // r/soccer match-thread top reactions (alternative feed)
+  redditCommentaryUrl?: string;           // link to the r/soccer match thread
 }
 
 export interface BracketMatch {

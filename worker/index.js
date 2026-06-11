@@ -19,6 +19,7 @@ import ANNEXC from "../web/js/annexC.data.js";
 import TVSEED from "../web/js/tvUK.data.js";
 import { sendWebPush } from "./push.js";
 import { mergeListings, annotateTv, fetchTvListings, ukTimeOf, TV_SOURCE_DEFAULT } from "./tv.js";
+import { redditEnabled, getRedditToken, findMatchThread, fetchThreadComments } from "./reddit.js";
 
 const API = "https://v3.football.api-sports.io";
 const KV_KEY = "latest.json";
@@ -292,6 +293,11 @@ export async function buildSnapshot(env, prev, liveOnly) {
       m.commentary = p.commentary; m.commentaryUrl = p.commentaryUrl; m.commentarySource = p.commentarySource;
       m._guardianId = p._guardianId; m._commentaryClosed = p._commentaryClosed;
     }
+    // Same for the Reddit r/soccer feed — frozen once we've taken the post-FT snapshot.
+    if (m.status === "ft" && p.redditCommentary) {
+      m.redditCommentary = p.redditCommentary; m.redditCommentaryUrl = p.redditCommentaryUrl;
+      m._redditId = p._redditId; m._redditClosed = p._redditClosed;
+    }
     if (m.status === "ft" && p.lineups) {
       m.events = p.events; m.stats = p.stats; m.lineups = p.lineups; m.progressionLine = p.progressionLine; m._final = true;
     }
@@ -329,6 +335,37 @@ export async function buildSnapshot(env, prev, liveOnly) {
         // Liveblog no longer updating → the wrap-up is in; freeze it so we stop polling.
         if (m.status === "ft" && com.live === false) m._commentaryClosed = true;
       } catch { /* commentary is best-effort */ }
+    }
+  }
+
+  // Reddit r/soccer match-thread reactions — the ALTERNATIVE commentary feed the user
+  // can switch to (never a replacement for the Guardian MBM). Same live/just-finished
+  // window; one final pull after full time captures the verdict reactions, then frozen.
+  // Best-effort, gated on Reddit app credentials. Reddit may throttle datacenter IPs, so
+  // a miss is normal — the feed simply doesn't appear for that match.
+  if (redditEnabled(env)) {
+    let token = null;
+    try { token = await getRedditToken(env); } catch (e) { console.error("reddit auth:", e.message); }
+    const now = Date.now();
+    if (token) for (const m of matches) {
+      if (m._redditClosed) continue;
+      const liveish = m.status === "live" || m.status === "ht";
+      const koMs = m.kickoff ? new Date(m.kickoff).getTime() : 0;
+      const justFinished = m.status === "ft" && koMs && now <= koMs + 12 * 3600e3;
+      if (!liveish && !justFinished) continue;
+      try {
+        let rid = m._redditId || prevMatch[m.id]?._redditId;
+        let rurl = m.redditCommentaryUrl || prevMatch[m.id]?.redditCommentaryUrl;
+        if (!rid) {
+          const found = await findMatchThread(env, token, dir.byId[m._homeId]?.name, dir.byId[m._awayId]?.name, m.kickoff);
+          if (found) { rid = found.id; rurl = found.url; }
+        }
+        if (!rid) continue;
+        m._redditId = rid;
+        const blocks = await fetchThreadComments(env, token, rid);
+        if (blocks.length) { m.redditCommentary = blocks; m.redditCommentaryUrl = rurl || `https://www.reddit.com/r/soccer/comments/${rid}`; }
+        if (m.status === "ft") m._redditClosed = true;   // one post-FT pull, then freeze
+      } catch { /* reddit feed is best-effort */ }
     }
   }
 

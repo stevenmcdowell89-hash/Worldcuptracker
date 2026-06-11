@@ -224,6 +224,43 @@ test("no GUARDIAN_KEY → no commentary (graceful)", async () => {
   assert.ok(!live.commentary, "no commentary without a key");
 });
 
+test("reddit r/soccer reactions attach as an alternative feed when creds are set", async () => {
+  const sec = (iso) => Date.parse(iso) / 1000;
+  const search = { data: { children: [
+    { data: { id: "decoy", title: "Match Thread: Brazil vs Spain | World Cup 2026", permalink: "/r/soccer/comments/decoy/x/", created_utc: sec("2026-06-25T13:00:00Z") } },
+    { data: { id: "argaus", title: "Match Thread: ARG vs AUS | World Cup 2026", permalink: "/r/soccer/comments/argaus/arg_v_aus/", created_utc: sec("2026-06-25T15:55:00Z") } },
+    { data: { id: "post", title: "Post-Match Thread: ARG vs AUS", permalink: "/r/soccer/comments/post/x/", created_utc: sec("2026-06-25T18:00:00Z") } },  // must be excluded
+  ] } };
+  const comments = [{ data: {} }, { data: { children: [
+    { kind: "t1", data: { body: "WHAT A GOAL FROM MESSI", author: "fan_a", score: 980, created_utc: sec("2026-06-25T16:20:00Z") } },
+    { kind: "t1", data: { body: "Australia hanging on for dear life here", author: "fan_b", score: 120, created_utc: sec("2026-06-25T16:25:00Z") } },
+    { kind: "t1", data: { body: "[removed]", author: "[deleted]", score: 5 } },                       // removed → skip
+    { kind: "t1", data: { body: "Match Thread rules: be civil", author: "AutoModerator", score: 9999, stickied: true } },  // bot → skip
+    { kind: "more", data: {} },                                                                        // stub → skip
+  ] } }];
+  globalThis.fetch = async (url) => {
+    const u = new URL(url);
+    if (u.hostname === "www.reddit.com") return { ok: true, status: 200, json: async () => ({ access_token: "tok", expires_in: 3600 }) };
+    if (u.hostname === "oauth.reddit.com") return { ok: true, status: 200, json: async () => (u.pathname.startsWith("/r/soccer/comments/") ? comments : search) };
+    return { ok: true, status: 200, headers: { get: () => null }, json: async () => ({ response: cannedFetch(url) }) };
+  };
+  const s = await buildSnapshot({ APIFOOTBALL_KEY: "t", WC_LEAGUE_ID: "1", WC_SEASON: "2026", REDDIT_CLIENT_ID: "id", REDDIT_CLIENT_SECRET: "sec" }, null, false);
+  const live = s.matches.find((m) => m.status === "live");
+  assert.ok(live.redditCommentary?.length, "live match carries reddit reactions");
+  assert.equal(live.redditCommentary[0].text, "WHAT A GOAL FROM MESSI");        // most-upvoted first
+  assert.equal(live.redditCommentary[0].key, true);                             // 980 ≥ 250 → highlighted
+  assert.match(live.redditCommentary[0].title, /u\/fan_a/);
+  assert.ok(!live.redditCommentary.some((b) => /AutoModerator|removed/.test(b.text + b.title)), "bot/removed comments filtered");
+  assert.match(live.redditCommentaryUrl, /argaus/);                             // confident thread match (not the decoy / post-match)
+  assert.equal(live.redditCommentary.some((b) => /_score/.test(JSON.stringify(b))), false);  // internal score stripped
+});
+
+test("no reddit creds → no reddit feed (graceful)", async () => {
+  globalThis.fetch = async (url) => ({ ok: true, status: 200, headers: { get: () => null }, json: async () => ({ response: cannedFetch(url) }) });
+  const s = await buildSnapshot({ APIFOOTBALL_KEY: "t", WC_LEAGUE_ID: "1", WC_SEASON: "2026" }, null, false);
+  assert.ok(!s.matches.some((m) => m.redditCommentary), "no reddit feed without credentials");
+});
+
 test("empty /fixtures with a schedule on record → poll fails (last good kept)", async () => {
   globalThis.fetch = async (url) => ({ ok: true, status: 200, headers: { get: () => null },
     json: async () => ({ response: new URL(url).pathname === "/fixtures" ? [] : cannedFetch(url) }) });

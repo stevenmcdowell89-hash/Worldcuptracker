@@ -120,6 +120,13 @@ matches.push({
     { at: new Date(Date.now() - 9 * 6e4).toISOString(), title: "", text: "Saudi Arabia are growing into this. Al-Dawsari drifts inside and curls one just over — a warning to the hosts.", key: false },
     { at: new Date(Date.now() - 22 * 6e4).toISOString(), title: "GOAL!", text: "1-1. Al-Dawsari levels from the spot after a clumsy challenge by Álvarez, sending Ochoa the wrong way.", key: true },
   ],
+  // Alternative commentary feed: r/soccer match-thread reactions (user-selectable).
+  redditCommentaryUrl: "https://www.reddit.com/r/soccer/comments/wc26mex",
+  redditCommentary: [
+    { at: new Date(Date.now() - 2 * 6e4).toISOString(), title: "▲ 1243 · u/azteca_diego", text: "GIMÉNEZ AGAIN. The whole stadium is shaking, my neighbours must think I'm being robbed", key: true },
+    { at: new Date(Date.now() - 8 * 6e4).toISOString(), title: "▲ 642 · u/xG_enjoyer", text: "Pineda's delivery has been elite all night, completely under-the-radar performance", key: true },
+    { at: new Date(Date.now() - 21 * 6e4).toISOString(), title: "▲ 97 · u/neutral_fan_99", text: "soft penalty but Álvarez has to be smarter than that in his own box", key: false },
+  ],
   lineups: {
     h: { formation: "4-3-3", coach: "Javier Aguirre", xi: [
       { num: 1, name: "G. Ochoa", pos: "GK", grid: "1:1" },

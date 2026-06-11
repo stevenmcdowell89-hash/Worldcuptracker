@@ -56,11 +56,23 @@ TV_REFRESH_HOUR = "5"
 # deploys; plaintext dashboard Variables do NOT (this [vars] block replaces them).
 VAPID_PUBLIC_KEY = "BPfPUEER1NnhSRaHUktTYQSKKHv6cPVqokU-3iCd1wgk5K8nV13AAj5WLkeiQ0T_oS4C3eX9tpoJJwXq5WUgO40"
 
+# Reddit r/soccer match-thread reactions — the ALTERNATIVE commentary feed (the user
+# picks Guardian or r/soccer in the Commentary tab; it never replaces the MBM). OPTIONAL
+# and inert until both creds are set. Create a "script"/"web app" at
+# reddit.com/prefs/apps; read-only userless OAuth, no Reddit account is used.
+#   REDDIT_CLIENT_ID     (Secret)
+#   REDDIT_CLIENT_SECRET (Secret)
+#   REDDIT_USER_AGENT    (Variable, optional) — a unique UA; Reddit throttles generic ones.
+# Note: Reddit can rate-limit datacenter IPs, so a missing thread is treated as normal.
+REDDIT_USER_AGENT = "web:wc26-tracker:1.0 (live match-thread reactions)"
+
 # APIFOOTBALL_KEY is a secret:  wrangler secret put APIFOOTBALL_KEY
 # FOOTBALLDATA_KEY (fallback, optional):  wrangler secret put FOOTBALLDATA_KEY
 # GUARDIAN_KEY (live minute-by-minute commentary, optional): set as a secret/var.
 #   Free Open Platform key from open-platform.theguardian.com — text + metadata,
 #   5,000 calls/day. Without it, the live Commentary tab simply doesn't appear.
+# REDDIT_CLIENT_ID / REDDIT_CLIENT_SECRET (alternative commentary feed, optional):
+#   wrangler secret put REDDIT_CLIENT_ID  /  wrangler secret put REDDIT_CLIENT_SECRET
 #
 # Web push notifications (brief §14) — OPTIONAL. The feature stays inert until set.
 #   Generate a key pair once:  npm run gen:vapid

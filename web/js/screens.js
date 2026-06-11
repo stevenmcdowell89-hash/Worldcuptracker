@@ -398,7 +398,7 @@ export function renderMatch(ctx) {
     `<button data-nav="match/${m.id}?t=${t}" data-replace class="${t === cur ? "active" : ""}">${label[t]}</button>`).join("")}</div>`;
 
   let body = "";
-  if (cur === "commentary") body = matchCommentary(m);
+  if (cur === "commentary") body = matchCommentary(m, ctx);
   else if (cur === "facts") body = matchFacts(m);
   else if (cur === "lineup") body = matchLineup(m);
   else if (cur === "group" && m.group) body = `<div class="sec-head"><h2>Group ${m.group}</h2></div><div class="block">${groupTableHTML(m.group, [m.home.code, m.away.code])}</div>`;
@@ -407,22 +407,46 @@ export function renderMatch(ctx) {
   return { title: "Match", html: hero + oneLiner + reminder + tabBar + body };
 }
 
-// Live minute-by-minute commentary (The Guardian). Newest first; key moments flagged.
-function matchCommentary(m) {
-  // Newest first (defensive — the Worker already sorts, but guarantee it in the view).
-  const blocks = (m.commentary || []).slice().sort((a, b) => (b.at || "").localeCompare(a.at || ""));
-  if (!blocks.length) {
+// Commentary tab. Two possible feeds — The Guardian minute-by-minute and the r/soccer
+// match-thread reactions — and the user picks which to read (via ?c=, not one or the
+// other). The switcher only appears when both are actually present.
+function matchCommentary(m, ctx) {
+  const feeds = [];
+  if (m.commentary?.length) feeds.push({
+    id: "guardian", label: "The Guardian", url: m.commentaryUrl, source: m.commentarySource || "The Guardian",
+    blocks: m.commentary, lead: "Live commentary", note: null,
+  });
+  if (m.redditCommentary?.length) feeds.push({
+    id: "reddit", label: "r/soccer", url: m.redditCommentaryUrl, source: "r/soccer",
+    blocks: m.redditCommentary, lead: "Top reactions",
+    note: "Top-voted fan reactions from the r/soccer match thread — banter, not minute-by-minute.",
+  });
+
+  if (!feeds.length) {
     return m.status === "ft"
       ? emptyState("🎙️", "No commentary for this match", "Minute-by-minute wasn't available for this game.")
       : emptyState("🎙️", "No commentary yet", "Minute-by-minute updates appear here once the match is under way.");
   }
+
+  const want = ctx?.query.get("c");
+  const feed = feeds.find((f) => f.id === want) || feeds[0];
+  const switcher = feeds.length > 1
+    ? `<div class="cmt-src">${feeds.map((f) =>
+        `<button data-nav="match/${m.id}?t=commentary&c=${f.id}" data-replace class="${f.id === feed.id ? "active" : ""}">${f.label}</button>`).join("")}</div>`
+    : "";
+
+  // Guardian is chronological (newest first); Reddit is already ordered by upvotes.
+  const blocks = feed.id === "guardian"
+    ? feed.blocks.slice().sort((a, b) => (b.at || "").localeCompare(a.at || ""))
+    : feed.blocks;
   const rows = blocks.map((b) => `<div class="cmt ${b.key ? "key" : ""}">
       <div class="cmt-head">${b.at ? `<span class="cmt-time">${fmtTime(b.at)}</span>` : ""}${b.title ? `<span class="cmt-title">${b.title}</span>` : ""}</div>
       <p>${b.text}</p></div>`).join("");
-  const credit = m.commentaryUrl
-    ? `<div class="updated">Live commentary via <a href="${m.commentaryUrl}" target="_blank" rel="noopener noreferrer" style="color:var(--brand);font-weight:700">The Guardian</a></div>`
-    : `<div class="updated">Live commentary via ${m.commentarySource || "The Guardian"}</div>`;
-  return `<div class="section cmts">${rows}</div>${credit}`;
+  const note = feed.note ? `<div class="cmt-note">${feed.note}</div>` : "";
+  const credit = feed.url
+    ? `<div class="updated">${feed.lead} via <a href="${feed.url}" target="_blank" rel="noopener noreferrer" style="color:var(--brand);font-weight:700">${feed.source}</a></div>`
+    : `<div class="updated">${feed.lead} via ${feed.source}</div>`;
+  return `${switcher}${note}<div class="section cmts">${rows}</div>${credit}`;
 }
 
 function matchFacts(m) {

@@ -117,6 +117,28 @@ Three additive features on the same snapshot/engine (never hide a fixture, no ac
   the works-anywhere fallback. State is per-device (localStorage + the subscription
   record). No accounts.
 
+## Live commentary — two user-selectable feeds
+
+The match centre's **Commentary** tab can carry two independent feeds, and the user
+picks which to read (a pill switcher; not one or the other). The switcher only shows
+when both are actually present for that match:
+
+- **The Guardian** minute-by-minute (Open Platform liveblog) — timed commentary,
+  newest first, key moments flagged. Gated on `GUARDIAN_KEY`.
+- **r/soccer** match-thread reactions — the most-upvoted comments from the live thread,
+  sorted by score. These are **fan reactions/banter, not minute-by-minute**, and are
+  labelled as such in the UI (brief §8 honesty). Gated on Reddit app credentials
+  (`REDDIT_CLIENT_ID` + `REDDIT_CLIENT_SECRET`), read-only userless OAuth — no Reddit
+  account, no posting. `worker/reddit.js` finds the thread (created-time vs kickoff +
+  team-name matching, same approach as the Guardian liveblog discovery) and pulls the
+  top comments; the token is cached in KV for the hour. Best-effort: Reddit can
+  rate-limit datacenter IPs, so a missing thread is treated as normal, never an error,
+  and never blocks the snapshot. Like the Guardian feed, it keeps pulling until just
+  after full time (capturing the verdict reactions), then freezes.
+
+Both feeds are inert until their keys are set, and the snapshot carries whichever is
+available per match (`commentary*` / `redditCommentary*` — see `shared/types.ts`).
+
 ## Status / honesty notes (see brief §8)
 
 - **No xG / xA anywhere.** Deliberate.
