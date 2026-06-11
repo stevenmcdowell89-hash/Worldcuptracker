@@ -38,7 +38,10 @@ function annexCHandoff(out) {
 export function renderRace() { return { title: "Race", html: raceContent() }; }
 
 export function raceContent() {
-  const started = S().meta?.started !== false && S().thirdPlaceRace?.some((t) => t.Pts > 0);
+  // "Started" must flip at the first WHISTLE, not the first final whistle: points stay
+  // 0 until a game finishes, so gate on the worker's meta.started (true once any match
+  // is live/ht/ft). The points check remains as a fallback for snapshots without meta.
+  const started = S().meta?.started === true || S().thirdPlaceRace?.some((t) => t.Pts > 0);
   const out = resolve(S(), [], state.annexC);
   const byStatus = Object.fromEntries(verdicts(S()).map((t) => [t.code, t.status]));
   const table = out.thirdPlaceTable;

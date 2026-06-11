@@ -268,7 +268,9 @@ export function plainEnglish(snapshot, code, annexC = null) {
   const name = NAME(snapshot, code);
   // Nothing is decided until games are played — don't fabricate certainties.
   const played = GROUP_LETTERS.reduce((s, g) => s + (snapshot.groups[g] || []).reduce((a, r) => a + (r.P || 0), 0), 0);
-  if (played === 0) return `Group games haven't started — ${name}'s route to the Round of 32 is still wide open.`;
+  if (played === 0) return snapshot.meta?.started
+    ? `No results yet — ${name}'s route to the Round of 32 is still wide open.`
+    : `Group games haven't started — ${name}'s route to the Round of 32 is still wide open.`;
 
   const fx = snapshot.remainingFixtures.find((f) => f.home === code || f.away === code);
   const v = verdicts(snapshot).find((t) => t.code === code);
@@ -341,7 +343,11 @@ export function qualifyOutlook(snapshot, code, annexC = null) {
   const group = groupOf(snapshot, code);
   if (!group) return { status: "eliminated", line: `${name} are not in the tournament.` };
   if (totalPlayed(snapshot) === 0)
-    return { status: "sweating", line: `The group stage hasn't kicked off — ${name}'s campaign is all to play for.` };
+    // P stays 0 until the first match FINISHES — meta.started flips at the first whistle,
+    // so a live opening game reads "under way", not "hasn't kicked off".
+    return { status: "sweating", line: snapshot.meta?.started
+      ? `The group stage is under way — ${name}'s campaign is all to play for.`
+      : `The group stage hasn't kicked off — ${name}'s campaign is all to play for.` };
 
   const globalDone = (snapshot.remainingFixtures || []).length === 0;
   const groupRem = snapshot.remainingFixtures.filter((f) => f.group === group);
