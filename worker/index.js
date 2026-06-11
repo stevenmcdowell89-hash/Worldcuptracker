@@ -168,7 +168,8 @@ function normFixtures(resp, dir, idToGroup) {
     const home = f.teams?.home, away = f.teams?.away;
     const groupLetter = idToGroup[home?.id] || idToGroup[away?.id];
     const isGroup = !!groupLetter;
-    const hc = codeOf(dir, home?.id), ac = codeOf(dir, away?.id);
+    // Knockout placeholders can arrive with no teams assigned yet — keep them honest.
+    const hc = home?.id ? codeOf(dir, home.id) : "TBD", ac = away?.id ? codeOf(dir, away.id) : "TBD";
     const base = {
       id: String(f.fixture?.id),
       stage: isGroup ? "Group Stage" : (f.league?.round || "Knockout"),
@@ -179,6 +180,9 @@ function normFixtures(resp, dir, idToGroup) {
       away: { code: ac, score: f.goals?.away },
       _homeId: home?.id, _awayId: away?.id,   // internal: for event home/away mapping
     };
+    // Penalty shootout: goals stay level after ET; the decider lives in score.penalty.
+    const pen = f.score?.penalty;
+    if (pen && pen.home != null && pen.away != null) base.pens = { h: pen.home, a: pen.away };
     if (!done && !live && !ht) {
       base.status = "scheduled";
       if (isGroup) remainingFixtures.push({
@@ -187,7 +191,7 @@ function normFixtures(resp, dir, idToGroup) {
       matches.push(base);
     } else {
       base.status = live ? "live" : ht ? "ht" : "ft";
-      if (live || ht) base.minute = (f.fixture?.status?.elapsed ?? "") + "'";
+      if (live || ht) base.minute = st === "P" ? "Pens" : (f.fixture?.status?.elapsed ?? "") + "'";
       matches.push(base);
     }
   }
@@ -843,7 +847,8 @@ function resultsDigest(snap) {
   const since = Date.now() - 16 * 3600e3;   // overnight catch-up window
   const ft = (snap.matches || []).filter((m) => m.status === "ft" && m.kickoff && new Date(m.kickoff).getTime() >= since);
   if (!ft.length) return null;
-  return ft.slice(0, 8).map((m) => `${m.home.code} ${m.home.score}-${m.away.score} ${m.away.code}`).join(" · ");
+  return ft.slice(0, 8).map((m) =>
+    `${m.home.code} ${m.home.score}-${m.away.score} ${m.away.code}${m.pens ? ` (${m.pens.h}-${m.pens.a}p)` : ""}`).join(" · ");
 }
 function todayDigest(snap, date) {
   const today = (snap.matches || []).filter((m) => m.status === "scheduled" && (m.kickoff || "").slice(0, 10) === date);

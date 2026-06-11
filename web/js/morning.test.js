@@ -97,10 +97,13 @@ test("knockout morning: who advanced + today's ties with their onward route", ()
   s.matches = [
     { id: "k0", stage: "Round of 32", status: "ft", kickoff: new Date(NOW - 8 * 3600e3).toISOString(),
       home: { code: "AAA", score: 2 }, away: { code: "DDD", score: 1 } },
+    { id: "kp", stage: "Round of 32", status: "ft", kickoff: new Date(NOW - 6 * 3600e3).toISOString(),
+      home: { code: "CCC", score: 1 }, away: { code: "DDD", score: 1 }, pens: { h: 3, a: 4 } },   // shootout
     { id: "k1", stage: "Round of 32", status: "scheduled", kickoff: "2026-06-21T19:00:00Z", slot: "R32-M73",
       home: { code: "BBB", score: null }, away: { code: "CCC", score: null } },
   ];
   const mm = morningModel(s, null, NOW);
   assert.ok(mm.flips.some((f) => f.includes("Alphaland") && f.includes("advance")));
+  assert.ok(mm.flips.some((f) => f.includes("Deltaland") && f.includes("advance on penalties")), `got: ${mm.flips}`);
   assert.ok(mm.stakes.some((l) => l.includes("Betaland v Gammaland") && l.includes("winner of Match 75")), `got: ${mm.stakes}`);
 });

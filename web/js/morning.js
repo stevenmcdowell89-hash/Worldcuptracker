@@ -164,14 +164,16 @@ function knockoutStakeLines(snap, today) {
   return lines;
 }
 
-// Who advanced overnight (knockout): winners by score (pens unresolved → skip).
+// Who advanced overnight (knockout): winner by score, or by the shootout when level.
 function advancedLines(snap, overnight) {
   const out = [];
   for (const m of overnight.filter((x) => !x.group)) {
     const hs = m.home.score, as = m.away.score;
-    if (hs == null || as == null || hs === as) continue;          // pens not modelled — say nothing wrong
-    const w = hs > as ? m.home.code : m.away.code;
-    out.push(`✅ ${nameOf(snap, w)} advance.`);
+    let w = null, pens = false;
+    if (hs != null && as != null && hs !== as) w = hs > as ? m.home.code : m.away.code;
+    else if (m.pens && m.pens.h !== m.pens.a) { w = m.pens.h > m.pens.a ? m.home.code : m.away.code; pens = true; }
+    if (!w) continue;                                             // genuinely unresolved — say nothing wrong
+    out.push(`✅ ${nameOf(snap, w)} advance${pens ? " on penalties" : ""}.`);
   }
   return out;
 }

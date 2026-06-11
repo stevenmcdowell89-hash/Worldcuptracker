@@ -27,15 +27,18 @@ function standings() {
   return [{ league: { standings: table } }];
 }
 function fixtures() {
-  const f = (id, round, st, hId, hCode, aId, aCode, hg, ag, date) => ({
+  const f = (id, round, st, hId, hCode, aId, aCode, hg, ag, date, pens) => ({
     fixture: { id, date, status: { short: st, elapsed: st === "1H" ? 30 : null }, venue: { name: "Stadium" } },
     league: { round }, teams: { home: { id: hId, code: hCode }, away: { id: aId, code: aCode } }, goals: { home: hg, away: ag },
+    score: pens ? { penalty: { home: pens[0], away: pens[1] } } : { penalty: { home: null, away: null } },
   });
   // round is "Group Stage - N" with NO group letter — group comes from team membership
   return [
     f(5001, "Group Stage - 2", "FT", 100, "ENG", 102, "SEN", 2, 1, "2026-06-20T16:00:00Z"),   // finished, has detail
     f(5002, "Group Stage - 3", "1H", 110, "ARG", 111, "AUS", 1, 0, "2026-06-25T16:00:00Z"),   // live
     f(5003, "Group Stage - 3", "NS", 100, "ENG", 101, "USA", null, null, "2026-06-26T16:00:00Z"), // scheduled → remaining
+    // knockout: level after ET, decided on penalties (teams outside the group standings)
+    f(5004, "Round of 32", "PEN", 900, null, 901, null, 1, 1, "2026-06-29T16:00:00Z", [4, 2]),
   ];
 }
 const events = (homeAway) => [
@@ -157,6 +160,15 @@ test("remaining fixtures + live match detected", () => {
   assert.equal(snap.remainingFixtures.length, 1);
   assert.equal(snap.remainingFixtures[0].id, "5003");
   assert.ok(snap.matches.some((m) => m.status === "live"));
+});
+
+test("penalty shootout: tally captured, knockout slot assigned, group games untouched", () => {
+  const ko = snap.matches.find((m) => m.id === "5004");
+  assert.equal(ko.status, "ft");                       // PEN = finished
+  assert.deepEqual(ko.pens, { h: 4, a: 2 });
+  assert.equal(ko.slot, "R32-M73");                    // official FIFA numbering via kickoff order
+  const grp = snap.matches.find((m) => m.id === "5001");
+  assert.equal(grp.pens, undefined);                   // null penalty block → no pens field
 });
 
 test("discipline leaderboard populated", () => {

@@ -13,34 +13,57 @@ import { qualifyOutlook } from "./engine.js";
 
 const ROUND_LABEL = { R32: "Round of 32", R16: "Round of 16", QF: "Quarter-finals", SF: "Semi-finals", Final: "Final" };
 
-// Cross-reference the live match (status + score) for a bracket match id.
-function liveMatch(snap, id) { return (snap.matches || []).find((x) => x.id === id); }
+// Cross-reference the real fixture (status + score + pens) for a bracket match id.
+// Bracket ids are FIFA match numbers (73–104); real fixtures carry API ids, so the
+// join goes through the slot key the Worker assigns ("R32-M73" → 73). Fixture ids
+// that ARE the match number (the mock) still join directly.
+export function liveMatch(snap, id) {
+  if (!snap._bySlotNo) {
+    const map = {};
+    for (const x of snap.matches || []) {
+      const n = /-M(\d+)$/.exec(x.slot || "")?.[1];
+      if (n) map[n] = x;
+      else if (!x.group && /^\d+$/.test(x.id)) map[x.id] = map[x.id] || x;
+    }
+    snap._bySlotNo = map;   // memo per snapshot object (replaced on every load)
+  }
+  return snap._bySlotNo[id];
+}
 
 // Resolve a bracket side {code,label,score,pos,thirdPlaceSlot} into display + state.
+// The bracket's own sides only name teams the structure can project (R32); once the
+// real fixture exists, its teams fill the later rounds too. "TBD"/unknown codes from
+// placeholder fixtures never override a projection.
 function sideView(snap, annexC, s, lm, sideKey) {
-  if (!s) return { name: "TBD", placeholder: true };
-  if (s.code) {
+  const lmSide = lm ? (sideKey === "a" ? lm.home : lm.away) : null;
+  const lmCode = lmSide && snap.teams?.[lmSide.code] ? lmSide.code : null;
+  const code = s?.code || lmCode;
+  if (code) {
     const live = lm && (lm.status === "live" || lm.status === "ht");
     const ft = lm && lm.status === "ft";
-    const score = lm ? (sideKey === "a" ? lm.home.score : lm.away.score) : s.score;
+    const score = lm ? (sideKey === "a" ? lm.home.score : lm.away.score) : s?.score;
     const oppScore = lm ? (sideKey === "a" ? lm.away.score : lm.home.score) : null;
-    const won = ft && score != null && oppScore != null && score > oppScore;
-    const lost = ft && score != null && oppScore != null && score < oppScore;
+    const pens = lm?.pens ? (sideKey === "a" ? lm.pens.h : lm.pens.a) : null;
+    const oppPens = lm?.pens ? (sideKey === "a" ? lm.pens.a : lm.pens.h) : null;
+    const level = score != null && oppScore != null && score === oppScore;
+    const won = ft && score != null && oppScore != null && (score > oppScore || (level && pens != null && pens > oppPens));
+    const lost = ft && score != null && oppScore != null && (score < oppScore || (level && pens != null && pens < oppPens));
     const done = snap.meta?.groupStageComplete;
-    const locked = done || qualifyOutlook(snap, s.code, annexC).status === "qualified";
-    const tag = s.thirdPlaceSlot && !done ? (locked ? "QUALIFIED" : "CURRENT") : "";
-    return { code: s.code, name: teamName(s.code), pos: s.pos, score, won, lost, live, ft, tag };
+    const locked = done || qualifyOutlook(snap, code, annexC).status === "qualified";
+    const tag = s?.thirdPlaceSlot && !done ? (locked ? "QUALIFIED" : "CURRENT") : "";
+    return { code, name: teamName(code), pos: s?.pos, score, pens, won, lost, live, ft, tag };
   }
-  const third = !!s.thirdPlaceSlot;
-  return { name: third ? `3rd ${s.thirdPlaceSlot.join("/")}` : (s.label || "TBD"), placeholder: true, pos: s.pos };
+  const third = !!s?.thirdPlaceSlot;
+  return { name: third ? `3rd ${s.thirdPlaceSlot.join("/")}` : (s?.label || "TBD"), placeholder: true, pos: s?.pos };
 }
 
 function sideHTML(v, sideKey) {
   if (v.placeholder) return `<div class="bx-team ph"><span class="nm">${v.name}</span>${v.pos ? `<span class="bx-pos">${v.pos}</span>` : ""}</div>`;
   const cls = ["bx-team", v.won ? "won" : "", v.lost ? "lost" : "", v.live ? "live" : ""].filter(Boolean).join(" ");
+  const sc = v.score != null ? `${v.score}${v.pens != null ? ` <span class="bx-pens">(${v.pens})</span>` : ""}` : "";
   return `<div class="${cls} clickable" data-nav="team/${v.code}">${flag(v.code)}
     <span class="nm">${v.name}</span>${v.tag ? `<span class="bx-tag ${v.tag === "QUALIFIED" ? "in" : "cur"}">${v.tag}</span>` : ""}
-    <span class="sc">${v.score ?? ""}</span></div>`;
+    <span class="sc">${sc}</span></div>`;
 }
 
 function tieHTML(snap, annexC, m, opts = {}) {
@@ -48,8 +71,8 @@ function tieHTML(snap, annexC, m, opts = {}) {
   const a = sideView(snap, annexC, m.a, lm, "a");
   const b = sideView(snap, annexC, m.b, lm, "b");
   const status = lm && (lm.status === "live" || lm.status === "ht") ? `<span class="bx-live">${lm.minute || "LIVE"}</span>`
-    : lm && lm.status === "ft" ? `<span class="bx-ft">FT</span>` : "";
-  const nav = lm ? `data-nav="match/${m.id}"` : "";
+    : lm && lm.status === "ft" ? `<span class="bx-ft">${lm.pens ? "FT · PENS" : "FT"}</span>` : "";
+  const nav = lm ? `data-nav="match/${lm.id}"` : "";
   return `<div class="bx ${opts.here ? "here" : ""} clickable" ${nav}>
     <div class="bx-head"><span class="bx-no">${ROUND_LABEL[m.rd] || m.rd} · Match ${m.id}</span>${status}</div>
     ${sideHTML(a, "a")}${sideHTML(b, "b")}

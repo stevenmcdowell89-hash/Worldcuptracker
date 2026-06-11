@@ -98,6 +98,7 @@ export interface Match {
   group?: GroupLetter;
   home: { code: string; score: number | null };
   away: { code: string; score: number | null };
+  pens?: { h: number; a: number };  // penalty shootout tally (scores stay level)
   affectsCut?: boolean;       // woven-in marker: result affects the last-8 race
   stakes?: Stakes | null;     // §15 tag on an upcoming group fixture
   tv?: TvInfo;                // UK channel (feature 1) — set by the Worker, never guessed

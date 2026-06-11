@@ -53,7 +53,7 @@ function matchRow(m, opts = {}) {
   const ft = m.status === "ft";
   let mid;
   if (live) mid = `<span class="score">${m.home.score}–${m.away.score}</span><span class="min">${m.minute || "LIVE"}</span>`;
-  else if (ft) mid = `<span class="score">${m.home.score}–${m.away.score}</span><span class="ko">FT</span>`;
+  else if (ft) mid = `<span class="score">${m.home.score}–${m.away.score}</span><span class="ko">${m.pens ? `${m.pens.h}–${m.pens.a} pens` : "FT"}</span>`;
   else mid = `<span class="ko">${fmtTime(m.kickoff)}</span>`;
   const stageLabel = m.group ? `Group ${m.group}` : (m.stage && m.stage !== "Group Stage" ? m.stage : "");
   const st = opts.showStakes && m.status === "scheduled" && m.stakes && STAKE[m.stakes];
@@ -362,7 +362,11 @@ export function renderMatch(ctx) {
   if (!m) return { title: "Match", html: emptyState("Match not found") };
   const tab = ctx.query.get("t") || "facts";
   const live = m.status === "live" || m.status === "ht";
-  const statusTxt = live ? (m.minute || "LIVE") : m.status === "ft" ? "Full time" : `${fmtDay(m.kickoff)} · ${fmtTime(m.kickoff)}`;
+  // Shootout: the headline score stays level — the decider gets its own line.
+  const pensWinner = m.pens && m.pens.h !== m.pens.a ? (m.pens.h > m.pens.a ? m.home.code : m.away.code) : null;
+  const statusTxt = live ? (m.minute || "LIVE")
+    : m.status === "ft" ? (pensWinner ? `Full time · ${teamName(pensWinner)} win on penalties` : "Full time")
+    : `${fmtDay(m.kickoff)} · ${fmtTime(m.kickoff)}`;
   const groupStarted = m.group && (S().groups[m.group] || []).some((r) => r.P > 0);
   const pos = (code) => {   // current group position, once games are played (not a FIFA ranking)
     if (!groupStarted) return "";
@@ -373,7 +377,7 @@ export function renderMatch(ctx) {
   const hero = `<div class="scorehero">
     <div class="teams">
       <div class="t" data-nav="team/${m.home.code}">${flag(m.home.code, "flag")}<span class="nm">${teamName(m.home.code)}</span><span class="rk">${pos(m.home.code)}</span></div>
-      <div><div class="sc">${m.home.score ?? "–"} : ${m.away.score ?? "–"}</div></div>
+      <div><div class="sc">${m.home.score ?? "–"} : ${m.away.score ?? "–"}</div>${m.pens ? `<div class="penline">${m.pens.h}–${m.pens.a} pens</div>` : ""}</div>
       <div class="t" data-nav="team/${m.away.code}">${flag(m.away.code, "flag")}<span class="nm">${teamName(m.away.code)}</span><span class="rk">${pos(m.away.code)}</span></div>
     </div>
     <div class="status ${live ? "" : "done"}">${statusTxt}${ctxLabel ? ` · ${ctxLabel}` : ""}${m.venue ? ` · ${m.venue}` : ""}</div>
