@@ -33,7 +33,18 @@ const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
 // the enrichment steps stop before the cap — squads/stats fill in over several polls
 // (squads persist once fetched). Reset at the start of each buildSnapshot.
 let SUBREQ = 0, SUBREQ_CAP = 45, RATE_LIMITED = false;
-const budgetLeft = () => (RATE_LIMITED ? 0 : SUBREQ_CAP - SUBREQ);   // stop enrichment once throttled
+// Enrichment budget = per-invocation cap AND per-minute headroom. The second term is
+// vital: enrichment bursts (team stats + deep player drill-ins) must never drain the
+// per-minute allowance, or the NEXT poll's critical calls (standings/fixtures/live
+// detail, which run first) get rate-limited — that blanked the group tables. Reserve
+// MIN_RESERVE calls/min for those; enrichment only spends what's left above it.
+const MIN_RESERVE = 40;
+const budgetLeft = () => {
+  if (RATE_LIMITED) return 0;
+  const bySub = SUBREQ_CAP - SUBREQ;
+  const byMin = RL.min != null ? RL.min - MIN_RESERVE : bySub;
+  return Math.max(0, Math.min(bySub, byMin));
+};
 // Last-seen rate-limit headers (api-sports): per-minute + per-day. Drives throttling.
 let RL = { min: null, minLimit: null, day: null, dayLimit: null };
 
@@ -298,7 +309,8 @@ export async function buildSnapshot(env, prev, liveOnly) {
   // seeding and the fixture→group mapping (group letters live ONLY in standings) — so
   // never run on an empty table: cache the last good one in KV (with team _id, before
   // it's stripped for serialisation) and reuse it until the API serves a real table.
-  let groups = normStandings(await apiGet(env, "/standings", base), dir);
+  let groups = {};
+  try { groups = normStandings(await apiGet(env, "/standings", base), dir); } catch { /* rate-limited/empty → cache below */ }
   if (Object.keys(groups).length) {
     try { await env.SNAPSHOT?.put(STANDINGS_KEY, JSON.stringify(groups)); } catch {}
   } else {
