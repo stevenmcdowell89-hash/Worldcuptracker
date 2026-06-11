@@ -23,6 +23,7 @@ import { mergeListings, annotateTv, fetchTvListings, ukTimeOf, TV_SOURCE_DEFAULT
 const API = "https://v3.football.api-sports.io";
 const KV_KEY = "latest.json";
 const META_KEY = "poll-meta";
+const TEAMDIR_KEY = "team-dir";   // last-good team directory (codes/names/crests), reused when /teams hiccups
 
 const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
 
@@ -128,7 +129,19 @@ async function buildTeamDir(env, base) {
       byId[tm.id] = { code, name: tm.name, logo: tm.logo };
       if (tm.logo) crests[code] = tm.logo;
     }
-  } catch { /* fall back to ids below */ }
+  } catch { /* fall back to the cached directory below */ }
+  // The team directory is the snapshot's identity layer (codes, names, crests).
+  // It's effectively static, so persist it once built and reuse the last good copy
+  // whenever /teams hiccups (rate-limit etc.). Without this, a single failed call
+  // collapses EVERY team to a bare numeric id with no crest — grey squares + ids.
+  if (Object.keys(byId).length) {
+    try { await env.SNAPSHOT?.put(TEAMDIR_KEY, JSON.stringify({ byId, crests })); } catch {}
+    return { byId, crests };
+  }
+  try {
+    const cached = await env.SNAPSHOT?.get(TEAMDIR_KEY, "json");
+    if (cached?.byId && Object.keys(cached.byId).length) return cached;
+  } catch {}
   return { byId, crests };
 }
 const codeOf = (dir, id) => dir.byId[id]?.code || String(id);
