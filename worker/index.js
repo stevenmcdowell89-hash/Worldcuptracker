@@ -802,6 +802,22 @@ async function listSubscriptions(env) {
   } while (cursor);
   return out;
 }
+// How many devices are registered, and what they're opted into. Surfaced on
+// /admin/status so the count is readable without firing a push at everyone. Prefs
+// default to on (an undefined pref means opted-in — see broadcast()), so we count
+// anything that isn't an explicit false.
+export async function subscriberStats(env) {
+  const subs = await listSubscriptions(env);
+  const stats = { devices: subs.length, optedIn: { results: 0, today: 0, qual: 0 }, withReminders: 0 };
+  for (const s of subs) {
+    const p = s.prefs || {};
+    if (p.results !== false) stats.optedIn.results++;
+    if (p.today !== false) stats.optedIn.today++;
+    if (p.qual !== false) stats.optedIn.qual++;
+    if (s.reminders && Object.keys(s.reminders).length) stats.withReminders++;
+  }
+  return stats;
+}
 // Send one notification to every subscriber opted into `prefKey`. Prunes dead subs.
 async function broadcast(env, prefKey, notif) {
   const subs = await listSubscriptions(env);
@@ -1176,12 +1192,16 @@ export default {
         const upcoming = (snap?.matches || []).filter((m) => m.status === "scheduled");
         tv = { ...tv, upcomingMapped: upcoming.filter((m) => m.tv).length, upcomingTotal: upcoming.length };
       } catch {}
+      // Push reach: registered devices + per-feed opt-ins (no push is sent to read it).
+      let subscribers = null;
+      try { subscribers = pushEnabled(env) ? await subscriberStats(env) : { devices: 0, note: "push not configured" }; }
+      catch (e) { subscribers = { error: e.message }; }
       return new Response(JSON.stringify({
         now: new Date().toISOString(), quota,
         cronHeartbeat: tick ? ago(tick) : "NEVER — cron is not firing (check dashboard Triggers)",
         lastCron: cron ? { ...cron, when: ago(cron.at) } : "no full/live poll yet",
         lastRefresh: refresh ? { ...refresh, when: ago(refresh.finished) } : "none",
-        tv,
+        tv, subscribers,
         pollMeta: pm ? { lastFull: ago(pm.lastFull && new Date(pm.lastFull).toISOString()), lastLive: ago(pm.lastLive && new Date(pm.lastLive).toISOString()) } : null,
         samplePlayer, enrichVersionExpected: ENRICH_VERSION,
       }, null, 2), { headers: { "content-type": "application/json" } });

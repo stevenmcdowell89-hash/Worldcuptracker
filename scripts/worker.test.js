@@ -3,7 +3,7 @@
 // end, asserting the snapshot shape the frontend depends on. Run: npm test
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildSnapshot, resultsDigest, todayDigest, fixtureLabel } from "../worker/index.js";
+import { buildSnapshot, resultsDigest, todayDigest, fixtureLabel, subscriberStats } from "../worker/index.js";
 
 // ── canned API-Football responses keyed by path (+ a little param awareness) ──
 const NATIONS = {
@@ -279,4 +279,24 @@ test("resultsDigest: scoreline, penalties, round; old match outside window dropp
   const d = resultsDigest(digestSnap);
   assert.equal(d.count, 1);
   assert.equal(d.body, "Mexico 1-1 France (4-3 pens) · Round of 16");
+});
+
+test("subscriberStats: counts devices, opt-ins (undefined = on), reminders", async () => {
+  // minimal in-memory KV: only the calls subscriberStats makes (list + get)
+  const store = {
+    "push:a": { prefs: { results: true, today: true, qual: true }, reminders: { f1: { at: "x" } } },
+    "push:b": { prefs: { results: false, today: true, qual: false }, reminders: {} },
+    "push:c": {},                                   // legacy record, no prefs → all default on
+    "snapshot": { matches: [] },                    // a non-push key must be ignored
+  };
+  const env = { SNAPSHOT: {
+    list: async ({ prefix }) => ({ keys: Object.keys(store).filter((k) => k.startsWith(prefix)).map((name) => ({ name })), list_complete: true }),
+    get: async (k) => store[k] ?? null,
+  } };
+  const s = await subscriberStats(env);
+  assert.equal(s.devices, 3);
+  assert.equal(s.optedIn.results, 2);   // a + c (b opted out)
+  assert.equal(s.optedIn.today, 3);     // all three
+  assert.equal(s.optedIn.qual, 2);      // a + c
+  assert.equal(s.withReminders, 1);     // only a has a reminder set
 });
