@@ -167,8 +167,12 @@ function normStandings(resp, dir) {
   const groups = {};
   const table = resp?.[0]?.league?.standings || [];
   for (const groupRows of table) {
-    const letter = (groupRows?.[0]?.group || "").replace(/^Group\s+/i, "").trim().toUpperCase();
-    if (!/^[A-L]$/.test(letter)) continue;          // skip "Ranking of third-placed teams" etc.
+    // API-Football labels the block "Group A" OR "Group Stage - Group A" (the format
+    // it switched to once the tournament was under way). Pull the trailing group letter
+    // either way; non-group blocks ("Ranking of third-placed teams", "Group Stage") miss.
+    const m = /group\s+([a-l])\s*$/i.exec(groupRows?.[0]?.group || "");
+    if (!m) continue;
+    const letter = m[1].toUpperCase();
     for (const r of groupRows) {
       const id = r.team?.id;
       const row = {
