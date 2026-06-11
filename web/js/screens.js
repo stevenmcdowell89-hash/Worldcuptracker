@@ -466,7 +466,7 @@ function matchLineup(m) {
         <span class="nm">${p.name.split(" ").slice(-1)[0]}</span></div>`).join("")}</div>`).join("");
     const subs = (L.subs || []).map((p) => `<span class="sub" data-nav="${p.playerId ? `player/${p.playerId}` : ""}">${p.num} ${p.name}${p.rating != null ? ` (${p.rating.toFixed(1)})` : ""}</span>`).join(" · ");
     return `<div class="formhead"><span class="f">${L.formation}</span><span class="c">${L.coach || ""}</span></div>
-      <div class="pitch" style="background:linear-gradient(${colour(code).primary}22, #1b6b3c)">${pitch}</div>
+      <div class="pitch">${pitch}</div>
       ${subs ? `<div class="lrow"><span class="sub" style="font-weight:600">Subs: ${subs}</span></div>` : ""}`;
   };
   return renderSide(m.lineups.h, m.home.code) + (m.lineups.a?.xi?.length ? renderSide(m.lineups.a, m.away.code) : "");

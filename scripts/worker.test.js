@@ -160,6 +160,27 @@ test("matches: events mapped to correct side, FT ratings merged", () => {
   assert.ok(rated.length > 0, "player ratings merged at FT");
 });
 
+test("live match detail keeps last-good when a poll returns empty (no flicker)", async () => {
+  // Poll 1: healthy — the live match (5002) has lineups, events, stats.
+  globalThis.fetch = async (url) => ({ ok: true, status: 200, headers: { get: () => null }, json: async () => ({ response: cannedFetch(url) }) });
+  const good = await buildSnapshot({ APIFOOTBALL_KEY: "t", WC_LEAGUE_ID: "1", WC_SEASON: "2026" }, null, false);
+  const live1 = good.matches.find((m) => m.status === "live");
+  assert.ok(live1?.lineups?.h?.xi?.length && live1.events.length && live1.stats.length, "live match fully detailed on a healthy poll");
+
+  // Poll 2: the per-match detail endpoints come back empty (rate-limit/transient).
+  // The live match must keep its lineups/events/stats from the previous snapshot.
+  globalThis.fetch = async (url) => {
+    const p = new URL(url).pathname;
+    const empty = p === "/fixtures/lineups" || p === "/fixtures/events" || p === "/fixtures/statistics";
+    return { ok: true, status: 200, headers: { get: () => null }, json: async () => ({ response: empty ? [] : cannedFetch(url) }) };
+  };
+  const degraded = await buildSnapshot({ APIFOOTBALL_KEY: "t", WC_LEAGUE_ID: "1", WC_SEASON: "2026" }, good, false);
+  const live2 = degraded.matches.find((m) => m.status === "live");
+  assert.ok(live2.lineups?.h?.xi?.length, "lineups survive an empty poll");
+  assert.ok(live2.events.length, "events survive an empty poll");
+  assert.ok(live2.stats.length, "stats survive an empty poll");
+});
+
 test("remaining fixtures + live match detected", () => {
   assert.equal(snap.remainingFixtures.length, 1);
   assert.equal(snap.remainingFixtures[0].id, "5003");

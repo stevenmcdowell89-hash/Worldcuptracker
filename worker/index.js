@@ -310,13 +310,18 @@ export async function buildSnapshot(env, prev, liveOnly) {
     }
   }
   // Fetch detail: live/HT every poll; newly-finished matches once (incl FT ratings).
+  // Keep last-good per field: a single empty/rate-limited response must never blank a
+  // live match's lineup (static once published) or wipe its events/stats (which only
+  // accumulate) — that caused the lineup/facts to flicker out mid-match between polls.
   for (const m of matches.filter((x) => x.status === "live" || x.status === "ht" || (x.status === "ft" && !x._final))) {
-    try { m.events = normEvents(await apiGet(env, "/fixtures/events", { fixture: m.id }), m._homeId); } catch {}
-    try { m.stats = normStats(await apiGet(env, "/fixtures/statistics", { fixture: m.id })); } catch {}
+    const p = prevMatch[m.id];
+    try { const ev = normEvents(await apiGet(env, "/fixtures/events", { fixture: m.id }), m._homeId); m.events = ev.length ? ev : (p?.events || ev); } catch { m.events = p?.events; }
+    try { const stt = normStats(await apiGet(env, "/fixtures/statistics", { fixture: m.id })); m.stats = stt.length ? stt : (p?.stats || stt); } catch { m.stats = p?.stats; }
     try {
       const lu = await apiGet(env, "/fixtures/lineups", { fixture: m.id });
       if (lu?.length) m.lineups = normLineups(lu, m._homeId, m._awayId);
     } catch {}
+    if (!m.lineups && p?.lineups) m.lineups = p.lineups;   // lineups don't change mid-match
     if (m.status === "ft") {  // player ratings + per-match stats land at full time
       try { mergePlayerRatings(m, await apiGet(env, "/fixtures/players", { fixture: m.id })); } catch {}
     }
