@@ -158,6 +158,15 @@ async function boot() {
   // minutes actually move between data polls.
   setInterval(() => {
     document.querySelectorAll("[data-countdown]").forEach((el) => { el.textContent = countdown(el.dataset.countdown); });
+    // Advance live match minutes locally between data polls (anchor = snapshot build
+    // time), clamped at the half boundaries so stoppage time holds at 45'/90' until
+    // the next snapshot moves it on. Guarantees the minute never visibly skips.
+    document.querySelectorAll("[data-livemin]").forEach((el) => {
+      const base = parseInt(el.dataset.livemin), at = Date.parse(el.dataset.anchor || "");
+      if (!Number.isFinite(base) || Number.isNaN(at)) return;
+      const cap = base <= 45 ? 45 : base <= 90 ? 90 : base <= 105 ? 105 : 120;
+      el.textContent = Math.min(base + Math.max(0, Math.floor((Date.now() - at) / 60000)), cap) + "'";
+    });
   }, 1000);
   // When the tab is re-shown, refresh immediately and apply any pending code update.
   document.addEventListener("visibilitychange", () => { if (!document.hidden) { applyUpdate(); tick(); } });

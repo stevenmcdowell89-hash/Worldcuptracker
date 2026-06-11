@@ -2,7 +2,7 @@
 // Progression intelligence is woven in: the "affects the race" marker on match
 // rows, the one-liner on match pages, the verdict chip on team pages (brief §7).
 
-import { state, colour, teamName, player, flag, statusChip, fmtTime, fmtDay, countdown, gd, timeAgo } from "./data.js";
+import { state, colour, teamName, player, flag, statusChip, fmtTime, fmtDay, countdown, gd, timeAgo, liveMinute } from "./data.js";
 import { qualifyOutlook } from "./engine.js";
 import { raceContent } from "./race.js";
 import { bracketEmbed, renderBracket } from "./bracketview.js";
@@ -52,7 +52,7 @@ function matchRow(m, opts = {}) {
   const live = m.status === "live" || m.status === "ht";
   const ft = m.status === "ft";
   let mid;
-  if (live) mid = `<span class="score">${m.home.score}–${m.away.score}</span><span class="min">${m.minute || "LIVE"}</span>`;
+  if (live) mid = `<span class="score">${m.home.score}–${m.away.score}</span><span class="min">${liveMinute(m)}</span>`;
   else if (ft) mid = `<span class="score">${m.home.score}–${m.away.score}</span><span class="ko">${m.pens ? `${m.pens.h}–${m.pens.a} pens` : "FT"}</span>`;
   else mid = `<span class="ko">${fmtTime(m.kickoff)}</span>`;
   const stageLabel = m.group ? `Group ${m.group}` : (m.stage && m.stage !== "Group Stage" ? m.stage : "");
@@ -364,7 +364,7 @@ export function renderMatch(ctx) {
   const live = m.status === "live" || m.status === "ht";
   // Shootout: the headline score stays level — the decider gets its own line.
   const pensWinner = m.pens && m.pens.h !== m.pens.a ? (m.pens.h > m.pens.a ? m.home.code : m.away.code) : null;
-  const statusTxt = live ? (m.minute || "LIVE")
+  const statusTxt = live ? liveMinute(m)
     : m.status === "ft" ? (pensWinner ? `Full time · ${teamName(pensWinner)} win on penalties` : "Full time")
     : `${fmtDay(m.kickoff)} · ${fmtTime(m.kickoff)}`;
   const groupStarted = m.group && (S().groups[m.group] || []).some((r) => r.P > 0);
