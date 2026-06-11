@@ -381,7 +381,12 @@ export async function buildSnapshot(env, prev, liveOnly) {
     // — they persist once fetched — then team aggregates, then deep player drill-in.
     try { await ensureNationSquads(env, base, teams, players); } catch {}
     if (anyPlayed) { try { await enrichTeamStats(env, base, teams, groups); } catch {} }   // skip pre-tournament (all zeros)
-    try { await enrichPlayers(env, base, curatedPlayerIds({ scorers, assists, discipline, prev, matches }), players, cfg, dir); } catch {}
+    // Deep drill-in is ~4 API calls per player. While a match is in play, shrink the
+    // batch so the burst can't trip the per-minute limit and starve the live calls
+    // (events/stats/lineups) — seen on opening day when an ENRICH_VERSION bump queued
+    // every Watch player for re-enrichment mid-match. Full speed between games.
+    const liveNow = matches.some((m) => m.status === "live" || m.status === "ht");
+    try { await enrichPlayers(env, base, curatedPlayerIds({ scorers, assists, discipline, prev, matches }), players, cfg, dir, liveNow ? 4 : undefined); } catch {}
   }
 
   // Sort groups with the full rules (now card-aware) so positions + third place are exact.
@@ -740,9 +745,13 @@ async function findLiveblogId(env, home, away, kickoffIso) {
 }
 // Pull the latest timestamped commentary blocks for a liveblog id.
 async function fetchCommentary(env, id) {
-  const res = await guardianGet(env, "/" + id, { "show-blocks": "body:latest:30", "show-fields": "liveBloggingNow" });
+  const SEL = "body:latest:30";
+  const res = await guardianGet(env, "/" + id, { "show-blocks": SEL, "show-fields": "liveBloggingNow" });
   const c = res.content || {};
-  const blocks = (c.blocks?.body || []).map((b) => ({
+  // Qualified selectors ("body:latest:30") come back under blocks.requestedBodyBlocks
+  // keyed by the selector — blocks.body is only populated for plain "body".
+  const raw = c.blocks?.requestedBodyBlocks?.[SEL] || c.blocks?.body || [];
+  const blocks = raw.map((b) => ({
     at: b.firstPublishedDate || b.publishedDate || b.createdDate || "",
     title: (b.title || "").trim(),
     text: b.bodyTextSummary || stripHtml(b.bodyHtml),
