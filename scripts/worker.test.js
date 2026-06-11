@@ -160,6 +160,23 @@ test("matches: events mapped to correct side, FT ratings merged", () => {
   assert.ok(rated.length > 0, "player ratings merged at FT");
 });
 
+test("stoppage time: status.extra → '90+3' minute; event time.extra → '90+2'", async () => {
+  globalThis.fetch = async (url) => {
+    const p = new URL(url).pathname;
+    if (p === "/fixtures") return { ok: true, status: 200, headers: { get: () => null }, json: async () => ({ response: [{
+      fixture: { id: 8001, date: "2026-06-20T16:00:00Z", status: { short: "2H", elapsed: 90, extra: 3 }, venue: { name: "Stadium" } },
+      league: { round: "Group Stage - 1" }, teams: { home: { id: 100, code: "ENG" }, away: { id: 102, code: "SEN" } },
+      goals: { home: 1, away: 0 }, score: { penalty: { home: null, away: null } } }] }) };
+    if (p === "/fixtures/events") return { ok: true, status: 200, headers: { get: () => null }, json: async () => ({ response: [
+      { time: { elapsed: 90, extra: 2 }, team: { id: 100 }, type: "Goal", detail: "Normal Goal", player: { name: "Late Winner" } } ] }) };
+    return { ok: true, status: 200, headers: { get: () => null }, json: async () => ({ response: cannedFetch(url) }) };
+  };
+  const s = await buildSnapshot({ APIFOOTBALL_KEY: "t", WC_LEAGUE_ID: "1", WC_SEASON: "2026" }, null, false);
+  const m = s.matches.find((x) => String(x.id) === "8001");
+  assert.equal(m.minute, "90+3'", "clock shows added time, not a frozen 90");
+  assert.equal(m.events.find((e) => e.type === "goal").min, "90+2'", "event minute carries added time");
+});
+
 test("live match detail keeps last-good when a poll returns empty (no flicker)", async () => {
   // Poll 1: healthy — the live match (5002) has lineups, events, stats.
   globalThis.fetch = async (url) => ({ ok: true, status: 200, headers: { get: () => null }, json: async () => ({ response: cannedFetch(url) }) });

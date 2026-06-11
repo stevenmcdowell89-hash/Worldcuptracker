@@ -52,6 +52,11 @@ export function flag(code, cls = "flag") {
 export function liveMinute(m) {
   const n = parseInt(m.minute);
   if (m.status !== "live" || !Number.isFinite(n)) return m.minute || "LIVE";
+  // Stoppage time (e.g. "90+3'") is authoritative from the worker — show it verbatim
+  // and don't local-tick it (we can't know how much added time there'll be). Local
+  // ticking only fills in normal play, where it holds at 45'/90' until the worker
+  // takes over with the added-time value.
+  if (String(m.minute).includes("+")) return m.minute;
   return `<span data-livemin="${n}" data-anchor="${state.snap?.meta?.updated || ""}">${n}'</span>`;
 }
 

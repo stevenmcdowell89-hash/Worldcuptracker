@@ -204,7 +204,12 @@ function normFixtures(resp, dir, idToGroup) {
       matches.push(base);
     } else {
       base.status = live ? "live" : ht ? "ht" : "ft";
-      if (live || ht) base.minute = st === "P" ? "Pens" : (f.fixture?.status?.elapsed ?? "") + "'";
+      // Stoppage time: API-Football holds the clock at 45/90 in `elapsed` and carries
+      // the added minutes in `extra` (e.g. elapsed 90, extra 3 → "90+3'").
+      if (live || ht) {
+        const el = f.fixture?.status?.elapsed, ex = f.fixture?.status?.extra;
+        base.minute = st === "P" ? "Pens" : `${el ?? ""}${ex ? "+" + ex : ""}'`;
+      }
       matches.push(base);
     }
   }
@@ -213,7 +218,7 @@ function normFixtures(resp, dir, idToGroup) {
 
 function normEvents(resp, homeId) {
   return (resp || []).map((e) => ({
-    min: `${e.time?.elapsed ?? ""}'`,
+    min: `${e.time?.elapsed ?? ""}${e.time?.extra ? "+" + e.time.extra : ""}'`,
     side: e.team?.id === homeId ? "h" : "a",   // map to the correct side
     type: e.type === "Goal" ? (e.detail === "Penalty" ? "penalty" : e.detail === "Own Goal" ? "owngoal" : "goal")
       : e.type === "Card" ? (e.detail === "Red Card" ? "red" : "yellow") : e.type === "subst" ? "subst" : "goal",
