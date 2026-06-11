@@ -161,15 +161,11 @@ export function renderMatches(ctx = {}) {
     return `${head}${byDay.map(daySec).join("")}${bracketEmbed(S(), state.annexC)}${foot}`;
   }
 
-  // ── GROUP (everyday): feed with the race card embedded once it has meaning ──
+  // ── GROUP (everyday): plain feed. The third-place race card belongs to the
+  // groupFinal phase (its own branch above, plus the morning view) — surfacing it
+  // during early group, before the final matchday, is just noise. ──
   const byDay = upcomingByDay(upcoming);
-  // Embed the race card only once there are actual RESULTS — with zero games played
-  // the third-place table is all zeros and just adds noise to the Matches feed.
-  // (Distinct from the Race tab's banner copy, which flips at the first whistle.)
-  const started = S().meta?.started !== false && (S().thirdPlaceRace || []).some((t) => t.Pts > 0);
-  const firstDay = byDay.slice(0, 1).map(daySec).join("");
-  const restDays = byDay.slice(1).map(daySec).join("");
-  return `${toggle}${head}${firstDay}${started ? compactRaceCard() : ""}${restDays}${foot}`;
+  return `${toggle}${head}${byDay.map(daySec).join("")}${foot}`;
 }
 
 // Morning catch-up layout (feature 2). The model (morning.js) is pure/engine-driven;
