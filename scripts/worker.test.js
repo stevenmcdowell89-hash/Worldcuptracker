@@ -220,6 +220,24 @@ test("pre-kickoff: no World Cup entry → tournament stats are zero, club stats 
   assert.ok(p.season.some((s) => s.comp === "Serie A" && s.apps === 35));   // other comps still surface under season[]
 });
 
+test("lineups load pre-match once kickoff is imminent (match still 'scheduled')", async () => {
+  const soon = new Date(Date.now() + 30 * 60e3).toISOString();   // kickoff in 30 minutes
+  globalThis.fetch = async (url) => {
+    const p = new URL(url).pathname;
+    const resp = p === "/fixtures"
+      ? [{ fixture: { id: 7001, date: soon, status: { short: "NS", elapsed: null }, venue: { name: "Stadium" } },
+           league: { round: "Group Stage - 1" }, teams: { home: { id: 100, code: "ENG" }, away: { id: 102, code: "SEN" } },
+           goals: { home: null, away: null }, score: { penalty: { home: null, away: null } } }]
+      : cannedFetch(url);
+    return { ok: true, status: 200, headers: { get: () => null }, json: async () => ({ response: resp }) };
+  };
+  const s = await buildSnapshot({ APIFOOTBALL_KEY: "t", WC_LEAGUE_ID: "1", WC_SEASON: "2026" }, null, false);
+  const m = s.matches.find((x) => String(x.id) === "7001");
+  assert.ok(m, "imminent scheduled match present");
+  assert.equal(m.status, "scheduled");
+  assert.ok(m.lineups?.h?.xi?.length, "home XI populated before kickoff");
+});
+
 test("bracket built with full structure", () => {
   assert.equal(snap.bracket.matches.filter((m) => m.rd === "R32").length, 16);
   assert.equal(snap.bracket.matches.length, 31);

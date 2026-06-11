@@ -309,6 +309,20 @@ export async function buildSnapshot(env, prev, liveOnly) {
     }
   }
 
+  // Confirmed XIs publish ~1 hr before kickoff, while the match is still "scheduled"
+  // (the loop above only covers live/finished games). Fetch lineups for any match whose
+  // kickoff is within ~75 min so they show pre-match, and re-fetch each poll to pick up
+  // late changes. Skips matches with no kickoff on record or still well in the future.
+  const nowMs = Date.now();
+  for (const m of matches.filter((x) => x.status === "scheduled")) {
+    const koMs = m.kickoff ? new Date(m.kickoff).getTime() : 0;
+    if (!koMs || koMs - nowMs > 75 * 60e3) continue;
+    try {
+      const lu = await apiGet(env, "/fixtures/lineups", { fixture: m.id });
+      if (lu?.length) m.lineups = normLineups(lu, m._homeId, m._awayId);
+    } catch {}
+  }
+
   // Guardian minute-by-minute (best-effort, gated on a key). Live/HT every poll; and a
   // just-finished match keeps pulling until the liveblog actually closes, so the
   // full-time wrap-up / report is captured. Then it's frozen and never refetched.
@@ -534,7 +548,7 @@ function curatedPlayerIds({ scorers, assists, discipline, prev, matches }) {
 
 // ── deep player drill-in: club-season stats + transfers + trophies ──
 // Bump ENRICH_VERSION to force re-enrichment of already-flagged players after a fix.
-const ENRICH_VERSION = 2;
+const ENRICH_VERSION = 3;
 async function enrichPlayers(env, base, ids, players, cfg, dir, cap = 18) {   // small batch/poll; fills over polls
   // European club seasons (2025-26) are filed under the START year (2025) in the API,
   // so club stats live under (WC season - 1), NOT the WC season.
