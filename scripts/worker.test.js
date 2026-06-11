@@ -202,20 +202,22 @@ test("deep player enrichment: tournament + season + career + honours", () => {
 });
 
 test("pre-kickoff: no World Cup entry → tournament stats are zero, club stats never leak", () => {
-  // A player who has only club competitions on record (no WC league row yet, as is
-  // the case before the tournament starts). The tournament block must NOT borrow the
-  // club numbers — everyone should read 0 apps / 0 goals until they actually play.
+  // Mirrors the real pre-kickoff case: /players?season=<WC season> returns several
+  // non-World-Cup competitions (a national-team friendly/qualifier that has a few
+  // appearances, plus a club row) but NO World Cup league row yet. The tournament
+  // block must stay 0 no matter which competition happens to be listed first.
   const resp = [{
     player: { id: 999, name: "Jonathan David", age: 26, position: "Attacker" },
     statistics: [
-      { league: { id: 39, name: "Premier League" }, team: { name: "Lille" }, games: { appearences: 4, position: "Attacker" }, goals: { total: 2, assists: 1 } },
+      { league: { id: 10, name: "Friendlies" }, team: { name: "Canada" }, games: { appearences: 4, position: "Attacker" }, goals: { total: 2, assists: 1 } },
+      { league: { id: 135, name: "Serie A" }, team: { name: "Juventus" }, games: { appearences: 35 }, goals: { total: 18, assists: 6 } },
     ],
   }];
   const p = normPlayer(resp, "1", {});             // WC_LEAGUE_ID = "1"
   assert.equal(p.tournament.apps, 0);
   assert.equal(p.tournament.g, 0);
   assert.equal(p.tournament.a, 0);
-  assert.ok(p.season.some((s) => s.comp === "Premier League" && s.apps === 4));   // club stats still surface under season
+  assert.ok(p.season.some((s) => s.comp === "Serie A" && s.apps === 35));   // other comps still surface under season[]
 });
 
 test("bracket built with full structure", () => {
