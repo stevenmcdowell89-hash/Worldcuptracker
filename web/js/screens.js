@@ -163,7 +163,8 @@ export function renderMatches(ctx = {}) {
 
   // ── GROUP (everyday): feed with the race card embedded once it has meaning ──
   const byDay = upcomingByDay(upcoming);
-  const started = S().meta?.started !== false && (S().thirdPlaceRace || []).some((t) => t.Pts > 0);
+  // Flip at the first whistle (meta.started), not the first result — see race.js.
+  const started = S().meta?.started === true || (S().thirdPlaceRace || []).some((t) => t.Pts > 0);
   const firstDay = byDay.slice(0, 1).map(daySec).join("");
   const restDays = byDay.slice(1).map(daySec).join("");
   return `${toggle}${head}${firstDay}${started ? compactRaceCard() : ""}${restDays}${foot}`;
