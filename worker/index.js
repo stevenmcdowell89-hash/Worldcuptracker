@@ -72,10 +72,14 @@ async function apiGet(env, path, params = {}, attempt = 0) {
   if (body.errors && Object.keys(body.errors).length) {
     const msg = JSON.stringify(body.errors);
     if (/ratelimit/i.test(msg)) {
-      // Per-minute: brief retry (window resets each minute). Per-day: don't bother —
-      // it won't recover, so fail fast and stop further enrichment this run.
-      if (/per minute|requests per minute/i.test(msg) && attempt < 2) { await sleep(6000); return apiGet(env, path, params, attempt + 1); }
-      RATE_LIMITED = true;
+      const perMinute = /per minute|requests per minute/i.test(msg);
+      // Per-minute: brief retry (the window resets each minute). If it still fails,
+      // skip just THIS call — do NOT trip RATE_LIMITED, which would zero the whole
+      // poll's enrichment budget for a limit that recovers within 60s (that quietly
+      // starved deep enrichment, so re-enriched stats never landed). Only a per-day
+      // limit is unrecoverable this run, so that one stops further enrichment.
+      if (perMinute && attempt < 2) { await sleep(6000); return apiGet(env, path, params, attempt + 1); }
+      if (!perMinute) RATE_LIMITED = true;
     }
     throw new Error(`API-Football ${path}: ${msg}`);
   }
@@ -576,7 +580,8 @@ function curatedPlayerIds({ scorers, assists, discipline, prev, matches }) {
 
 // ── deep player drill-in: club-season stats + transfers + trophies ──
 // Bump ENRICH_VERSION to force re-enrichment of already-flagged players after a fix.
-const ENRICH_VERSION = 3;
+const ENRICH_VERSION = 4;
+const ZERO_TOURNAMENT = { apps: 0, min: 0, g: 0, a: 0, shots: 0, keyPasses: 0, yellow: 0, red: 0 };
 async function enrichPlayers(env, base, ids, players, cfg, dir, cap = 18) {   // small batch/poll; fills over polls
   // European club seasons (2025-26) are filed under the START year (2025) in the API,
   // so club stats live under (WC season - 1), NOT the WC season.
@@ -603,7 +608,10 @@ async function enrichPlayers(env, base, ids, players, cfg, dir, cap = 18) {   //
         age: club.age ?? wc.age, pos: club.pos || wc.pos || existing?.pos,
         club: club.club, league: club.league,
         code: wc.code || existing?.code,                       // nation, from squad seed / WC entry
-        tournament: wc.tournament || existing?.tournament,     // WC aggregate (0 until games played)
+        // WC aggregate (0 until the player's nation has played). When the API has no
+        // WC row yet, normPlayer returns null → zero it; never carry a previous value
+        // forward, or pre-fix club numbers that leaked into `tournament` would persist.
+        tournament: wc.tournament || ZERO_TOURNAMENT,
         season: club.season || [],
       };
       players[id] = { ...(existing || {}), ...rec, career, honours, _enriched: ENRICH_VERSION };
