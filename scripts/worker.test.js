@@ -337,15 +337,26 @@ test("empty /fixtures with a schedule on record → poll fails (last good kept)"
   );
 });
 
-test("empty /standings with groups on record → poll fails (last good kept)", async () => {
-  // API-Football briefly serves an empty standings table while rebuilding after a
-  // result; it must not blank out the groups (tables, race, bracket seeding).
+test("empty /standings reuses the cached table (groups never blank)", async () => {
+  const store = new Map();
+  const kv = {
+    get: async (k, t) => { const v = store.get(k); return v == null ? null : (t === "json" ? JSON.parse(v) : v); },
+    put: async (k, v) => { store.set(k, v); },
+    list: async () => ({ keys: [] }),
+  };
+  const env = { APIFOOTBALL_KEY: "t", WC_LEAGUE_ID: "1", WC_SEASON: "2026", SNAPSHOT: kv };
+  // Poll 1: healthy standings → cached.
+  globalThis.fetch = async (url) => ({ ok: true, status: 200, headers: { get: () => null }, json: async () => ({ response: cannedFetch(url) }) });
+  const good = await buildSnapshot(env, null, false);
+  assert.ok(Object.keys(good.groups).length, "groups populated on a healthy poll");
+
+  // Poll 2: API serves an empty standings table — groups must survive from the cache,
+  // and fixtures must still map to their group (group letters live only in standings).
   globalThis.fetch = async (url) => ({ ok: true, status: 200, headers: { get: () => null },
     json: async () => ({ response: new URL(url).pathname === "/standings" ? [] : cannedFetch(url) }) });
-  await assert.rejects(
-    buildSnapshot({ APIFOOTBALL_KEY: "t", WC_LEAGUE_ID: "1", WC_SEASON: "2026" }, snap, false),
-    /standings returned empty/,
-  );
+  const degraded = await buildSnapshot(env, good, false);
+  assert.deepEqual(Object.keys(degraded.groups).sort(), Object.keys(good.groups).sort(), "groups reused from cache");
+  assert.ok(degraded.matches.some((m) => m.group), "fixtures still mapped to groups");
 });
 
 test("tight subrequest budget degrades gracefully (no crash)", async () => {

@@ -24,6 +24,7 @@ const API = "https://v3.football.api-sports.io";
 const KV_KEY = "latest.json";
 const META_KEY = "poll-meta";
 const TEAMDIR_KEY = "team-dir";   // last-good team directory (codes/names/crests), reused when /teams hiccups
+const STANDINGS_KEY = "standings-cache";   // last-good group tables, reused when /standings serves empty
 
 const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
 
@@ -292,13 +293,16 @@ export async function buildSnapshot(env, prev, liveOnly) {
   const dir = await buildTeamDir(env, base);
 
   // Standings + all fixtures (cheap, every poll).
-  const groups = normStandings(await apiGet(env, "/standings", base), dir);
-  // API-Football briefly serves an EMPTY standings table while it rebuilds after a
-  // result. The whole app keys off groups (tables, race, bracket seeding, the
-  // fixture→group mapping), so never overwrite a good table with nothing — fail the
-  // poll and keep the last good snapshot, exactly as we do for an empty fixtures list.
-  if (!Object.keys(groups).length && Object.keys(prev?.groups || {}).length) {
-    throw new Error("standings returned empty with groups on record — keeping the last good snapshot");
+  // API-Football intermittently serves an EMPTY standings table (notably while it
+  // rebuilds after a result). The whole app keys off groups — tables, race, bracket
+  // seeding and the fixture→group mapping (group letters live ONLY in standings) — so
+  // never run on an empty table: cache the last good one in KV (with team _id, before
+  // it's stripped for serialisation) and reuse it until the API serves a real table.
+  let groups = normStandings(await apiGet(env, "/standings", base), dir);
+  if (Object.keys(groups).length) {
+    try { await env.SNAPSHOT?.put(STANDINGS_KEY, JSON.stringify(groups)); } catch {}
+  } else {
+    try { const c = await env.SNAPSHOT?.get(STANDINGS_KEY, "json"); if (c && Object.keys(c).length) groups = c; } catch {}
   }
   const idToGroup = {};
   for (const [g, rows] of Object.entries(groups)) rows.forEach((r) => (idToGroup[r._id] = g));
