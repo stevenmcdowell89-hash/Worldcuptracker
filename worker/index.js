@@ -662,9 +662,14 @@ function annotateProgression(matches, groups, remainingFixtures, teams, race, an
   const engineSnap = { groups, remainingFixtures, teams, meta: { started: anyPlayed } };
   const outlookCache = {};
   const outlook = (code) => (outlookCache[code] = outlookCache[code] || qualifyOutlook(engineSnap, code, ANNEXC));
+  // A match can only "decide" qualification once there are RESULTS to build on. Before
+  // the first group result every team reads "sweating", which would stamp the cut
+  // marker on every game and print a one-sided "all to play for" line for the home
+  // side. Gate the progression intel on real results, not merely a match being live.
+  const anyResults = Object.values(groups).some((rows) => rows.some((r) => (r.P || 0) > 0));
   for (const m of matches) {
     m.affectsCut = false;
-    if (!anyPlayed || m.stage !== "Group Stage" || m.status === "ft") continue;
+    if (!anyResults || m.stage !== "Group Stage" || m.status === "ft") continue;
     const codes = [m.home.code, m.away.code];
     // "On the line" = a side's place is genuinely undecided (not already through/out).
     const live = codes.map(outlook).filter((o) => o.status === "sweating" || o.status === "in" || o.status === "out");
