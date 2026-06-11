@@ -69,6 +69,13 @@ test("morningModel: window-gated, sections composed, nothing fabricated", () => 
   assert.equal(morningModel(s, null, NOW), null);
 });
 
+test("morningModel: phase fallback agrees with the app — no meta.phase + started:false → no morning view", () => {
+  const s = snap();
+  delete s.meta.phase;
+  s.meta.started = false;          // screens' phase() would say "pre" — so must we
+  assert.equal(morningModel(s, null, NOW), null);
+});
+
 test("morningModel: rest day + silent night → empty sections, no content invented", () => {
   const s = snap();
   s.matches = [];                                                       // nothing overnight, nothing today

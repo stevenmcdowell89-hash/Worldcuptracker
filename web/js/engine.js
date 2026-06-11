@@ -417,17 +417,20 @@ export function tournamentPhase(snapshot, now = Date.now()) {
   const matches = snapshot.matches || [];
   const koOf = (m) => Date.parse(m.kickoff);
   const groupKOs = matches.filter((m) => m.group).map(koOf).filter(Number.isFinite);
-  const allKOs = matches.map(koOf).filter(Number.isFinite);
 
-  // No schedule in the snapshot (e.g. the mock, or an early/empty poll) → fall back to
-  // the results-based signal so those still work.
-  if (!allKOs.length || !groupKOs.length) {
+  // No group schedule in the snapshot (e.g. the mock, or an early/empty poll) → fall
+  // back to the results-based signal so those still work.
+  if (!groupKOs.length) {
     const played = GROUP_LETTERS.some((g) => (snapshot.groups?.[g] || []).some((r) => (r.P || 0) > 0));
     if (!played) return "pre";
     return (snapshot.remainingFixtures || []).some((f) => f.group) ? "group" : "knockout";
   }
 
-  if (now < Math.min(...allKOs)) return "pre";                               // countdown still running
+  // `pre` is gated on the first GROUP kickoff — the tournament opens with a group
+  // game, and the data feed can carry stray non-group fixtures (play-off ties from
+  // months earlier, TBD knockout placeholders with odd dates) which must never end
+  // the countdown early.
+  if (now < Math.min(...groupKOs)) return "pre";
   const lastGroupKO = Math.max(...groupKOs);
   if (now >= flipInstant(lastGroupKO + 12 * 3600e3)) return "knockout";      // morning after the last group game
   if (now >= flipInstant(lastGroupKO - GROUP_FINAL_DAYS * 24 * 3600e3)) return "groupFinal";

@@ -31,6 +31,17 @@ export function inMorningWindow(now = Date.now()) {
   return !!uk && uk.hour >= MORNING_FROM && uk.hour < MORNING_TO;
 }
 
+// THE phase read, shared with screens.js. Every surface must resolve the phase the
+// same way — when two fallbacks disagreed, the 30s snapshot tick visibly flipped the
+// Matches tab between layouts (seen live on opening morning: morning ↔ countdown).
+export function phaseOf(snap) {
+  const m = snap?.meta || {};
+  if (m.phase) return m.phase;
+  if (m.started === false) return "pre";
+  if (m.groupStageComplete) return "knockout";
+  return "group";
+}
+
 const nameOf = (snap, code) => snap.teams?.[code]?.name || code;
 
 // "Last night" = finished games whose kickoff falls after 13:00 UK *yesterday* (the
@@ -171,7 +182,7 @@ function advancedLines(snap, overnight) {
  */
 export function morningModel(snap, annexC, now = Date.now(), force = false) {
   if (!snap || (!force && !inMorningWindow(now))) return null;
-  const phase = snap.meta?.phase || "group";
+  const phase = phaseOf(snap);
   if (phase === "pre") return null;                              // nothing to catch up on
   const todayUkDate = ukClock(now).date;
   const matches = snap.matches || [];

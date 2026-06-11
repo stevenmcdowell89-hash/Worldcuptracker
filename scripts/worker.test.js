@@ -212,6 +212,16 @@ test("no GUARDIAN_KEY → no commentary (graceful)", async () => {
   assert.ok(!live.commentary, "no commentary without a key");
 });
 
+test("empty /fixtures with a schedule on record → poll fails (last good kept)", async () => {
+  globalThis.fetch = async (url) => ({ ok: true, status: 200, headers: { get: () => null },
+    json: async () => ({ response: new URL(url).pathname === "/fixtures" ? [] : cannedFetch(url) }) });
+  // a degraded fixtures response must not produce a snapshot that flips the phase
+  await assert.rejects(
+    buildSnapshot({ APIFOOTBALL_KEY: "t", WC_LEAGUE_ID: "1", WC_SEASON: "2026" }, snap, false),
+    /fixtures returned empty/,
+  );
+});
+
 test("tight subrequest budget degrades gracefully (no crash)", async () => {
   globalThis.fetch = async (url) => ({ ok: true, status: 200, headers: { get: () => null }, json: async () => ({ response: cannedFetch(url) }) });
   const s = await buildSnapshot({ APIFOOTBALL_KEY: "t", WC_LEAGUE_ID: "1", WC_SEASON: "2026", SUBREQUEST_BUDGET: "5" }, null, false);

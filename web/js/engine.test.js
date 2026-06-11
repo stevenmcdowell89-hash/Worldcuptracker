@@ -195,6 +195,13 @@ test("phase: flips snap to ~05:00 UK, not to the kickoff", () => {
   assert.equal(tournamentPhase(SCHED, at("2026-06-28T02:00:00Z")), "groupFinal");
   assert.equal(tournamentPhase(SCHED, at("2026-06-28T05:00:00Z")), "knockout");
 });
+test("phase: a stray non-group fixture months earlier can't end pre", () => {
+  // The feed can carry play-off ties / placeholder dates outside the group schedule;
+  // pre must hold until the first GROUP kickoff (seen live: opening-morning flicker).
+  const withStray = { matches: [mko("p1", null, "2026-03-26T19:00:00Z"), ...SCHED.matches] };
+  assert.equal(tournamentPhase(withStray, at("2026-06-11T08:00:00Z")), "pre");
+  assert.equal(tournamentPhase(withStray, at("2026-06-16T12:00:00Z")), "group");
+});
 test("phase: falls back to results when the snapshot has no schedule", () => {
   const played = { groups: { A: [gr("AA", 6, 3, 5)] }, remainingFixtures: [] };
   assert.equal(tournamentPhase(played, at("2026-06-28T12:00:00Z")), "knockout");

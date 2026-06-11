@@ -269,7 +269,12 @@ export async function buildSnapshot(env, prev, liveOnly) {
   const groups = normStandings(await apiGet(env, "/standings", base), dir);
   const idToGroup = {};
   for (const [g, rows] of Object.entries(groups)) rows.forEach((r) => (idToGroup[r._id] = g));
-  const { matches, remainingFixtures } = normFixtures(await apiGet(env, "/fixtures", base), dir, idToGroup);
+  const fixturesResp = await apiGet(env, "/fixtures", base);
+  // A truncated/empty fixtures response (rate-limit hiccup) must never replace a real
+  // schedule: phase, the morning view and the live-gate all key off these kickoffs,
+  // and a degraded write flips the app's layout. Fail the poll → keep last good.
+  if (!fixturesResp.length && prev?.matches?.length) throw new Error("fixtures returned empty with a schedule on record — keeping the last good snapshot");
+  const { matches, remainingFixtures } = normFixtures(fixturesResp, dir, idToGroup);
 
   // Carry over finalised match detail (events/stats/lineups/ratings never change once
   // FT) so each finished match is fetched exactly once.

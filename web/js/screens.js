@@ -7,20 +7,14 @@ import { qualifyOutlook } from "./engine.js";
 import { raceContent } from "./race.js";
 import { bracketEmbed, renderBracket } from "./bracketview.js";
 import { notificationsCardHTML, mountNotifications } from "./notifications.js";
-import { morningModel } from "./morning.js";
+import { morningModel, phaseOf } from "./morning.js";
 import { bellHTML, reminderCardHTML } from "./reminders.js";
 export { renderBracket };   // the Bracket screen now lives in bracketview.js (vertical Path/structural, §13)
 
 const S = () => state.snap;
-// The phase flag (brief §11). Falls back to a sensible value if an old snapshot
-// predates it, so the frontend still works offline against either.
-function phase() {
-  const m = S().meta || {};
-  if (m.phase) return m.phase;
-  if (m.started === false) return "pre";
-  if (m.groupStageComplete) return "knockout";
-  return "group";
-}
+// The phase flag (brief §11). One shared fallback (phaseOf, morning.js) so this and
+// the morning view can never disagree about which layout the Matches tab should show.
+function phase() { return phaseOf(S()); }
 
 // ── shared bits ──
 function compactRaceCard(prominent = false) {
