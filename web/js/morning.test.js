@@ -55,6 +55,17 @@ test("overnight flips: the result that sealed qualification is reported", () => 
   assert.ok(flips.some((f) => f.includes("Betaland") && f.includes("through")), `expected a BBB flip in: ${flips}`);
 });
 
+test("match day spans past midnight: a 2am-next-day game stays in today's slate", () => {
+  const s = snap();
+  // 02:00 UK Mon (the day AFTER todayUkDate) — a late US kickoff, still today's slate.
+  s.matches.push({ id: "m4", stage: "Group Stage", group: "B", status: "scheduled",
+    kickoff: "2026-06-22T01:00:00Z", home: { code: "CCC", score: null }, away: { code: "DDD", score: null } });
+  const mm = morningModel(s, null, NOW);
+  assert.ok(mm.today.some((m) => m.id === "m4"), "small-hours game folded into today");
+  assert.ok(!mm.today.some((m) => m.id === "m3"), "tomorrow's evening game is the NEXT match day");
+  assert.equal(ukClock("2026-06-22T01:00:00Z").date !== mm.date, true, "and it's flagged as the after-midnight portion");
+});
+
 test("morningModel: window-gated, sections composed, nothing fabricated", () => {
   const s = snap();
   assert.equal(morningModel(s, null, at("2026-06-21T15:00:00Z")), null);   // 16:00 UK — outside
