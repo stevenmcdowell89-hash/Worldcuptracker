@@ -90,11 +90,11 @@ function cannedFetch(url) {
       { id: "football/live/2026/spain-v-brazil", type: "liveblog", webTitle: "Spain v Brazil: World Cup 2026 – live", webUrl: "https://www.theguardian.com/y", webPublicationDate: "2026-06-25T13:00:00Z", fields: { liveBloggingNow: "false" } },
       { id: "football/live/2026/argentina-v-australia", type: "liveblog", webTitle: "Argentina v Australia: World Cup 2026 – live", webUrl: "https://www.theguardian.com/x", webPublicationDate: "2026-06-25T15:30:00Z", fields: { liveBloggingNow: "true" } },
     ] };
-    // Real Open Platform shape: qualified selectors ("body:latest:30") return blocks
+    // Real Open Platform shape: qualified selectors ("body:latest:200") return blocks
     // under requestedBodyBlocks keyed by the selector — NOT blocks.body (that's only
     // for plain "body"). Mirroring this caught the empty-commentary bug on match day.
     return { content: { webUrl: "https://www.theguardian.com" + p, fields: { liveBloggingNow: "true" },
-      blocks: { totalBodyBlocks: 2, requestedBodyBlocks: { "body:latest:30": [
+      blocks: { totalBodyBlocks: 2, requestedBodyBlocks: { "body:latest:200": [
         { firstPublishedDate: "2026-06-25T16:20:00Z", title: "GOAL!", bodyTextSummary: "Argentina lead.", attributes: { keyEvent: true } },
         { firstPublishedDate: "2026-06-25T16:05:00Z", title: "", bodyHtml: "<p>Lively start in New Jersey.</p>", attributes: {} },
       ] } } } };
