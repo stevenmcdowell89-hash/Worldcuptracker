@@ -426,6 +426,13 @@ function matchCommentary(m) {
   // Newest first (defensive — the Worker already sorts, but guarantee it in the view).
   const blocks = (m.commentary || []).slice().sort((a, b) => (b.at || "").localeCompare(a.at || ""));
   if (!blocks.length) {
+    // Commentary is trimmed 48h after a game (catch-up window passed). Point at the
+    // Guardian liveblog if we kept the link, rather than showing a bare empty state.
+    if (m.status === "ft" && m.commentaryUrl) {
+      return `<div class="empty"><div class="big">🎙️</div><div class="t">Commentary archived</div>
+        <div>This game has wrapped up — read the full minute-by-minute on
+        <a href="${m.commentaryUrl}" target="_blank" rel="noopener noreferrer" style="color:var(--brand);font-weight:700">The Guardian</a>.</div></div>`;
+    }
     return m.status === "ft"
       ? emptyState("🎙️", "No commentary for this match", "Minute-by-minute wasn't available for this game.")
       : emptyState("🎙️", "No commentary yet", "Minute-by-minute updates appear here once the match is under way.");
