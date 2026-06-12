@@ -62,7 +62,7 @@ function matchRow(m, opts = {}) {
   const tags = [
     stageLabel ? `<span class="grp-pill">${stageLabel}</span>` : "",
     tv,
-    m.affectsCut && !st ? `<span class="stake decider">Affects the last-8 race</span>` : "",
+    m.affectsCut && !st && phase() === "groupFinal" ? `<span class="stake decider">Affects the last-8 race</span>` : "",
     st ? `<span class="stake ${st.cls}">${st.lbl}</span>` : "",
   ].filter(Boolean).join("");
   const bell = bellHTML(m);   // reminder bell (feature 3) — scheduled fixtures only
@@ -114,7 +114,10 @@ export function renderMatches(ctx = {}) {
   const finished = matches.filter((m) => m.status === "ft").sort((a, b) => (b.kickoff || "").localeCompare(a.kickoff || ""));
 
   const stale = S().meta?.stale ? `<div class="banner">⚠️ Showing the last good update — live data is briefly unavailable.</div>` : "";
-  const showStakes = ph === "group" || ph === "groupFinal";
+  // Stake tags (Decider/Seeding/Dead) are only meaningful on the final matchday —
+  // stakesFor assumes all other remaining games draw, which is noise with two rounds
+  // still to play (it flags nearly everything a "decider"). Show them in groupFinal only.
+  const showStakes = ph === "groupFinal";
   const sec = (label, list, o) => list.length
     ? `<div class="day-label">${label}</div><div class="section">${list.map((m) => matchRow(m, o)).join("")}</div>` : "";
 
@@ -176,7 +179,7 @@ function morningHTML(mm) {
     ? `<div class="day-label">Last night — what you missed</div><div class="section">${mm.lastNight.map((m) => matchRow(m)).join("")}</div>`
       + (mm.flips.length ? `<div class="block">${mm.flips.map((f) => `<div class="lrow"><span class="nm flipline">${f}</span></div>`).join("")}</div>` : "")
     : "";
-  const showStakes = mm.phase === "group" || mm.phase === "groupFinal";
+  const showStakes = mm.phase === "groupFinal";
   const sec2 = `<div class="day-label">Today — the slate</div>` + (mm.today.length
     ? `<div class="section">${mm.today.map((m) => matchRow(m, { showStakes })).join("")}</div>`
     : `<div class="block"><div class="lrow"><span class="nm muted" style="font-weight:500">Rest day — no matches today.</span></div></div>`);
@@ -184,7 +187,9 @@ function morningHTML(mm) {
     ? `<div class="day-label">What's at stake today</div><div class="block">${mm.stakes.map((l) => `<div class="pe"><p>${l}</p></div>`).join("")}</div>`
     : "";
   const race = mm.phase === "groupFinal" ? compactRaceCard(true) : "";   // the peak morning
-  return head + sec1 + sec2 + sec3 + race;
+  // Wrap the whole catch-up in a warm panel so it reads as its own moment, distinct
+  // from the standard feed below (which reverts after 13:00).
+  return `<div class="morning">${head + sec1 + sec2 + sec3 + race}</div>`;
 }
 
 function upcomingByDay(upcoming) {
@@ -193,7 +198,7 @@ function upcomingByDay(upcoming) {
   }, {}));
 }
 function daySec([day, list]) {
-  const showStakes = phase() === "group" || phase() === "groupFinal";
+  const showStakes = phase() === "groupFinal";
   return `<div class="day-label">${day}</div><div class="section">${list.map((m) => matchRow(m, { showStakes })).join("")}</div>`;
 }
 
@@ -382,7 +387,10 @@ export function renderMatch(ctx) {
     <div class="status ${live ? "" : "done"}">${statusTxt}${ctxLabel ? ` · ${ctxLabel}` : ""}${m.venue ? ` · ${m.venue}` : ""}</div>
     ${m.tv && m.status !== "ft" ? `<div class="tvline">📺 ${m.tv.channel}${m.tv.stream ? ` <span class="str">· stream on ${m.tv.stream}</span>` : ""}</div>` : ""}
   </div>`;
-  const oneLiner = m.progressionLine
+  // The progression one-liner is forward-looking qualification scenario text — only
+  // meaningful on the final matchday. Before then it's premature ("even beating X
+  // might not be enough" after one game), so only surface it in groupFinal.
+  const oneLiner = m.progressionLine && phase() === "groupFinal"
     ? `<div class="oneliner"><span class="tick"></span><p>${m.progressionLine}</p></div>` : "";
   const reminder = reminderCardHTML(m);   // bell + lead + .ics (feature 3)
 

@@ -540,7 +540,15 @@ a { color:inherit; text-decoration:none; }
 .remcard .sub-label { font-weight:600; color:var(--muted); }
 .remlead { font:inherit; font-weight:600; font-size:13px; color:var(--text); background:var(--raised); border:1px solid var(--divider); border-radius:9px; padding:6px 8px; }
 
-/* morning catch-up header (06:00–13:00 UK) */
+/* morning catch-up (06:00–13:00 UK) — a warm panel with a left accent so the whole
+   section reads as its own moment and doesn't blend into the standard feed below. */
+.morning { position:relative; margin:12px 10px; padding:6px 0 10px; border-radius:var(--radius);
+  background:linear-gradient(180deg,#FFF6E9,#FFFDF8); border:1px solid rgba(243,155,27,.22);
+  box-shadow:inset 4px 0 0 var(--sweating), var(--shadow-card); overflow:hidden; }
+.morning .morninghead { margin:0; border:none; border-radius:0; box-shadow:none; background:transparent; }
+.morning .morninghead .t { font-size:16px; }
+.morning .day-label { color:#a86f12; }                 /* warm accent labels inside the panel */
+.morning .section, .morning .block { margin:6px 12px; background:rgba(255,255,255,.72); border:1px solid rgba(243,155,27,.14); }
 .morninghead { display:flex; align-items:baseline; gap:8px; margin:12px 10px 0; padding:12px 15px; border-radius:var(--radius); background:linear-gradient(120deg,#FFF7E8,#FDEEDC); border:1px solid rgba(243,155,27,.25); box-shadow:var(--shadow-card); }
 .morninghead .sun { font-size:16px; }
 .morninghead .t { font-family:var(--display); font-weight:800; font-size:15px; color:#7a4d00; }
