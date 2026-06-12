@@ -339,7 +339,7 @@ export async function buildSnapshot(env, prev, liveOnly) {
     // captured (it never changes again) — so you can look back at how the game unfolded.
     if (m.status === "ft" && p.commentary) {
       m.commentary = p.commentary; m.commentaryUrl = p.commentaryUrl; m.commentarySource = p.commentarySource;
-      m._guardianId = p._guardianId; m._commentaryClosed = p._commentaryClosed;
+      m._guardianId = p._guardianId; m._commentaryClosed = p._commentaryClosed; m._commentaryV = p._commentaryV;
     }
     if (m.status === "ft" && p.lineups) {
       m.events = p.events; m.stats = p.stats; m.lineups = p.lineups; m.progressionLine = p.progressionLine; m._final = true;
@@ -385,7 +385,12 @@ export async function buildSnapshot(env, prev, liveOnly) {
     for (const m of matches) {
       const liveish = m.status === "live" || m.status === "ht";
       const koMs = m.kickoff ? new Date(m.kickoff).getTime() : 0;
-      const justFinished = m.status === "ft" && !m._commentaryClosed && koMs && now <= koMs + 12 * 3600e3;
+      // Re-fetch a just-finished match until the liveblog closes (12h) — plus a one-shot
+      // backfill (within 72h) when its stored commentary predates the current fetch
+      // version, to recover games frozen under the old truncated cap. Then frozen for good.
+      const within = (h) => koMs && now <= koMs + h * 3600e3;
+      const justFinished = m.status === "ft"
+        && ((!m._commentaryClosed && within(12)) || (m._commentaryV !== COMMENTARY_V && within(72)));
       if (!liveish && !justFinished) continue;
       try {
         let gid = m._guardianId || prevMatch[m.id]?._guardianId;
@@ -393,7 +398,7 @@ export async function buildSnapshot(env, prev, liveOnly) {
         if (!gid) continue;
         m._guardianId = gid;
         const com = await fetchCommentary(env, gid);
-        if (com.blocks.length) { m.commentary = com.blocks; m.commentaryUrl = com.url; m.commentarySource = "The Guardian"; }
+        if (com.blocks.length) { m.commentary = com.blocks; m.commentaryUrl = com.url; m.commentarySource = "The Guardian"; m._commentaryV = COMMENTARY_V; }
         // Liveblog no longer updating → the wrap-up is in; freeze it so we stop polling.
         if (m.status === "ft" && com.live === false) m._commentaryClosed = true;
       } catch { /* commentary is best-effort */ }
@@ -757,6 +762,7 @@ async function fetchNews(env) {
 // Free tier (text + metadata), separate from the API-Football quota. Gated on
 // GUARDIAN_KEY; attribution + link back are required and surfaced in the UI.
 const GUARDIAN = "https://content.guardianapis.com";
+const COMMENTARY_V = 2;   // bump to force one re-fetch of frozen commentary after a fetch change
 const stripHtml = (s) => (s || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 async function guardianGet(env, path, params = {}) {
   const url = new URL(GUARDIAN + path);
@@ -796,12 +802,14 @@ async function findLiveblogId(env, home, away, kickoffIso) {
   // accept only a confident match: within ~4h of kickoff, or a name matched outright
   return best && (bestScore < 4 * 36e5 || nameHit(best.webTitle)) ? best.id : null;
 }
-// Pull the latest timestamped commentary blocks for a liveblog id.
+// Pull the timestamped commentary blocks for a liveblog id. 200 covers a full match
+// (incl. extra time + pre-match build-up); "latest:30" only reached back ~35 minutes,
+// which truncated the feed mid-match.
 async function fetchCommentary(env, id) {
-  const SEL = "body:latest:30";
+  const SEL = "body:latest:200";
   const res = await guardianGet(env, "/" + id, { "show-blocks": SEL, "show-fields": "liveBloggingNow" });
   const c = res.content || {};
-  // Qualified selectors ("body:latest:30") come back under blocks.requestedBodyBlocks
+  // Qualified selectors ("body:latest:N") come back under blocks.requestedBodyBlocks
   // keyed by the selector — blocks.body is only populated for plain "body".
   const raw = c.blocks?.requestedBodyBlocks?.[SEL] || c.blocks?.body || [];
   const blocks = raw.map((b) => ({
@@ -811,7 +819,7 @@ async function fetchCommentary(env, id) {
     key: !!(b.attributes && b.attributes.keyEvent),
   })).filter((b) => b.text);
   blocks.sort((a, b) => (b.at || "").localeCompare(a.at || ""));
-  return { url: c.webUrl || null, live: c.fields?.liveBloggingNow === "true", blocks: blocks.slice(0, 30) };
+  return { url: c.webUrl || null, live: c.fields?.liveBloggingNow === "true", blocks };
 }
 
 // ── football-data.org fallback (fixtures/standings only — resilience, never primary) ──
