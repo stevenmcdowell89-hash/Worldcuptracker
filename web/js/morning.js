@@ -130,7 +130,10 @@ function groupStakeLines(snap, annexC, today, phase, todayUkDate) {
     }
   }
   // teams whose fate could move today — the engine's own sentences
-  const cap = phase === "groupFinal" ? 6 : 2;     // early group mornings stay quiet
+  // Forward-looking qualification lines only earn their place on the final matchday;
+  // earlier they're premature speculation. "Group X is decided today" (above) still
+  // shows whenever it's literally true.
+  const cap = phase === "groupFinal" ? 6 : 0;
   const codes = [...new Set(today.filter((m) => m.group).flatMap((m) => [m.home.code, m.away.code]))];
   const outlooks = [];
   for (const code of codes) {
