@@ -7,7 +7,7 @@ import { qualifyOutlook } from "./engine.js";
 import { raceContent } from "./race.js";
 import { bracketEmbed, renderBracket } from "./bracketview.js";
 import { notificationsCardHTML, mountNotifications } from "./notifications.js";
-import { morningModel, phaseOf } from "./morning.js";
+import { morningModel, phaseOf, ukClock } from "./morning.js";
 import { bellHTML, reminderCardHTML } from "./reminders.js";
 export { renderBracket };   // the Bracket screen now lives in bracketview.js (vertical Path/structural, §13)
 
@@ -54,7 +54,7 @@ function matchRow(m, opts = {}) {
   let mid;
   if (live) mid = `<span class="score">${m.home.score}–${m.away.score}</span><span class="min"><span class="livedot"></span>${liveMinute(m)}</span>`;
   else if (ft) mid = `<span class="score">${m.home.score}–${m.away.score}</span><span class="ko">${m.pens ? `${m.pens.h}–${m.pens.a} pens` : "FT"}</span>`;
-  else mid = `<span class="ko">${fmtTime(m.kickoff)}</span>`;
+  else mid = `<span class="ko">${opts.showDay ? new Date(m.kickoff).toLocaleDateString([], { weekday: "short" }) + " " : ""}${fmtTime(m.kickoff)}</span>`;
   const stageLabel = m.group ? `Group ${m.group}` : (m.stage && m.stage !== "Group Stage" ? m.stage : "");
   const st = opts.showStakes && m.status === "scheduled" && m.stakes && STAKE[m.stakes];
   // Where to watch (feature 1): UK channel on upcoming/live rows. No mapping → nothing.
@@ -180,8 +180,15 @@ function morningHTML(mm) {
       + (mm.flips.length ? `<div class="block">${mm.flips.map((f) => `<div class="lrow"><span class="nm flipline">${f}</span></div>`).join("")}</div>` : "")
     : "";
   const showStakes = mm.phase === "groupFinal";
+  // Split the slate into daytime vs after-midnight games. Both belong to today's match
+  // day, but the small-hours ones are flagged with their weekday ("Sat 02:00") so it's
+  // clear they kick off overnight, not this afternoon.
+  const daytime = mm.today.filter((m) => ukClock(m.kickoff)?.date === mm.date);
+  const overnight = mm.today.filter((m) => ukClock(m.kickoff)?.date !== mm.date);
+  const slate = (list, o) => `<div class="section">${list.map((m) => matchRow(m, o)).join("")}</div>`;
   const sec2 = `<div class="day-label">Today — the slate</div>` + (mm.today.length
-    ? `<div class="section">${mm.today.map((m) => matchRow(m, { showStakes })).join("")}</div>`
+    ? (daytime.length ? slate(daytime, { showStakes }) : "")
+      + (overnight.length ? `<div class="day-label">Early hours — still today's slate</div>${slate(overnight, { showStakes, showDay: true })}` : "")
     : `<div class="block"><div class="lrow"><span class="nm muted" style="font-weight:500">Rest day — no matches today.</span></div></div>`);
   const sec3 = mm.stakes.length
     ? `<div class="day-label">What's at stake today</div><div class="block">${mm.stakes.map((l) => `<div class="pe"><p>${l}</p></div>`).join("")}</div>`

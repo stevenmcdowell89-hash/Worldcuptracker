@@ -192,9 +192,19 @@ export function morningModel(snap, annexC, now = Date.now(), force = false) {
   const todayUkDate = ukClock(now).date;
   const matches = snap.matches || [];
 
+  // A "match day" is the daily programme, not the calendar day: US kickoffs spill past
+  // UK midnight (a 02:00 UK game is still part of the previous evening's slate). Define
+  // the window as [06:00 UK today, 06:00 UK tomorrow) — the boundary is the morning
+  // window's open — so those small-hours games stay with today and don't slip through
+  // the gap (too late for tonight's feed, already played by tomorrow's morning view).
+  const hh = String(MORNING_FROM).padStart(2, "0");
+  const dayStart = Date.parse(`${todayUkDate}T${hh}:00:00+01:00`);   // summer-only tournament ⇒ BST
+  const dayEnd = dayStart + 24 * 3600e3;
+  const inMatchDay = (ko) => { const t = Date.parse(ko || ""); return Number.isFinite(t) && t >= dayStart && t < dayEnd; };
+
   const lastNight = matches.filter((m) => isOvernight(snap, m, now))
     .sort((a, b) => (b.kickoff || "").localeCompare(a.kickoff || ""));
-  const today = matches.filter((m) => m.status !== "ft" && m.kickoff && ukClock(m.kickoff)?.date === todayUkDate)
+  const today = matches.filter((m) => m.status !== "ft" && inMatchDay(m.kickoff))
     .sort((a, b) => (a.kickoff || "").localeCompare(b.kickoff || ""));
 
   const flips = phase === "knockout" ? advancedLines(snap, lastNight) : overnightFlips(snap, lastNight);
