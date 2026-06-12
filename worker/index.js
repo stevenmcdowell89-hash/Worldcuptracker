@@ -338,8 +338,12 @@ export async function buildSnapshot(env, prev, liveOnly) {
     // The Guardian feed is live-only, so once a match is over keep the commentary we
     // captured (it never changes again) — so you can look back at how the game unfolded.
     if (m.status === "ft" && p.commentary) {
-      m.commentary = p.commentary; m.commentaryUrl = p.commentaryUrl; m.commentarySource = p.commentarySource;
+      m.commentaryUrl = p.commentaryUrl; m.commentarySource = p.commentarySource;
       m._guardianId = p._guardianId; m._commentaryClosed = p._commentaryClosed; m._commentaryV = p._commentaryV;
+      // Commentary is catch-up material; after 48h drop the blocks (they bloat every
+      // snapshot) but keep the link so the UI can point at the Guardian liveblog.
+      const aged = Date.now() - Date.parse(m.kickoff || "") > 48 * 3600e3;
+      m.commentary = aged ? [] : p.commentary;
     }
     if (m.status === "ft" && p.lineups) {
       m.events = p.events; m.stats = p.stats; m.lineups = p.lineups; m.progressionLine = p.progressionLine; m._final = true;
@@ -390,7 +394,7 @@ export async function buildSnapshot(env, prev, liveOnly) {
       // version, to recover games frozen under the old truncated cap. Then frozen for good.
       const within = (h) => koMs && now <= koMs + h * 3600e3;
       const justFinished = m.status === "ft"
-        && ((!m._commentaryClosed && within(12)) || (m._commentaryV !== COMMENTARY_V && within(72)));
+        && ((!m._commentaryClosed && within(12)) || (m._commentaryV !== COMMENTARY_V && within(48)));
       if (!liveish && !justFinished) continue;
       try {
         let gid = m._guardianId || prevMatch[m.id]?._guardianId;

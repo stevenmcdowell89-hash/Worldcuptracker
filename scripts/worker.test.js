@@ -162,6 +162,26 @@ test("matches: events mapped to correct side, FT ratings merged", () => {
   assert.ok(rated.length > 0, "player ratings merged at FT");
 });
 
+test("commentary trimmed 48h after a match, Guardian link kept", async () => {
+  const old = new Date(Date.now() - 50 * 3600e3).toISOString();    // 50h ago → past the 48h window
+  const prev = { matches: [{ id: "9001", status: "ft", kickoff: old, group: "A",
+    home: { code: "ENG" }, away: { code: "SEN" },
+    commentary: [{ at: old, text: "An old block." }], commentaryUrl: "https://www.theguardian.com/x",
+    commentarySource: "The Guardian", _commentaryClosed: true, _commentaryV: 2 }] };
+  globalThis.fetch = async (url) => {
+    const p = new URL(url).pathname;
+    if (p === "/fixtures") return { ok: true, status: 200, headers: { get: () => null }, json: async () => ({ response: [{
+      fixture: { id: 9001, date: old, status: { short: "FT", elapsed: 90 }, venue: { name: "Stadium" } },
+      league: { round: "Group Stage - 1" }, teams: { home: { id: 100, code: "ENG" }, away: { id: 102, code: "SEN" } },
+      goals: { home: 1, away: 0 }, score: { penalty: { home: null, away: null } } }] }) };
+    return { ok: true, status: 200, headers: { get: () => null }, json: async () => ({ response: cannedFetch(url) }) };
+  };
+  const s = await buildSnapshot({ APIFOOTBALL_KEY: "t", WC_LEAGUE_ID: "1", WC_SEASON: "2026" }, prev, false);  // no GUARDIAN_KEY → no refetch
+  const m = s.matches.find((x) => String(x.id) === "9001");
+  assert.deepEqual(m.commentary, [], "old commentary blocks trimmed");
+  assert.equal(m.commentaryUrl, "https://www.theguardian.com/x", "Guardian link retained for the UI");
+});
+
 test("stoppage time: status.extra → '90+3' minute; event time.extra → '90+2'", async () => {
   globalThis.fetch = async (url) => {
     const p = new URL(url).pathname;
