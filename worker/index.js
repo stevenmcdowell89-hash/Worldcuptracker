@@ -1214,17 +1214,31 @@ async function refreshDayHighlights(env) {
   } catch (e) { return { ok: false, date, error: e.message }; }
 }
 
-async function runNotifications(env, prev, snap) {
+// Verdict-flip alerts (brief §14) — live qualification moments, waking hours only
+// (overnight flips fold into the morning results digest). This diffs the previous
+// snapshot against the freshly-built one, so it only makes sense right after a data
+// poll: it's called from the poll block, not on every tick.
+async function runFlipAlerts(env, prev, snap) {
   if (!pushEnabled(env)) return;                       // feature off until keys are set
-  const { hour, date } = ukParts();
-  const waking = hour >= 8 && hour < 23;
+  const { hour } = ukParts();
+  if (hour < 8 || hour >= 23) return;                  // waking hours only
+  const flips = detectFlips(prev, snap);
+  if (flips.length) await broadcast(env, "qual", { title: "Qualification update", body: flips.join(" · "), tag: "wc26-qual", url: "/#/groups?t=race" });
+}
 
-  // Qualification moments — live verdict flips, waking hours only (overnight folds
-  // into the morning digest).
-  if (waking) {
-    const flips = detectFlips(prev, snap);
-    if (flips.length) await broadcast(env, "qual", { title: "Qualification update", body: flips.join(" · "), tag: "wc26-qual", url: "/#/groups?t=race" });
-  }
+// Daily push digests (brief §14) — the morning results round-up (~8am UK) and the
+// midday "today's matches" preview (~12pm UK). Time-gated by UK wall-clock hour and
+// fired at most once per day via claimDaily.
+//
+// IMPORTANT: this runs on EVERY cron tick, not only when a data poll is due. The two
+// digests just read the current snapshot (overnight results and the day's fixtures are
+// already settled by 8am/12pm), so they don't need a fresh poll — and coupling them to
+// one was the bug: the 6-hourly baseline cadence rarely lands a poll inside the 08:00 or
+// 12:00 hour, so a day's digests were silently skipped whenever no live match or
+// enrichment backlog happened to be driving frequent polls at the time.
+async function runDigests(env, snap) {
+  if (!pushEnabled(env) || !snap) return;
+  const { hour, date } = ukParts();
   // Morning results digest (~8am UK) + the overnight catch-up.
   if (hour === 8 && await claimDaily(env, "digest-results", date)) {
     const d = resultsDigest(snap);
@@ -1252,6 +1266,12 @@ export default {
       // Per-match reminders (feature 3): a cheap sweep on every tick — it exits
       // immediately unless a kickoff is inside the reminder window.
       try { await runReminders(env, prev); } catch (e) { console.error("reminders failed:", e.message); }
+
+      // Daily push digests (§14): the ~8am results round-up and ~12pm "today" preview.
+      // Time-gated + once-per-day (claimDaily), so they run on EVERY tick — decoupled
+      // from the data-poll cadence, which doesn't reliably fire inside the 08:00/12:00
+      // hour once the morning has no live match or backlog driving frequent polls.
+      try { await runDigests(env, prev); } catch (e) { console.error("digests failed:", e.message); }
 
       // UK TV map (feature 1): check the published schedules once a day (~TV_REFRESH_HOUR
       // UK), plus a 6-hourly retry while any match in the next 48h still lacks a channel —
@@ -1337,8 +1357,9 @@ export default {
         await writeSnapshot(env, snap);
         await env.SNAPSHOT.put(META_KEY, JSON.stringify({ ...meta, lastFull: dueFull ? now : meta.lastFull, lastLive: now, lastNews: dueFull ? now : (meta.lastNews || 0) }));
         await env.SNAPSHOT.put("cron-status", JSON.stringify({ ok: true, at: new Date().toISOString(), kind: dueFull ? "full" : "live", squadCount: snap.meta.squadCount, subrequests: SUBREQ }));
-        // Push: digests + verdict-flip alerts, diffing the previous snapshot (§14).
-        try { await runNotifications(env, prev, snap); } catch (e) { console.error("notify failed:", e.message); }
+        // Push: verdict-flip alerts, diffing the previous snapshot against this fresh
+        // poll (§14). The time-gated daily digests run separately on every tick above.
+        try { await runFlipAlerts(env, prev, snap); } catch (e) { console.error("notify failed:", e.message); }
       } catch (err) {
         console.error("poll failed:", err.message);
         await env.SNAPSHOT.put("cron-status", JSON.stringify({ ok: false, at: new Date().toISOString(), error: err.message }));
