@@ -1181,6 +1181,27 @@ async function refreshTvListings(env) {
   }
 }
 
+// Source the day's highlights round-up now and surface it — the same job the cron runs
+// inside the morning window. Best-effort; returns what it found. The cron (gated on the
+// window + a throttle) and the token-gated admin endpoint (force it during testing) both
+// call this, so the search/store/patch logic lives in one place.
+async function refreshDayHighlights(env) {
+  if (!env.YOUTUBE_API_KEY) return { ok: false, error: "YOUTUBE_API_KEY not set" };
+  const { date } = ukParts();
+  try {
+    const dh = await findDayHighlights(env, date);
+    if (!dh) return { ok: true, date, found: false };
+    await env.SNAPSHOT.put("day-highlights", JSON.stringify(dh));
+    const snap = await readSnapshot(env);
+    if (snap) {   // surface it immediately, like the TV refresh — no wait for the next poll
+      snap.dayHighlights = dh;
+      snap.meta = { ...snap.meta, updated: new Date().toISOString() };
+      await writeSnapshot(env, snap);
+    }
+    return { ok: true, date, found: true, dayHighlights: dh };
+  } catch (e) { return { ok: false, date, error: e.message }; }
+}
+
 async function runNotifications(env, prev, snap) {
   if (!pushEnabled(env)) return;                       // feature off until keys are set
   const { hour, date } = ukParts();
@@ -1254,15 +1275,7 @@ export default {
           if (have?.date !== uk.date && now - (meta.lastHighlights || 0) >= 30 * 60e3) {
             meta.lastHighlights = now;
             await env.SNAPSHOT.put(META_KEY, JSON.stringify(meta));
-            const dh = await findDayHighlights(env, uk.date);   // tagged with date: uk.date
-            if (dh) {
-              await env.SNAPSHOT.put("day-highlights", JSON.stringify(dh));
-              if (prev) {   // surface it immediately, not on the next baseline poll
-                prev.dayHighlights = dh;
-                prev.meta = { ...prev.meta, updated: new Date().toISOString() };
-                await writeSnapshot(env, prev);
-              }
-            }
+            await refreshDayHighlights(env);   // searches, stores, surfaces — see the helper
           }
         }
       } catch (e) { console.error("highlights refresh failed:", e.message); }
@@ -1484,6 +1497,46 @@ export default {
     if (path === "/admin/refresh-tv") {
       if (env.DEBUG_TOKEN && url.searchParams.get("t") !== env.DEBUG_TOKEN) return json({ error: "forbidden" }, 403);
       return json(await refreshTvListings(env));
+    }
+
+    // Force the day's highlights round-up now (same job the cron runs inside the morning
+    // window). Token-gated — useful for testing without waiting for the window/cron.
+    if (path === "/admin/refresh-highlights") {
+      if (env.DEBUG_TOKEN && url.searchParams.get("t") !== env.DEBUG_TOKEN) return json({ error: "forbidden" }, 403);
+      return json(await refreshDayHighlights(env));
+    }
+
+    // Diagnose highlights sourcing (token-gated, read-only). Shows the stored state plus
+    // the live YouTube candidates + what the picker / round-up filter accepts, so the
+    // matching can be tuned against real upload titles. ?fixture=<id> probes one match;
+    // otherwise the most recent finished match.
+    if (path === "/debug/highlights") {
+      if (env.DEBUG_TOKEN && url.searchParams.get("t") !== env.DEBUG_TOKEN) return json({ error: "forbidden" }, 403);
+      if (!env.YOUTUBE_API_KEY) return json({ error: "YOUTUBE_API_KEY not set" }, 503);
+      const out = { uk: ukParts() };
+      const snap = await readSnapshot(env);
+      const fts = (snap?.matches || []).filter((m) => m.status === "ft")
+        .sort((a, b) => (b.kickoff || "").localeCompare(a.kickoff || ""));
+      out.finishedMatches = fts.map((m) => ({ id: m.id, teams: `${m.home.code} v ${m.away.code}`, kickoff: m.kickoff, highlights: m.highlights || null }));
+      out.dayHighlightsStored = await env.SNAPSHOT.get("day-highlights", "json");
+      try {
+        const items = await youtubeSearch(env, "FIFA World Cup 2026 matchday highlights all the goals", { order: "date" });
+        out.roundupCandidates = items.map((it) => ({ title: it.snippet?.title, channel: it.snippet?.channelTitle, published: it.snippet?.publishedAt, id: it.id?.videoId }));
+        out.roundupPicked = await findDayHighlights(env, out.uk.date);
+      } catch (e) { out.roundupError = e.message; }
+      const probe = url.searchParams.get("fixture") ? fts.find((m) => m.id === url.searchParams.get("fixture")) : fts[0];
+      if (probe) {
+        const home = snap.teams?.[probe.home.code]?.name || probe.home.code;
+        const away = snap.teams?.[probe.away.code]?.name || probe.away.code;
+        const koMs = Date.parse(probe.kickoff || "");
+        out.matchProbe = { id: probe.id, query: `${home} vs ${away} highlights World Cup 2026` };
+        try {
+          const items = await youtubeSearch(env, out.matchProbe.query, { order: "relevance", ...(isNaN(koMs) ? {} : { publishedAfter: new Date(koMs).toISOString() }) });
+          out.matchProbe.candidates = items.map((it) => ({ title: it.snippet?.title, channel: it.snippet?.channelTitle, published: it.snippet?.publishedAt, id: it.id?.videoId }));
+          out.matchProbe.picked = pickHighlight(items, home, away, koMs);
+        } catch (e) { out.matchProbe.error = e.message; }
+      }
+      return new Response(JSON.stringify(out, null, 2), { headers: { "content-type": "application/json" } });
     }
 
     // Fire a test push to every stored subscription (ignores per-device prefs) so you
