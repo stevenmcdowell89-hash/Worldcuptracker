@@ -332,6 +332,15 @@ a { color:inherit; text-decoration:none; }
 .cmt-title { font-size:11px; font-weight:800; letter-spacing:.03em; text-transform:uppercase; color:var(--brand); }
 .cmt p { font-size:13.5px; line-height:1.5; color:var(--text); }
 
+/* ── highlights (YouTube): a 16:9 embed that leads a finished match's commentary and
+   the morning catch-up; falls back to a link button when no embed was sourced. ── */
+.hl { margin:10px 12px 14px; }
+.hl-frame { position:relative; width:100%; aspect-ratio:16/9; border-radius:12px; overflow:hidden; background:#000; box-shadow:0 1px 3px rgba(0,0,0,.18); }
+.hl-frame iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
+.hl-credit { font-size:11px; color:var(--faint); font-weight:600; padding:6px 2px 0; }
+.hl-link { display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:700; color:#fff; background:var(--brand); padding:10px 14px; border-radius:10px; text-decoration:none; }
+.hl-day { margin-top:4px; }
+
 /* ── news ── */
 .newslist { background:var(--card); }
 .newscard { display:flex; gap:12px; padding:13px 14px; align-items:flex-start; }

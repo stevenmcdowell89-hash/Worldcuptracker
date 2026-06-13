@@ -97,6 +97,14 @@ test("morningModel: rest day + silent night → empty sections, no content inven
   assert.equal(mm.flips.length, 0);
 });
 
+test("morningModel: day highlights pass through from the snapshot (null when absent)", () => {
+  const s = snap();
+  assert.equal(morningModel(s, null, NOW).highlights, null);          // none on the snapshot
+  s.dayHighlights = { id: "abc123", title: "Matchday highlights", channel: "FIFA", date: mmDate() };
+  assert.deepEqual(morningModel(s, null, NOW).highlights, s.dayHighlights);
+});
+function mmDate() { return ukClock(NOW).date; }
+
 test("knockout morning: who advanced + today's ties with their onward route", () => {
   const s = snap();
   s.meta.phase = "knockout";

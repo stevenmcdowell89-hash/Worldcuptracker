@@ -212,5 +212,7 @@ export function morningModel(snap, annexC, now = Date.now(), force = false) {
     ? knockoutStakeLines(snap, today)
     : groupStakeLines(snap, annexC, today, phase, todayUkDate);
 
-  return { phase, date: todayUkDate, lastNight, flips, today, stakes, restDay: !today.length };
+  // The day's official round-up video (worker-sourced; null until found). Surfaced in the
+  // catch-up only when there's actually a night to recap — the renderer gates on lastNight.
+  return { phase, date: todayUkDate, lastNight, flips, today, stakes, restDay: !today.length, highlights: snap.dayHighlights || null };
 }

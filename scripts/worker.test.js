@@ -3,7 +3,7 @@
 // end, asserting the snapshot shape the frontend depends on. Run: npm test
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildSnapshot, resultsDigest, todayDigest, fixtureLabel, normPlayer } from "../worker/index.js";
+import { buildSnapshot, resultsDigest, todayDigest, fixtureLabel, normPlayer, pickHighlight } from "../worker/index.js";
 
 // ── canned API-Football responses keyed by path (+ a little param awareness) ──
 const NATIONS = {
@@ -347,6 +347,36 @@ test("no GUARDIAN_KEY → no commentary (graceful)", async () => {
   const s = await buildSnapshot({ APIFOOTBALL_KEY: "t", WC_LEAGUE_ID: "1", WC_SEASON: "2026" }, null, false);
   const live = s.matches.find((m) => m.status === "live");
   assert.ok(!live.commentary, "no commentary without a key");
+});
+
+// ── highlights: the official-video picker (pure scoring, no network) ──
+const hlItem = (title, channel, publishedAt) =>
+  ({ id: { videoId: title.replace(/\W+/g, "").slice(0, 11) }, snippet: { title, channelTitle: channel, publishedAt } });
+const KO = Date.parse("2026-06-20T16:00:00Z");
+
+test("pickHighlight: prefers the official channel among valid candidates", () => {
+  const items = [
+    hlItem("England vs Senegal Highlights — full match reaction", "FootyFan TV", "2026-06-20T22:00:00Z"),
+    hlItem("England 2-1 Senegal | Highlights | World Cup 2026", "FIFA", "2026-06-20T21:00:00Z"),
+  ];
+  const hit = pickHighlight(items, "England", "Senegal", KO);
+  assert.equal(hit.channel, "FIFA");
+});
+
+test("pickHighlight: requires a highlights video that names BOTH teams", () => {
+  // names only one team
+  assert.equal(pickHighlight([hlItem("England Highlights", "FIFA", "2026-06-20T21:00:00Z")], "England", "Senegal", KO), null);
+  // not a highlights video (a press conference)
+  assert.equal(pickHighlight([hlItem("England v Senegal press conference", "FIFA", "2026-06-20T21:00:00Z")], "England", "Senegal", KO), null);
+});
+
+test("pickHighlight: rejects a pre-kickoff upload (a previous edition / preview)", () => {
+  const items = [hlItem("England vs Senegal highlights (2022)", "FIFA", "2026-06-20T09:00:00Z")];   // before KO
+  assert.equal(pickHighlight(items, "England", "Senegal", KO), null);
+});
+
+test("pickHighlight: nothing confident → null", () => {
+  assert.equal(pickHighlight([], "England", "Senegal", KO), null);
 });
 
 test("empty /fixtures with a schedule on record → poll fails (last good kept)", async () => {

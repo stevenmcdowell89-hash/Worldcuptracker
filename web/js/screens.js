@@ -171,6 +171,17 @@ export function renderMatches(ctx = {}) {
   return `${toggle}${head}${byDay.map(daySec).join("")}${foot}`;
 }
 
+// The day's highlights round-up for the morning catch-up: the official video the Worker
+// found, else a link out to a YouTube search. Only called when there's a night to recap.
+function dayHighlights(mm) {
+  const h = mm.highlights;
+  if (h?.id) {
+    const credit = h.channel ? `<div class="hl-credit">Day highlights · ${h.channel} on YouTube</div>` : "";
+    return `<div class="hl hl-day">${ytEmbed(h.id, "Day highlights")}${credit}</div>`;
+  }
+  return `<div class="hl hl-day">${ytSearchLink("FIFA World Cup 2026 highlights all the goals", "Watch the day's highlights on YouTube")}</div>`;
+}
+
 // Morning catch-up layout (feature 2). The model (morning.js) is pure/engine-driven;
 // this just lays its three sections out. Empty sections vanish — nothing fabricated.
 function morningHTML(mm) {
@@ -178,6 +189,7 @@ function morningHTML(mm) {
   const sec1 = mm.lastNight.length
     ? `<div class="day-label">Last night — what you missed</div><div class="section">${mm.lastNight.map((m) => matchRow(m)).join("")}</div>`
       + (mm.flips.length ? `<div class="block">${mm.flips.map((f) => `<div class="lrow"><span class="nm flipline">${f}</span></div>`).join("")}</div>` : "")
+      + dayHighlights(mm)
     : "";
   const showStakes = mm.phase === "groupFinal";
   // Split the slate into daytime vs after-midnight games. Both belong to today's match
@@ -421,21 +433,47 @@ export function renderMatch(ctx) {
   return { title: "Match", html: hero + oneLiner + reminder + tabBar + body };
 }
 
+// ── highlights (YouTube) ──
+// A privacy-friendly (youtube-nocookie) responsive embed. The id/title come from the
+// Worker, which only attaches an official, confidently-matched video; see worker/index.js.
+function ytEmbed(id, title) {
+  return `<div class="hl-frame"><iframe src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?rel=0"
+    title="${title}" loading="lazy" frameborder="0" referrerpolicy="strict-origin-when-cross-origin"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+    allowfullscreen></iframe></div>`;
+}
+function ytSearchLink(query, label) {
+  return `<a class="hl-link" href="https://www.youtube.com/results?search_query=${encodeURIComponent(query)}" target="_blank" rel="noopener noreferrer">▶ ${label}</a>`;
+}
+// Highlights for a finished match: embed the official video the Worker sourced, else a
+// link out to a YouTube search (works with zero config / no API key). Empty until FT.
+function matchHighlights(m) {
+  if (m.status !== "ft") return "";
+  const h = m.highlights;
+  if (h?.id) {
+    const credit = h.channel ? `<div class="hl-credit">Highlights · ${h.channel} on YouTube</div>` : "";
+    return `<div class="hl">${ytEmbed(h.id, "Match highlights")}${credit}</div>`;
+  }
+  return `<div class="hl">${ytSearchLink(`${teamName(m.home.code)} vs ${teamName(m.away.code)} highlights World Cup 2026`, "Watch highlights on YouTube")}</div>`;
+}
+
 // Live minute-by-minute commentary (The Guardian). Newest first; key moments flagged.
+// A finished match leads with its highlights (embed or search link) above the commentary.
 function matchCommentary(m) {
+  const hl = matchHighlights(m);
   // Newest first (defensive — the Worker already sorts, but guarantee it in the view).
   const blocks = (m.commentary || []).slice().sort((a, b) => (b.at || "").localeCompare(a.at || ""));
   if (!blocks.length) {
     // Commentary is trimmed 48h after a game (catch-up window passed). Point at the
     // Guardian liveblog if we kept the link, rather than showing a bare empty state.
     if (m.status === "ft" && m.commentaryUrl) {
-      return `<div class="empty"><div class="big">🎙️</div><div class="t">Commentary archived</div>
+      return `${hl}<div class="empty"><div class="big">🎙️</div><div class="t">Commentary archived</div>
         <div>This game has wrapped up — read the full minute-by-minute on
         <a href="${m.commentaryUrl}" target="_blank" rel="noopener noreferrer" style="color:var(--brand);font-weight:700">The Guardian</a>.</div></div>`;
     }
-    return m.status === "ft"
+    return hl + (m.status === "ft"
       ? emptyState("🎙️", "No commentary for this match", "Minute-by-minute wasn't available for this game.")
-      : emptyState("🎙️", "No commentary yet", "Minute-by-minute updates appear here once the match is under way.");
+      : emptyState("🎙️", "No commentary yet", "Minute-by-minute updates appear here once the match is under way."));
   }
   const rows = blocks.map((b) => `<div class="cmt ${b.key ? "key" : ""}">
       <div class="cmt-head">${b.at ? `<span class="cmt-time">${fmtTime(b.at)}</span>` : ""}${b.title ? `<span class="cmt-title">${b.title}</span>` : ""}</div>
@@ -443,7 +481,7 @@ function matchCommentary(m) {
   const credit = m.commentaryUrl
     ? `<div class="updated">Live commentary via <a href="${m.commentaryUrl}" target="_blank" rel="noopener noreferrer" style="color:var(--brand);font-weight:700">The Guardian</a></div>`
     : `<div class="updated">Live commentary via ${m.commentarySource || "The Guardian"}</div>`;
-  return `<div class="section cmts">${rows}</div>${credit}`;
+  return `${hl}<div class="section cmts">${rows}</div>${credit}`;
 }
 
 function matchFacts(m) {

@@ -348,6 +348,8 @@ export async function buildSnapshot(env, prev, liveOnly) {
     if (m.status === "ft" && p.lineups) {
       m.events = p.events; m.stats = p.stats; m.lineups = p.lineups; m.progressionLine = p.progressionLine; m._final = true;
     }
+    // Highlights are sourced once and never change — freeze them so we don't re-search.
+    if (m.status === "ft" && p.highlights) m.highlights = p.highlights;
   }
   // Fetch detail: live/HT every poll; newly-finished matches once (incl FT ratings).
   // Keep last-good per field: a single empty/rate-limited response must never blank a
@@ -406,6 +408,31 @@ export async function buildSnapshot(env, prev, liveOnly) {
         // Liveblog no longer updating → the wrap-up is in; freeze it so we stop polling.
         if (m.status === "ft" && com.live === false) m._commentaryClosed = true;
       } catch { /* commentary is best-effort */ }
+    }
+  }
+
+  // YouTube highlights (best-effort, gated on a key). Finished matches only; fetched once
+  // then frozen (carried over above). Official highlights post ~1–3h after full time, so
+  // keep trying a just-finished match — within a 48h window — until the upload appears.
+  // The daily round-up (for the morning catch-up) is refreshed on full polls only.
+  let dayHighlights = prev?.dayHighlights || null;
+  if (env.YOUTUBE_API_KEY) {
+    const now = Date.now();
+    for (const m of matches) {
+      if (m.status !== "ft" || m.highlights) continue;
+      const koMs = m.kickoff ? new Date(m.kickoff).getTime() : 0;
+      if (koMs && now > koMs + 48 * 3600e3) continue;   // gave up — the upload never appeared
+      try {
+        const hl = await findHighlights(env, dir.byId[m._homeId]?.name, dir.byId[m._awayId]?.name, m.kickoff);
+        if (hl) m.highlights = hl;
+      } catch { /* highlights are best-effort */ }
+    }
+    if (!liveOnly) {
+      const lastFt = matches.filter((m) => m.status === "ft" && m.kickoff).map((m) => m.kickoff).sort().pop();
+      const day = lastFt ? lastFt.slice(0, 10) : null;   // UTC date of the most recent match day
+      if (day && dayHighlights?.date !== day) {
+        try { const dh = await findDayHighlights(env, day); if (dh) dayHighlights = dh; } catch { /* best-effort */ }
+      }
     }
   }
 
@@ -490,6 +517,7 @@ export async function buildSnapshot(env, prev, liveOnly) {
     scorers, assists, discipline,
     teams, players, clubWatch, news,
     crests: dir.crests,           // code -> official crest/flag image URL
+    dayHighlights,                // the day's official round-up video (morning catch-up); null until sourced
   };
 }
 
@@ -824,6 +852,84 @@ async function fetchCommentary(env, id) {
   })).filter((b) => b.text);
   blocks.sort((a, b) => (b.at || "").localeCompare(a.at || ""));
   return { url: c.webUrl || null, live: c.fields?.liveBloggingNow === "true", blocks };
+}
+
+// ── highlights: official match + daily round-up videos (YouTube Data API v3) ──
+// Best-effort, gated on YOUTUBE_API_KEY. Free quota (10k units/day; search.list = 100
+// units ⇒ ~100 searches/day, far more than a match day needs) and separate from the
+// API-Football budget. We never trust a raw search hit: a result must read as a
+// highlights video that names BOTH teams and was published after kickoff, and we boost
+// FIFA + the broadcasters YouTube named as 2026 media partners — so we surface the
+// official upload, not a fan re-cut. Frozen once captured (carried over per poll).
+const YOUTUBE = "https://www.googleapis.com/youtube/v3";
+const HIGHLIGHTS_V = 1;   // bump to force one re-fetch of frozen highlights after a change
+// Match channelTitle case-insensitively — robust to YouTube channel-id churn (a
+// hardcoded UC… id silently rots), and the official partners all brand their channel.
+const HL_OFFICIAL = ["fifa", "bbc sport", "fox soccer", "fox sports", "telemundo", "tudn", "tsn", "espn", "sbs", "optus sport", "dazn"];
+const ytOfficial = (channelTitle) => { const c = (channelTitle || "").toLowerCase(); return HL_OFFICIAL.some((o) => c.includes(o)); };
+
+async function youtubeSearch(env, q, params = {}) {
+  const url = new URL(YOUTUBE + "/search");
+  url.searchParams.set("key", env.YOUTUBE_API_KEY);
+  url.searchParams.set("part", "snippet");
+  url.searchParams.set("type", "video");
+  url.searchParams.set("videoEmbeddable", "true");   // only videos we can actually embed
+  url.searchParams.set("maxResults", "10");
+  url.searchParams.set("q", q);
+  for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
+  const r = await fetch(url, { headers: { accept: "application/json" } });
+  if (!r.ok) throw new Error(`YouTube /search ${r.status}`);
+  return (await r.json()).items || [];
+}
+
+// Score a result set and return the best official MATCH highlight (or null). Pure, so
+// the scoring is unit-tested (scripts/worker.test.js) without touching the network.
+export function pickHighlight(items, home, away, koMs) {
+  const lower = (s) => (s || "").toLowerCase();
+  const tok = (n) => lower(n).split(/\s+/).pop();   // last word of a team name (e.g. "South Korea" → "korea")
+  const ht = tok(home), at = tok(away);
+  let best = null, bestScore = -Infinity;
+  for (const it of items || []) {
+    const title = lower(it.snippet?.title);
+    if (!/highlight/.test(title)) continue;                          // must be a highlights video
+    if (!(ht.length > 2 && title.includes(ht)) || !(at.length > 2 && title.includes(at))) continue;  // names BOTH teams
+    const pub = Date.parse(it.snippet?.publishedAt || "");
+    if (!isNaN(pub) && !isNaN(koMs) && pub < koMs) continue;         // pre-kickoff ⇒ a previous edition
+    let score = 0;
+    if (ytOfficial(it.snippet?.channelTitle)) score += 5;           // official / broadcast partner
+    if (!isNaN(pub) && !isNaN(koMs)) score += Math.max(0, 3 - (pub - koMs) / (24 * 3600e3));  // sooner after KO scores higher
+    if (score > bestScore) { bestScore = score; best = it; }
+  }
+  return best ? { id: best.id?.videoId, title: best.snippet?.title, channel: best.snippet?.channelTitle } : null;
+}
+
+async function findHighlights(env, home, away, kickoffIso) {
+  if (!home || !away) return null;
+  const koMs = Date.parse(kickoffIso || "");
+  const items = await youtubeSearch(env, `${home} vs ${away} highlights World Cup 2026`, {
+    order: "relevance", ...(isNaN(koMs) ? {} : { publishedAfter: new Date(koMs).toISOString() }),
+  });
+  const hit = pickHighlight(items, home, away, koMs);
+  return hit && hit.id ? { ...hit, source: "youtube", v: HIGHLIGHTS_V } : null;
+}
+
+// The day's official round-up (one per match day, for the morning catch-up) — stricter
+// than a match search: an official channel AND a round-up signal in the title, so we
+// never mistake a single tie's highlights for the whole day.
+async function findDayHighlights(env, dateIso) {
+  const koMs = Date.parse(dateIso);
+  const after = isNaN(koMs) ? undefined : new Date(koMs - 6 * 3600e3).toISOString();
+  const items = await youtubeSearch(env, "FIFA World Cup 2026 matchday highlights all the goals", {
+    order: "date", ...(after ? { publishedAfter: after } : {}),
+  });
+  const roundup = /(match\s?day|round[\s-]?up|all the goals|every goal|today at the|recap|day \d)/i;
+  for (const it of items) {
+    const title = it.snippet?.title || "";
+    if (!ytOfficial(it.snippet?.channelTitle)) continue;
+    if (!/highlight|goals|recap/i.test(title) || !roundup.test(title)) continue;
+    return { id: it.id?.videoId, title, channel: it.snippet?.channelTitle, date: dateIso, source: "youtube", v: HIGHLIGHTS_V };
+  }
+  return null;
 }
 
 // ── football-data.org fallback (fixtures/standings only — resilience, never primary) ──

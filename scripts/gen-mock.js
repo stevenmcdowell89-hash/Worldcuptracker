@@ -206,6 +206,9 @@ matches.push({
       { num: 10, name: "S. Mané", pos: "LW", rating: 7.8, playerId: 170, grid: "4:1" },
     ], subs: [] },
   },
+  // Highlights (worker-sourced from the YouTube Data API in production). A real WC26 clip
+  // is used here purely so the embed renders in the local mock demo.
+  highlights: { id: "DjYkkRPqV18", title: "England 2-1 Senegal · Highlights", channel: "FIFA", source: "youtube", v: 1 },
 });
 
 // Scheduled matchday-3 fixtures become "scheduled" matches.
@@ -409,6 +412,9 @@ const snapshot = {
   bracket,
   scorers, assists, discipline,
   teams, players, clubWatch, news,
+  // The day's official round-up video for the morning catch-up (worker-sourced in
+  // production). Real WC26 clip here so the morning-view embed renders in the demo.
+  dayHighlights: { id: "DjYkkRPqV18", title: "World Cup 2026 · Matchday highlights", channel: "FIFA", date: new Date().toISOString().slice(0, 10), source: "youtube", v: 1 },
 };
 
 mkdirSync(dirname(OUT), { recursive: true });

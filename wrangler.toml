@@ -66,6 +66,12 @@ VAPID_PUBLIC_KEY = "BPfPUEER1NnhSRaHUktTYQSKKHv6cPVqokU-3iCd1wgk5K8nV13AAj5WLkei
 #   Free Open Platform key from open-platform.theguardian.com — text + metadata,
 #   5,000 calls/day. Without it, the live Commentary tab simply doesn't appear.
 #
+# YOUTUBE_API_KEY (match + daily highlights, optional):  wrangler secret put YOUTUBE_API_KEY
+#   YouTube Data API v3 key from a Google Cloud project (free: 10,000 quota units/day;
+#   search.list = 100 units ⇒ ~100 searches/day, ample for a match day). Separate from the
+#   API-Football quota. Without it, highlights degrade gracefully to a "Watch on YouTube"
+#   search link at the top of a finished match's commentary and in the morning catch-up.
+#
 # Web push notifications (brief §14) — OPTIONAL. The feature stays inert until set.
 #   Generate a key pair once:  npm run gen:vapid
 #   VAPID_JWK        (Secret)   — the private-key JWK it prints
