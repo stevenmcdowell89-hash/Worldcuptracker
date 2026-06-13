@@ -340,6 +340,13 @@ a { color:inherit; text-decoration:none; }
 .hl-credit { font-size:11px; color:var(--faint); font-weight:600; padding:6px 2px 0; }
 .hl-link { display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:700; color:#fff; background:var(--brand); padding:10px 14px; border-radius:10px; text-decoration:none; }
 .hl-day { margin-top:4px; }
+/* Per-match highlights list in the morning catch-up — official tap-through links. */
+.hl-matches { margin:8px 12px 14px; }
+.hl-matches-h { font-size:12px; font-weight:700; color:var(--faint); text-transform:uppercase; letter-spacing:.04em; padding:0 2px 6px; }
+.hl-matchlink { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:11px 12px; margin-bottom:6px; border-radius:10px; background:var(--card,#fff); box-shadow:0 1px 3px rgba(0,0,0,.10); text-decoration:none; color:inherit; }
+.hl-matchlink:last-child { margin-bottom:0; }
+.hl-mx { font-size:14px; font-weight:700; }
+.hl-ch { font-size:12px; font-weight:700; color:var(--brand); white-space:nowrap; }
 
 /* ── news ── */
 .newslist { background:var(--card); }

@@ -171,15 +171,29 @@ export function renderMatches(ctx = {}) {
   return `${toggle}${head}${byDay.map(daySec).join("")}${foot}`;
 }
 
-// The day's highlights round-up for the morning catch-up: the official video the Worker
-// found, else a link out to a YouTube search. Only called when there's a night to recap.
-function dayHighlights(mm) {
-  const h = mm.highlights;
-  if (h?.id) {
-    const credit = h.channel ? `<div class="hl-credit">Day highlights · ${h.channel} on YouTube</div>` : "";
-    return `<div class="hl hl-day">${ytEmbed(h.id, "Day highlights")}${credit}</div>`;
+// Highlights for the morning catch-up. Per-match official highlights are the reliable
+// source (a whole-day round-up is rarely posted), so they lead: one tap-through link per
+// last-night game we sourced an official video for — links, not a stack of heavy players.
+// A whole-day round-up embeds above them as a bonus when one was found; if nothing was
+// sourced at all, a YouTube search link keeps a way through. Only called with a night to recap.
+function morningHighlights(mm) {
+  const blocks = [];
+  const day = mm.highlights;
+  if (day?.id) {
+    const credit = day.channel ? `<div class="hl-credit">Day highlights · ${day.channel} on YouTube</div>` : "";
+    blocks.push(`<div class="hl hl-day">${ytEmbed(day.id, "Day highlights")}${credit}</div>`);
   }
-  return `<div class="hl hl-day">${ytSearchLink("FIFA World Cup 2026 highlights all the goals", "Watch the day's highlights on YouTube")}</div>`;
+  const sourced = mm.lastNight.filter((m) => m.highlights?.id);
+  if (sourced.length) {
+    const rows = sourced.map((m) => `<a class="hl-matchlink" href="https://www.youtube.com/watch?v=${encodeURIComponent(m.highlights.id)}" target="_blank" rel="noopener noreferrer">
+        <span class="hl-mx">▶ ${teamName(m.home.code)} ${m.home.score ?? ""}–${m.away.score ?? ""} ${teamName(m.away.code)}</span>
+        <span class="hl-ch">${m.highlights.channel || "Highlights"} ›</span></a>`).join("");
+    blocks.push(`<div class="hl-matches"><div class="hl-matches-h">Match highlights</div>${rows}</div>`);
+  }
+  if (!blocks.length) {
+    blocks.push(`<div class="hl hl-day">${ytSearchLink("FIFA World Cup 2026 highlights all the goals", "Watch the day's highlights on YouTube")}</div>`);
+  }
+  return blocks.join("");
 }
 
 // Morning catch-up layout (feature 2). The model (morning.js) is pure/engine-driven;
@@ -189,7 +203,7 @@ function morningHTML(mm) {
   const sec1 = mm.lastNight.length
     ? `<div class="day-label">Last night — what you missed</div><div class="section">${mm.lastNight.map((m) => matchRow(m)).join("")}</div>`
       + (mm.flips.length ? `<div class="block">${mm.flips.map((f) => `<div class="lrow"><span class="nm flipline">${f}</span></div>`).join("")}</div>` : "")
-      + dayHighlights(mm)
+      + morningHighlights(mm)
     : "";
   const showStakes = mm.phase === "groupFinal";
   // Split the slate into daytime vs after-midnight games. Both belong to today's match
