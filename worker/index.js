@@ -348,9 +348,14 @@ export async function buildSnapshot(env, prev, liveOnly) {
     if (m.status === "ft" && p.lineups) {
       m.events = p.events; m.stats = p.stats; m.lineups = p.lineups; m.progressionLine = p.progressionLine; m._final = true;
     }
-    // Highlights are sourced once and never change — freeze them (and carry the last-tried
-    // stamp so the retry throttle survives across polls) so we don't keep re-searching.
-    if (m.status === "ft") { if (p.highlights) m.highlights = p.highlights; if (p._hlTriedAt) m._hlTriedAt = p._hlTriedAt; }
+    // Highlights are sourced once then frozen — carry them (and the last-tried stamp, so the
+    // retry throttle survives across polls). Both are version-stamped: bumping HIGHLIGHTS_V
+    // forces one clean re-fetch/re-search after a scoring change (stale-version stamps don't
+    // carry, so a previously-tried-but-empty match is retried right away).
+    if (m.status === "ft") {
+      if (p.highlights?.v === HIGHLIGHTS_V) m.highlights = p.highlights;
+      if (p._hlTriedAt && p._hlV === HIGHLIGHTS_V) { m._hlTriedAt = p._hlTriedAt; m._hlV = p._hlV; }
+    }
   }
   // Fetch detail: live/HT every poll; newly-finished matches once (incl FT ratings).
   // Keep last-good per field: a single empty/rate-limited response must never blank a
@@ -425,10 +430,10 @@ export async function buildSnapshot(env, prev, liveOnly) {
       const koMs = m.kickoff ? new Date(m.kickoff).getTime() : 0;
       if (koMs && now > koMs + 48 * 3600e3) continue;                 // gave up — the upload never appeared
       if (m._hlTriedAt && now - m._hlTriedAt < 45 * 60e3) continue;   // throttle retries between polls
-      m._hlTriedAt = now;
+      m._hlTriedAt = now; m._hlV = HIGHLIGHTS_V;
       try {
         const hl = await findHighlights(env, dir.byId[m._homeId]?.name, dir.byId[m._awayId]?.name, m.kickoff);
-        if (hl) { m.highlights = hl; delete m._hlTriedAt; }
+        if (hl) { m.highlights = hl; delete m._hlTriedAt; delete m._hlV; }
       } catch { /* highlights are best-effort */ }
     }
   }
@@ -863,11 +868,19 @@ async function fetchCommentary(env, id) {
 // FIFA + the broadcasters YouTube named as 2026 media partners — so we surface the
 // official upload, not a fan re-cut. Frozen once captured (carried over per poll).
 const YOUTUBE = "https://www.googleapis.com/youtube/v3";
-const HIGHLIGHTS_V = 1;   // bump to force one re-fetch of frozen highlights after a change
-// Match channelTitle case-insensitively — robust to YouTube channel-id churn (a
-// hardcoded UC… id silently rots), and the official partners all brand their channel.
-const HL_OFFICIAL = ["fifa", "bbc sport", "fox soccer", "fox sports", "telemundo", "tudn", "tsn", "espn", "sbs", "optus sport", "dazn"];
-const ytOfficial = (channelTitle) => { const c = (channelTitle || "").toLowerCase(); return HL_OFFICIAL.some((o) => c.includes(o)); };
+const HIGHLIGHTS_V = 2;   // bump to force one re-fetch/re-search of frozen highlights after a scoring change
+// Recognise the official rights-holders by channel-title brand (case-insensitive) — robust
+// to YouTube channel-id churn (a hardcoded UC… id silently rots), and broadcasters all
+// brand their channel. Real titles vary ("BBC Football", "ITV Sport", "CBS Sports"), so
+// match the brand token, not an exact name. FIFA's own channel is matched exactly so we
+// don't sweep in the many fan channels with "fifa" in their name.
+const HL_OFFICIAL = ["bbc", "itv", "cbs", "fox sport", "fox soccer", "telemundo", "tudn", "univision",
+  "tsn", "rds", "espn", "nbc", "peacock", "sky sport", "dazn", "sbs", "optus", "bein", "tnt sport"];
+const ytOfficial = (channelTitle) => {
+  const c = (channelTitle || "").toLowerCase().trim();
+  if (c === "fifa" || c === "fifa world cup" || c === "fifa+") return true;   // FIFA's own channel, not fan "…fifa…" names
+  return HL_OFFICIAL.some((o) => c.includes(o));
+};
 
 async function youtubeSearch(env, q, params = {}) {
   const url = new URL(YOUTUBE + "/search");
@@ -891,14 +904,13 @@ export function pickHighlight(items, home, away, koMs) {
   const ht = tok(home), at = tok(away);
   let best = null, bestScore = -Infinity;
   for (const it of items || []) {
+    if (!ytOfficial(it.snippet?.channelTitle)) continue;             // official broadcaster only — never a fan re-cut
     const title = lower(it.snippet?.title);
     if (!/highlight/.test(title)) continue;                          // must be a highlights video
     if (!(ht.length > 2 && title.includes(ht)) || !(at.length > 2 && title.includes(at))) continue;  // names BOTH teams
     const pub = Date.parse(it.snippet?.publishedAt || "");
     if (!isNaN(pub) && !isNaN(koMs) && pub < koMs) continue;         // pre-kickoff ⇒ a previous edition
-    let score = 0;
-    if (ytOfficial(it.snippet?.channelTitle)) score += 5;           // official / broadcast partner
-    if (!isNaN(pub) && !isNaN(koMs)) score += Math.max(0, 3 - (pub - koMs) / (24 * 3600e3));  // sooner after KO scores higher
+    const score = (!isNaN(pub) && !isNaN(koMs)) ? Math.max(0, 3 - (pub - koMs) / (24 * 3600e3)) : 0;  // sooner after KO wins
     if (score > bestScore) { bestScore = score; best = it; }
   }
   return best ? { id: best.id?.videoId, title: best.snippet?.title, channel: best.snippet?.channelTitle } : null;
@@ -921,7 +933,7 @@ async function findDayHighlights(env, dateIso) {
   const koMs = Date.parse(dateIso);
   const after = isNaN(koMs) ? undefined : new Date(koMs - 6 * 3600e3).toISOString();
   const items = await youtubeSearch(env, "FIFA World Cup 2026 matchday highlights all the goals", {
-    order: "date", ...(after ? { publishedAfter: after } : {}),
+    order: "date", maxResults: "25", ...(after ? { publishedAfter: after } : {}),   // dig past fan re-uploads
   });
   const roundup = /(match\s?day|round[\s-]?up|all the goals|every goal|today at the|recap|day \d)/i;
   for (const it of items) {

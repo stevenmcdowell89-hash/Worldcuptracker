@@ -363,6 +363,22 @@ test("pickHighlight: prefers the official channel among valid candidates", () =>
   assert.equal(hit.channel, "FIFA");
 });
 
+test("pickHighlight: recognises broadcaster brands, not just exact names; beats a fan re-cut", () => {
+  // a fan re-cut posted SOONER must still lose to the real broadcaster (BBC Football, ITV Sport…)
+  const items = [
+    hlItem("England vs Senegal 2-1 Highlights | World Cup 2026", "Sajib Travel Tales", "2026-06-20T17:00:00Z"),
+    hlItem("England v Senegal Highlights | 2026 FIFA World Cup", "BBC Football", "2026-06-20T18:30:00Z"),
+    hlItem("HIGHLIGHTS - England v Senegal | FIFA World Cup 2026", "ITV Sport", "2026-06-20T19:00:00Z"),
+  ];
+  const hit = pickHighlight(items, "England", "Senegal", KO);
+  assert.ok(["BBC Football", "ITV Sport"].includes(hit.channel));
+});
+
+test("pickHighlight: ignores non-official channels even when the title looks perfect", () => {
+  const items = [hlItem("England vs Senegal 2-1 | Highlights | FIFA World Cup 2026", "Global Football Highlights", "2026-06-20T17:00:00Z")];
+  assert.equal(pickHighlight(items, "England", "Senegal", KO), null);   // → frontend shows the search-link fallback
+});
+
 test("pickHighlight: requires a highlights video that names BOTH teams", () => {
   // names only one team
   assert.equal(pickHighlight([hlItem("England Highlights", "FIFA", "2026-06-20T21:00:00Z")], "England", "Senegal", KO), null);
