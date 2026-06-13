@@ -25,6 +25,7 @@ const ROUTES = {
   news: { render: S.renderNews, tab: "news", top: true },
   watch: { render: S.renderWatch, tab: "watch", top: true },
   more: { render: S.renderMore, tab: "more", top: true },
+  results: { render: S.renderResults, tab: "more", title: "Results" },
   bracket: { render: S.renderBracket, tab: "more", title: "Bracket" },
   stats: { render: S.renderStats, tab: "more", title: "Stats" },
   match: { render: S.renderMatch, tab: "matches", title: "Match" },

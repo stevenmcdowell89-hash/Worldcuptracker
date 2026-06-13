@@ -17,6 +17,7 @@ const cases = [
   ["Matches", () => S.renderMatches(q())],
   ["Matches(race)", () => S.renderMatches(q("v=race"))],
   ["More", () => S.renderMore(q())],
+  ["Results", () => S.renderResults(q())],
   ["News", () => S.renderNews(q())],
   ["Groups(race)", () => S.renderGroups({ forceTab: "race", ...q() })],
   ["Groups", () => S.renderGroups(q())],
