@@ -132,8 +132,13 @@ a { color:inherit; text-decoration:none; }
    finished games apart from the crisp white upcoming fixtures below (and from the red
    live rail). The score stays full-strength — it's the point — the rest just recedes. */
 .day-label.results-label { color:var(--faint); }
-.section.results { background:#F5F6F9; box-shadow:inset 3px 0 0 #C2C7D1, var(--shadow-card); }
+.section.results { background:#EEF0F4; box-shadow:inset 4px 0 0 #AEB4C0, var(--shadow-card); }
 .section.results .match .side .nm { color:var(--muted); }
+/* Divider between the finished results and the upcoming fixtures: a centred label
+   flanked by hairlines, with a clear gap above so the feed reads in two distinct parts
+   rather than one continuous list. */
+.feed-split { display:flex; align-items:center; gap:12px; margin:22px 16px 8px; color:var(--muted); font-family:var(--display); font-weight:700; font-size:11.5px; text-transform:uppercase; letter-spacing:.06em; }
+.feed-split::before, .feed-split::after { content:""; flex:1; height:1px; background:var(--divider); }
 
 /* ── "Race for the last 8" status card ── */
 .racecard { margin:10px; border-radius:var(--radius); background:var(--card); overflow:hidden; }

@@ -132,9 +132,14 @@ export function renderMatches(ctx = {}) {
     ? `<div class="day-label${cls ? ` ${cls}-label` : ""}">${label}</div><div class="section${cls ? ` ${cls}` : ""}">${list.map((m) => matchRow(m, o)).join("")}</div>` : "";
 
   const liveSec = sec(live.length ? "● Live" : "", live, { showStakes });
-  const resultsSec = sec("Latest results", recentResults(finished), {}, "results");
+  const recent = recentResults(finished);
+  const resultsSec = sec("Latest results", recent, {}, "results");
   const head = `${stale}${liveSec}${resultsSec}`;
   const foot = `<div class="updated">Updated ${fmtTime(S().meta?.updated)} · ${S().meta?.stage}</div>`;
+  // A labelled divider introduces the fixtures when results sit directly above them, so
+  // the feed doesn't read as one continuous list. Only shown when there's a results
+  // block to separate from.
+  const upNext = recent.length ? `<div class="feed-split">Upcoming</div>` : "";
 
   // ── MORNING (06:00–13:00 UK): the catch-up layout leads, then the feed reverts
   // after 13:00 (§ feature 2). Additive: the slate lists every match today (live
@@ -152,7 +157,7 @@ export function renderMatches(ctx = {}) {
   // ── PRE: countdown hero + clubs nudge above the opening fixtures ──
   if (ph === "pre") {
     const byDay = upcomingByDay(upcoming);
-    return `${stale}${preHero(upcoming)}${resultsSec}${byDay.map(daySec).join("")}${foot}`;
+    return `${stale}${preHero(upcoming)}${resultsSec}${upNext}${byDay.map(daySec).join("")}${foot}`;
   }
 
   // ── GROUP FINAL: interleave each group's table beneath that group's final games ──
@@ -171,14 +176,14 @@ export function renderMatches(ctx = {}) {
   // ── KNOCKOUT: KO fixtures lead, then the bracket embedded inline (§11/§13) ──
   if (ph === "knockout") {
     const byDay = upcomingByDay(upcoming);
-    return `${head}${byDay.map(daySec).join("")}${bracketEmbed(S(), state.annexC)}${foot}`;
+    return `${head}${upNext}${byDay.map(daySec).join("")}${bracketEmbed(S(), state.annexC)}${foot}`;
   }
 
   // ── GROUP (everyday): plain feed. The third-place race card belongs to the
   // groupFinal phase (its own branch above, plus the morning view) — surfacing it
   // during early group, before the final matchday, is just noise. ──
   const byDay = upcomingByDay(upcoming);
-  return `${toggle}${head}${byDay.map(daySec).join("")}${foot}`;
+  return `${toggle}${head}${upNext}${byDay.map(daySec).join("")}${foot}`;
 }
 
 // Highlights for the morning catch-up. Per-match official highlights are the reliable
