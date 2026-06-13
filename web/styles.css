@@ -128,6 +128,12 @@ a { color:inherit; text-decoration:none; }
 .grp-pill { font-size:11px; font-weight:700; color:var(--muted); background:var(--raised); padding:2px 8px; border-radius:8px; }
 .race-tag { font-size:11px; color:var(--sweating); font-weight:700; }
 .day-label { padding:14px 16px 6px; font-family:var(--display); font-weight:700; font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+/* "Latest results" — settled / past. A recessed grey wash + a muted left rail sets the
+   finished games apart from the crisp white upcoming fixtures below (and from the red
+   live rail). The score stays full-strength — it's the point — the rest just recedes. */
+.day-label.results-label { color:var(--faint); }
+.section.results { background:#F5F6F9; box-shadow:inset 3px 0 0 #C2C7D1, var(--shadow-card); }
+.section.results .match .side .nm { color:var(--muted); }
 
 /* ── "Race for the last 8" status card ── */
 .racecard { margin:10px; border-radius:var(--radius); background:var(--card); overflow:hidden; }
