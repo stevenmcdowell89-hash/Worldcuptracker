@@ -128,11 +128,11 @@ export function renderMatches(ctx = {}) {
   // stakesFor assumes all other remaining games draw, which is noise with two rounds
   // still to play (it flags nearly everything a "decider"). Show them in groupFinal only.
   const showStakes = ph === "groupFinal";
-  const sec = (label, list, o) => list.length
-    ? `<div class="day-label">${label}</div><div class="section">${list.map((m) => matchRow(m, o)).join("")}</div>` : "";
+  const sec = (label, list, o, cls) => list.length
+    ? `<div class="day-label${cls ? ` ${cls}-label` : ""}">${label}</div><div class="section${cls ? ` ${cls}` : ""}">${list.map((m) => matchRow(m, o)).join("")}</div>` : "";
 
   const liveSec = sec(live.length ? "● Live" : "", live, { showStakes });
-  const resultsSec = sec("Latest results", recentResults(finished));
+  const resultsSec = sec("Latest results", recentResults(finished), {}, "results");
   const head = `${stale}${liveSec}${resultsSec}`;
   const foot = `<div class="updated">Updated ${fmtTime(S().meta?.updated)} · ${S().meta?.stage}</div>`;
 
@@ -144,7 +144,7 @@ export function renderMatches(ctx = {}) {
     const todayIds = new Set(mm.today.map((m) => m.id));
     const lastIds = new Set(mm.lastNight.map((m) => m.id));
     const later = upcomingByDay(upcoming.filter((m) => !todayIds.has(m.id))).map(daySec).join("");
-    const earlier = sec("Earlier results", recentResults(finished.filter((m) => !lastIds.has(m.id))));
+    const earlier = sec("Earlier results", recentResults(finished.filter((m) => !lastIds.has(m.id))), {}, "results");
     const tail = ph === "knockout" ? bracketEmbed(S(), state.annexC) : "";
     return `${toggle}${stale}${morningHTML(mm)}${later}${earlier}${tail}${foot}`;
   }
