@@ -100,6 +100,16 @@ function preHero(upcoming) {
 }
 
 // ── Matches (home spine) — accretes phase-relevant context inline (§11) ──
+// "Latest results" on the Matches feed is deliberately tight: only finished games from
+// the last 24h, and at most 4 — so today's fixtures (the high-value piece) stay on
+// screen without scrolling. The full, permanent archive lives under More → Results
+// (renderResults), where nothing ever drops off. `list` must already be newest-first.
+const RESULTS_FEED_MAX = 4, RESULTS_FEED_WINDOW_MS = 24 * 3600e3;
+function recentResults(list) {
+  const since = Date.now() - RESULTS_FEED_WINDOW_MS;
+  return list.filter((m) => Date.parse(m.kickoff || "") >= since).slice(0, RESULTS_FEED_MAX);
+}
+
 export function renderMatches(ctx = {}) {
   const view = ctx.query?.get("v") || "matches";
   const ph = phase();
@@ -122,7 +132,7 @@ export function renderMatches(ctx = {}) {
     ? `<div class="day-label">${label}</div><div class="section">${list.map((m) => matchRow(m, o)).join("")}</div>` : "";
 
   const liveSec = sec(live.length ? "● Live" : "", live, { showStakes });
-  const resultsSec = finished.length ? sec("Latest results", finished.slice(0, 8)) : "";
+  const resultsSec = sec("Latest results", recentResults(finished));
   const head = `${stale}${liveSec}${resultsSec}`;
   const foot = `<div class="updated">Updated ${fmtTime(S().meta?.updated)} · ${S().meta?.stage}</div>`;
 
@@ -134,7 +144,7 @@ export function renderMatches(ctx = {}) {
     const todayIds = new Set(mm.today.map((m) => m.id));
     const lastIds = new Set(mm.lastNight.map((m) => m.id));
     const later = upcomingByDay(upcoming.filter((m) => !todayIds.has(m.id))).map(daySec).join("");
-    const earlier = sec("Earlier results", finished.filter((m) => !lastIds.has(m.id)).slice(0, 8));
+    const earlier = sec("Earlier results", recentResults(finished.filter((m) => !lastIds.has(m.id))));
     const tail = ph === "knockout" ? bracketEmbed(S(), state.annexC) : "";
     return `${toggle}${stale}${morningHTML(mm)}${later}${earlier}${tail}${foot}`;
   }
@@ -239,6 +249,7 @@ function daySec([day, list]) {
 export function renderMore() {
   const html = `
     <div class="block">
+      <div class="lrow clickable" data-nav="results"><span class="nm">📋 Results — every match so far</span><span class="chev">›</span></div>
       <div class="lrow clickable" data-nav="bracket"><span class="nm">🏆 Bracket</span><span class="chev">›</span></div>
       <div class="lrow clickable" data-nav="stats"><span class="nm">📈 Stats — scorers, assists, discipline</span><span class="chev">›</span></div>
     </div>
@@ -249,6 +260,24 @@ export function renderMore() {
     </div>
     <div class="updated">Snapshot ${fmtDay(S().meta?.updated)} ${fmtTime(S().meta?.updated)} · source: ${S().meta?.dataSource}</div>`;
   return { html, mount: (root) => { mountNotifications(root).catch(() => {}); } };
+}
+
+// ── Results archive (More → Results) ──
+// Every finished match of the tournament, grouped by match day, newest day first.
+// Unlike the Matches feed's "Latest results" (trimmed to the last 24h × 4 so today's
+// fixtures stay visible), nothing here ever drops off — at the end of the tournament
+// you can scroll back through the whole thing.
+export function renderResults() {
+  const finished = (S().matches || [])
+    .filter((m) => m.status === "ft")
+    .sort((a, b) => (b.kickoff || "").localeCompare(a.kickoff || ""));
+  if (!finished.length) return emptyState("📋", "No results yet", "Finished matches will appear here as the tournament plays out.");
+  const byDay = Object.entries(finished.reduce((acc, m) => {
+    const d = fmtDay(m.kickoff); (acc[d] = acc[d] || []).push(m); return acc;
+  }, {}));
+  const sections = byDay.map(([day, list]) =>
+    `<div class="day-label">${day}</div><div class="section">${list.map((m) => matchRow(m)).join("")}</div>`).join("");
+  return `${sections}<div class="updated">${finished.length} match${finished.length === 1 ? "" : "es"} played</div>`;
 }
 
 // ── News (BBC Sport World Cup headlines; tap opens the article) ──
