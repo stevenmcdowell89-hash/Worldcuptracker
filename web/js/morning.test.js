@@ -97,13 +97,17 @@ test("morningModel: rest day + silent night → empty sections, no content inven
   assert.equal(mm.flips.length, 0);
 });
 
-test("morningModel: day highlights pass through from the snapshot (null when absent)", () => {
+test("morningModel: day highlights surface only for today's recap (stale dates ignored)", () => {
   const s = snap();
+  const today = ukClock(NOW).date;
   assert.equal(morningModel(s, null, NOW).highlights, null);          // none on the snapshot
-  s.dayHighlights = { id: "abc123", title: "Matchday highlights", channel: "FIFA", date: mmDate() };
+  // tagged with today's UK date → surfaced
+  s.dayHighlights = { id: "abc123", title: "Matchday highlights", channel: "FIFA", date: today };
   assert.deepEqual(morningModel(s, null, NOW).highlights, s.dayHighlights);
+  // a previous day's round-up must never show for this morning
+  s.dayHighlights = { id: "old123", title: "Yesterday", channel: "FIFA", date: "2020-01-01" };
+  assert.equal(morningModel(s, null, NOW).highlights, null);
 });
-function mmDate() { return ukClock(NOW).date; }
 
 test("knockout morning: who advanced + today's ties with their onward route", () => {
   const s = snap();

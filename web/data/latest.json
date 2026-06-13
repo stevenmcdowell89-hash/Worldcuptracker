@@ -1,7 +1,7 @@
 {
   "meta": {
     "stage": "Group Stage",
-    "updated": "2026-06-13T08:38:06.736Z",
+    "updated": "2026-06-13T08:55:08.120Z",
     "groupStageComplete": false,
     "dataSource": "mock",
     "started": true,
@@ -1165,19 +1165,19 @@
       "commentaryUrl": "https://www.theguardian.com/football/live",
       "commentary": [
         {
-          "at": "2026-06-13T08:36:06.723Z",
+          "at": "2026-06-13T08:53:08.106Z",
           "title": "GOAL!",
           "text": "Mexico 2-1 Saudi Arabia. Giménez gets his second, turning in Pineda's low cross at the near post. The Azteca erupts.",
           "key": true
         },
         {
-          "at": "2026-06-13T08:29:06.723Z",
+          "at": "2026-06-13T08:46:08.106Z",
           "title": "",
           "text": "Saudi Arabia are growing into this. Al-Dawsari drifts inside and curls one just over — a warning to the hosts.",
           "key": false
         },
         {
-          "at": "2026-06-13T08:16:06.723Z",
+          "at": "2026-06-13T08:33:08.106Z",
           "title": "GOAL!",
           "text": "1-1. Al-Dawsari levels from the spot after a clumsy challenge by Álvarez, sending Ochoa the wrong way.",
           "key": true
@@ -4944,7 +4944,7 @@
       "title": "Mexico hold off Saudi Arabia in Azteca opener",
       "summary": "Santiago Giménez's brace settles a nervy hosts' opener as the 2026 World Cup gets under way.",
       "link": "https://www.bbc.com/sport/football",
-      "published": "2026-06-13T08:03:06.736Z",
+      "published": "2026-06-13T08:20:08.120Z",
       "image": null,
       "source": "BBC Sport"
     },
@@ -4952,7 +4952,7 @@
       "title": "Argentina cruise as Messi pulls the strings",
       "summary": "Holders Argentina look ominous after a comfortable win in New Jersey.",
       "link": "https://www.bbc.com/sport/football",
-      "published": "2026-06-13T05:38:06.736Z",
+      "published": "2026-06-13T05:55:08.120Z",
       "image": null,
       "source": "BBC Sport"
     },
@@ -4960,7 +4960,7 @@
       "title": "Third-place race: who's still in the hunt?",
       "summary": "With the final group games to come, the eight best third-placed spots are wide open.",
       "link": "https://www.bbc.com/sport/football",
-      "published": "2026-06-13T02:38:06.736Z",
+      "published": "2026-06-13T02:55:08.120Z",
       "image": null,
       "source": "BBC Sport"
     }

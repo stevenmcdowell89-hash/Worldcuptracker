@@ -348,8 +348,9 @@ export async function buildSnapshot(env, prev, liveOnly) {
     if (m.status === "ft" && p.lineups) {
       m.events = p.events; m.stats = p.stats; m.lineups = p.lineups; m.progressionLine = p.progressionLine; m._final = true;
     }
-    // Highlights are sourced once and never change — freeze them so we don't re-search.
-    if (m.status === "ft" && p.highlights) m.highlights = p.highlights;
+    // Highlights are sourced once and never change — freeze them (and carry the last-tried
+    // stamp so the retry throttle survives across polls) so we don't keep re-searching.
+    if (m.status === "ft") { if (p.highlights) m.highlights = p.highlights; if (p._hlTriedAt) m._hlTriedAt = p._hlTriedAt; }
   }
   // Fetch detail: live/HT every poll; newly-finished matches once (incl FT ratings).
   // Keep last-good per field: a single empty/rate-limited response must never blank a
@@ -411,28 +412,24 @@ export async function buildSnapshot(env, prev, liveOnly) {
     }
   }
 
-  // YouTube highlights (best-effort, gated on a key). Finished matches only; fetched once
+  // YouTube match highlights (best-effort, gated on a key). Finished matches only, on FULL
+  // polls only — never the ~45s live ticks, which would burn the daily quota — fetched once
   // then frozen (carried over above). Official highlights post ~1–3h after full time, so
-  // keep trying a just-finished match — within a 48h window — until the upload appears.
-  // The daily round-up (for the morning catch-up) is refreshed on full polls only.
-  let dayHighlights = prev?.dayHighlights || null;
-  if (env.YOUTUBE_API_KEY) {
+  // retry a just-finished match every ~45 min, within a 48h window, until the upload lands.
+  // The DAILY round-up is sourced separately and time-gated to the morning window (the only
+  // surface that shows it) — see the cron's scheduled() handler.
+  if (env.YOUTUBE_API_KEY && !liveOnly) {
     const now = Date.now();
     for (const m of matches) {
       if (m.status !== "ft" || m.highlights) continue;
       const koMs = m.kickoff ? new Date(m.kickoff).getTime() : 0;
-      if (koMs && now > koMs + 48 * 3600e3) continue;   // gave up — the upload never appeared
+      if (koMs && now > koMs + 48 * 3600e3) continue;                 // gave up — the upload never appeared
+      if (m._hlTriedAt && now - m._hlTriedAt < 45 * 60e3) continue;   // throttle retries between polls
+      m._hlTriedAt = now;
       try {
         const hl = await findHighlights(env, dir.byId[m._homeId]?.name, dir.byId[m._awayId]?.name, m.kickoff);
-        if (hl) m.highlights = hl;
+        if (hl) { m.highlights = hl; delete m._hlTriedAt; }
       } catch { /* highlights are best-effort */ }
-    }
-    if (!liveOnly) {
-      const lastFt = matches.filter((m) => m.status === "ft" && m.kickoff).map((m) => m.kickoff).sort().pop();
-      const day = lastFt ? lastFt.slice(0, 10) : null;   // UTC date of the most recent match day
-      if (day && dayHighlights?.date !== day) {
-        try { const dh = await findDayHighlights(env, day); if (dh) dayHighlights = dh; } catch { /* best-effort */ }
-      }
     }
   }
 
@@ -484,6 +481,10 @@ export async function buildSnapshot(env, prev, liveOnly) {
   // (written by the cron's background check). Conservative matching — never a guess.
   let tvLive = null;
   try { tvLive = env.SNAPSHOT ? await env.SNAPSHOT.get("tv-listings", "json") : null; } catch {}
+  // The morning catch-up's daily round-up video is sourced by the cron during the morning
+  // window (see scheduled()) and stashed in KV — read it back here like the TV listings.
+  let dayHighlights = prev?.dayHighlights || null;
+  try { if (env.SNAPSHOT) { const dh = await env.SNAPSHOT.get("day-highlights", "json"); if (dh) dayHighlights = dh; } } catch {}
   const tvInfo = annotateTv(matches, teams, {
     listings: mergeListings(TVSEED.listings, tvLive?.listings || []),
     byFixture: TVSEED.byFixture, bySlot: TVSEED.bySlot,
@@ -1238,6 +1239,33 @@ export default {
           await env.SNAPSHOT.put(META_KEY, JSON.stringify(meta));
         }
       } catch (e) { console.error("tv refresh failed:", e.message); }
+
+      // Daily highlights round-up for the morning catch-up (feature: highlights). The
+      // official round-up surfaces overnight / early morning, so search ONLY inside the
+      // morning window (05:00–13:00 UK — a touch before the 06:00 view opens, until it
+      // closes at 13:00, mirroring morning.js): a video that only lands at 14:00 is useless
+      // to that surface. Retry ~every 30 min until found, then it's frozen for the day.
+      // Stashed in KV (read back in buildSnapshot); the patch below also surfaces it at once
+      // rather than waiting for the next baseline poll.
+      try {
+        const uk = ukParts();
+        if (env.YOUTUBE_API_KEY && uk.hour >= 5 && uk.hour < 13) {
+          const have = await env.SNAPSHOT.get("day-highlights", "json");
+          if (have?.date !== uk.date && now - (meta.lastHighlights || 0) >= 30 * 60e3) {
+            meta.lastHighlights = now;
+            await env.SNAPSHOT.put(META_KEY, JSON.stringify(meta));
+            const dh = await findDayHighlights(env, uk.date);   // tagged with date: uk.date
+            if (dh) {
+              await env.SNAPSHOT.put("day-highlights", JSON.stringify(dh));
+              if (prev) {   // surface it immediately, not on the next baseline poll
+                prev.dayHighlights = dh;
+                prev.meta = { ...prev.meta, updated: new Date().toISOString() };
+                await writeSnapshot(env, prev);
+              }
+            }
+          }
+        }
+      } catch (e) { console.error("highlights refresh failed:", e.message); }
 
       // Enrichment backlog → catch up every few minutes until squads + Watch-player
       // profiles are all loaded, then fall back to the 6h baseline.

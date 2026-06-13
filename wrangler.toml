@@ -68,9 +68,12 @@ VAPID_PUBLIC_KEY = "BPfPUEER1NnhSRaHUktTYQSKKHv6cPVqokU-3iCd1wgk5K8nV13AAj5WLkei
 #
 # YOUTUBE_API_KEY (match + daily highlights, optional):  wrangler secret put YOUTUBE_API_KEY
 #   YouTube Data API v3 key from a Google Cloud project (free: 10,000 quota units/day;
-#   search.list = 100 units ⇒ ~100 searches/day, ample for a match day). Separate from the
-#   API-Football quota. Without it, highlights degrade gracefully to a "Watch on YouTube"
-#   search link at the top of a finished match's commentary and in the morning catch-up.
+#   search.list = 100 units ⇒ ~100 searches/day). Separate from the API-Football quota.
+#   Per finished match: searched on full polls, throttled to ~45 min/match, frozen once
+#   found. Daily round-up (morning catch-up): searched ONLY inside the morning window
+#   (05:00–13:00 UK), ~every 30 min until found, so it's ready when the view is live and a
+#   late-afternoon upload is never used. Without the key, both degrade gracefully to a
+#   "Watch on YouTube" search link (finished-match commentary + morning catch-up).
 #
 # Web push notifications (brief §14) — OPTIONAL. The feature stays inert until set.
 #   Generate a key pair once:  npm run gen:vapid
