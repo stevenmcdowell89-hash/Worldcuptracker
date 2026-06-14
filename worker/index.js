@@ -131,6 +131,20 @@ function inLiveWindow(snapshot) {
   });
 }
 
+// ── pre-match lineup gate: is any scheduled fixture inside the lineup-lead window? ──
+// Confirmed XIs publish ~1 hr before kickoff while the match is still "scheduled" (the
+// live-gate above only opens at KO−5min). This gate lets the cron run a gentle poll
+// ahead of the live window so lineups surface pre-match. KO-relative, future-only.
+export function lineupWindowOpen(snapshot, leadMs) {
+  if (!snapshot) return false;
+  const now = Date.now();
+  return (snapshot.matches || []).some((m) => {
+    if (m.status !== "scheduled") return false;
+    const t = Date.parse(m.kickoff || "");
+    return Number.isFinite(t) && t > now && t - now <= leadMs;
+  });
+}
+
 // ── normalisers (API-Football v3 shapes → snapshot schema) ──
 // Standings/fixtures team objects carry only {id,name,logo} — no 3-letter code.
 // /teams (league+season) DOES carry `code` + `logo`, so we build a directory and
@@ -377,12 +391,13 @@ export async function buildSnapshot(env, prev, liveOnly) {
 
   // Confirmed XIs publish ~1 hr before kickoff, while the match is still "scheduled"
   // (the loop above only covers live/finished games). Fetch lineups for any match whose
-  // kickoff is within ~75 min so they show pre-match, and re-fetch each poll to pick up
-  // late changes. Skips matches with no kickoff on record or still well in the future.
+  // kickoff is within LINEUP_LEAD_MIN so they show pre-match, and re-fetch each poll to
+  // pick up late changes. Skips matches with no kickoff on record or still well ahead.
+  const lineupLeadMs = (parseInt(env.LINEUP_LEAD_MIN || "60", 10)) * 60e3;
   const nowMs = Date.now();
   for (const m of matches.filter((x) => x.status === "scheduled")) {
     const koMs = m.kickoff ? new Date(m.kickoff).getTime() : 0;
-    if (!koMs || koMs - nowMs > 75 * 60e3) continue;
+    if (!koMs || koMs - nowMs > lineupLeadMs) continue;
     try {
       const lu = await apiGet(env, "/fixtures/lineups", { fixture: m.id });
       if (lu?.length) m.lineups = normLineups(lu, m._homeId, m._awayId);
@@ -1281,6 +1296,11 @@ export default {
       const baselineMs = (parseInt(env.BASELINE_INTERVAL_MIN || "360", 10)) * 60e3;
       const liveMs = (parseInt(env.LIVE_INTERVAL_SEC || "75", 10)) * 1e3;
       const live = inLiveWindow(prev);
+      // Pre-match: poll gently in the hour before kickoff so confirmed XIs surface before
+      // the live window (KO−5min) opens. Cheap cadence — lineups are static once published.
+      const lineupLeadMs = (parseInt(env.LINEUP_LEAD_MIN || "60", 10)) * 60e3;
+      const lineupMs = (parseInt(env.LINEUP_INTERVAL_MIN || "5", 10)) * 60e3;
+      const lineupWindow = lineupWindowOpen(prev, lineupLeadMs);
 
       // Per-match reminders (feature 3): a cheap sweep on every tick — it exits
       // immediately unless a kickoff is inside the reminder window.
@@ -1345,8 +1365,9 @@ export default {
       const newsMs = (parseInt(env.NEWS_INTERVAL_MIN || "30", 10)) * 60e3;
       const dueFull = now - meta.lastFull >= effectiveBaseline;
       const dueLive = live && now - meta.lastLive >= liveMs;
+      const dueLineup = lineupWindow && now - (meta.lastLineup || 0) >= lineupMs;
       const dueNews = now - (meta.lastNews || 0) >= newsMs;
-      if (!dueFull && !dueLive) {
+      if (!dueFull && !dueLive && !dueLineup) {
         // No data poll due, but two things keep their own cadence here, decoupled from the
         // 6h baseline (neither touches lastFull/lastLive):
         if (!prev) return;
@@ -1387,10 +1408,10 @@ export default {
       if (pollLock && now - +pollLock < 150000) return;
       await env.SNAPSHOT.put("poll-lock", String(now), { expirationTtl: 180 });
       try {
-        const snap = await buildSnapshot(env, prev, !dueFull /* liveOnly when only the live tick is due */);
+        const snap = await buildSnapshot(env, prev, !dueFull /* liveOnly when only the live/lineup tick is due */);
         await writeSnapshot(env, snap);
-        await env.SNAPSHOT.put(META_KEY, JSON.stringify({ ...meta, lastFull: dueFull ? now : meta.lastFull, lastLive: now, lastNews: dueFull ? now : (meta.lastNews || 0) }));
-        await env.SNAPSHOT.put("cron-status", JSON.stringify({ ok: true, at: new Date().toISOString(), kind: dueFull ? "full" : "live", squadCount: snap.meta.squadCount, subrequests: SUBREQ }));
+        await env.SNAPSHOT.put(META_KEY, JSON.stringify({ ...meta, lastFull: dueFull ? now : meta.lastFull, lastLive: now, lastLineup: now, lastNews: dueFull ? now : (meta.lastNews || 0) }));
+        await env.SNAPSHOT.put("cron-status", JSON.stringify({ ok: true, at: new Date().toISOString(), kind: dueFull ? "full" : dueLive ? "live" : "lineup", squadCount: snap.meta.squadCount, subrequests: SUBREQ }));
         // Push: verdict-flip alerts, diffing the previous snapshot against this fresh
         // poll (§14). The time-gated daily digests run separately on every tick above.
         try { await runFlipAlerts(env, prev, snap); } catch (e) { console.error("notify failed:", e.message); }
