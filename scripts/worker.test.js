@@ -72,12 +72,14 @@ function squadFor(teamId) {
     ...(teamId === 100 ? [{ id: 1001, name: "Home Mid", number: 8, position: "Midfielder" }] : [])];
   return []; // other clubs (Liverpool/Arsenal/etc.) empty in this fixture
 }
-const playerDeep = (id) => [{
+const PLAYER_WC_ROW = { league: { id: 1, name: "World Cup" }, team: { code: "ENG" }, games: { appearences: 3, minutes: 270, position: "Midfielder", rating: "8.0" }, goals: { total: 2, assists: 1 }, shots: { total: 5 }, passes: { key: 4 }, cards: { yellow: 1, red: 0 } };
+const PLAYER_CLUB_ROW = { league: { id: 39, name: "Premier League" }, team: { name: "Manchester United" }, games: { appearences: 30, minutes: 2600, rating: "7.4" }, goals: { total: 9, assists: 7 }, cards: { yellow: 4, red: 0 } };
+// Mirror the real API: a national-team competition (World Cup) row only comes back when
+// the `league` filter is supplied; an id+season-only query returns the player's club
+// stats. So the WC tournament block is populated ONLY if enrichPlayers passes league.
+const playerDeep = (id, q) => [{
   player: { id: +id, name: "Home Mid", age: 25, position: "Midfielder" },
-  statistics: [
-    { league: { id: 1, name: "World Cup" }, team: { code: "ENG" }, games: { appearences: 3, minutes: 270, position: "Midfielder", rating: "8.0" }, goals: { total: 2, assists: 1 }, shots: { total: 5 }, passes: { key: 4 }, cards: { yellow: 1, red: 0 } },
-    { league: { id: 39, name: "Premier League" }, team: { name: "Manchester United" }, games: { appearences: 30, minutes: 2600, rating: "7.4" }, goals: { total: 9, assists: 7 }, cards: { yellow: 4, red: 0 } },
-  ],
+  statistics: q && q.get("league") ? [PLAYER_WC_ROW] : [PLAYER_CLUB_ROW],
 }];
 
 function cannedFetch(url) {
@@ -115,7 +117,7 @@ function cannedFetch(url) {
   if (p === "/fixtures/players") return fixturePlayers(100, 102);
   if (p === "/teams/statistics") return teamStats();
   if (p === "/players/squads") return [{ players: squadFor(team) }];
-  if (p === "/players") return playerDeep(q.get("id"));
+  if (p === "/players") return playerDeep(q.get("id"), q);
   if (p === "/transfers") return [{ transfers: [{ date: "2022-07-01", type: "€", teams: { in: { name: "Manchester United" }, out: { name: "Old Club" } } }] }];
   if (p === "/trophies") return [{ league: "Premier League", season: "2024", place: "Winner" }, { league: "FA Cup", season: "2023", place: "2nd" }];
   return [];
@@ -253,6 +255,22 @@ test("Player Watch intersects club squad × nation roster", () => {
   assert.ok(mu, "Man Utd present");
   assert.ok(mu.players.some((p) => String(p.playerId) === "1001"), "shared player in MU contingent");
   assert.ok("liverpool" in snap.clubWatch);             // empty contingent is valid
+});
+
+test("WC tournament stats query passes the league filter (else the WC row is omitted)", () => {
+  // Records the /players calls made during enrichment: the WC stats call must carry
+  // league=1 + season=2026, or the API returns club-only stats and the tournament
+  // block reads zero (the bug this guards). The club call stays league-free by design.
+  const seen = [];
+  globalThis.fetch = async (url) => {
+    const u = new URL(url);
+    if (u.pathname === "/players") seen.push({ league: u.searchParams.get("league"), season: u.searchParams.get("season") });
+    return { ok: true, status: 200, headers: { get: () => null }, json: async () => ({ response: cannedFetch(url) }) };
+  };
+  return buildSnapshot({ APIFOOTBALL_KEY: "test", WC_LEAGUE_ID: "1", WC_SEASON: "2026" }, null, false).then(() => {
+    assert.ok(seen.some((c) => c.league === "1" && c.season === "2026"), "WC stats fetched with league=1&season=2026");
+    assert.ok(seen.some((c) => c.league === null && c.season === "2025"), "club stats fetched league-free for the prior season");
+  });
 });
 
 test("deep player enrichment: tournament + season + career + honours", () => {

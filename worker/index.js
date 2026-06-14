@@ -669,7 +669,7 @@ function curatedPlayerIds({ scorers, assists, discipline, prev, matches }) {
 
 // ── deep player drill-in: club-season stats + transfers + trophies ──
 // Bump ENRICH_VERSION to force re-enrichment of already-flagged players after a fix.
-const ENRICH_VERSION = 4;
+const ENRICH_VERSION = 5;
 const ZERO_TOURNAMENT = { apps: 0, min: 0, g: 0, a: 0, shots: 0, keyPasses: 0, yellow: 0, red: 0 };
 async function enrichPlayers(env, base, ids, players, cfg, dir, cap = 18) {   // small batch/poll; fills over polls
   // European club seasons (2025-26) are filed under the START year (2025) in the API,
@@ -680,7 +680,11 @@ async function enrichPlayers(env, base, ids, players, cfg, dir, cap = 18) {   //
   await pmap(todo, async (id) => {
     const existing = players[id];
     try {
-      const wc = normPlayer(await apiGet(env, "/players", { id, season: base.season }), cfg.league, dir) || {};   // WC tournament stats
+      // WC tournament stats. The `league` filter is REQUIRED: `/players?id=&season=`
+      // (no league) returns the player's PRIMARY competition — their club — and omits
+      // the national-team World Cup row, so the tournament block came back all zeros.
+      // Passing league=WC (same as the topscorers/etc. leaderboards) returns the WC row.
+      const wc = normPlayer(await apiGet(env, "/players", { id, league: cfg.league, season: base.season }), cfg.league, dir) || {};
       const club = normPlayerClub(await apiGet(env, "/players", { id, season: clubSeason })) || {};               // club-season stats + bio
       let career = existing?.career || [], honours = existing?.honours || [];
       try {
