@@ -868,19 +868,13 @@ async function fetchCommentary(env, id) {
 // FIFA + the broadcasters YouTube named as 2026 media partners — so we surface the
 // official upload, not a fan re-cut. Frozen once captured (carried over per poll).
 const YOUTUBE = "https://www.googleapis.com/youtube/v3";
-const HIGHLIGHTS_V = 3;   // bump to force one re-fetch/re-search of frozen highlights after a scoring change
-// Recognise the official rights-holders by channel-title brand (case-insensitive) — robust
-// to YouTube channel-id churn (a hardcoded UC… id silently rots), and broadcasters all
-// brand their channel. Real titles vary ("BBC Football", "ITV Sport", "CBS Sports"), so
-// match the brand token, not an exact name. FIFA's own channel is matched exactly so we
-// don't sweep in the many fan channels with "fifa" in their name.
-const HL_OFFICIAL = ["bbc", "itv", "cbs", "fox sport", "fox soccer", "telemundo", "tudn", "univision",
-  "tsn", "rds", "espn", "nbc", "peacock", "sky sport", "dazn", "sbs", "optus", "bein", "tnt sport"];
-const ytOfficial = (channelTitle) => {
-  const c = (channelTitle || "").toLowerCase().trim();
-  if (c === "fifa" || c === "fifa world cup" || c === "fifa+") return true;   // FIFA's own channel, not fan "…fifa…" names
-  return HL_OFFICIAL.some((o) => c.includes(o));
-};
+const HIGHLIGHTS_V = 4;   // bump to force one re-fetch/re-search of frozen highlights after a scoring change
+// UK rights-holders only. BBC and ITV hold the UK World Cup rights and post highlights for
+// every match; everyone else's uploads (Fox, FIFA+, beIN, …) are geo-blocked in the UK and
+// would embed as "unavailable". Match channelTitle by brand, case-insensitively — "BBC Sport",
+// "BBC Football", "ITV Sport", "ITVX" all qualify; robust to YouTube channel-id churn.
+const HL_OFFICIAL = ["bbc", "itv"];
+const ytOfficial = (channelTitle) => { const c = (channelTitle || "").toLowerCase(); return HL_OFFICIAL.some((o) => c.includes(o)); };
 
 async function youtubeSearch(env, q, params = {}) {
   const url = new URL(YOUTUBE + "/search");

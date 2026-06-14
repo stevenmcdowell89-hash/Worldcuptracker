@@ -354,13 +354,20 @@ const hlItem = (title, channel, publishedAt) =>
   ({ id: { videoId: title.replace(/\W+/g, "").slice(0, 11) }, snippet: { title, channelTitle: channel, publishedAt } });
 const KO = Date.parse("2026-06-20T16:00:00Z");
 
-test("pickHighlight: prefers the official channel among valid candidates", () => {
+test("pickHighlight: prefers the official UK broadcaster among valid candidates", () => {
   const items = [
     hlItem("England vs Senegal Highlights — full match reaction", "FootyFan TV", "2026-06-20T22:00:00Z"),
-    hlItem("England 2-1 Senegal | Highlights | World Cup 2026", "FIFA", "2026-06-20T21:00:00Z"),
+    hlItem("England 2-1 Senegal | Highlights | World Cup 2026", "BBC Sport", "2026-06-20T21:00:00Z"),
   ];
   const hit = pickHighlight(items, "England", "Senegal", KO);
-  assert.equal(hit.channel, "FIFA");
+  assert.equal(hit.channel, "BBC Sport");
+});
+
+test("pickHighlight: UK rights — only BBC/ITV count; FIFA+/Fox are geo-blocked here", () => {
+  const fifa = [hlItem("England 2-1 Senegal | Highlights | FIFA World Cup 2026", "FIFA", "2026-06-20T21:00:00Z")];
+  const fox = [hlItem("England vs Senegal Highlights | World Cup 2026", "FOX Soccer", "2026-06-20T21:00:00Z")];
+  assert.equal(pickHighlight(fifa, "England", "Senegal", KO), null);   // FIFA's own channel — blocked in the UK
+  assert.equal(pickHighlight(fox, "England", "Senegal", KO), null);    // US broadcaster — blocked in the UK
 });
 
 test("pickHighlight: recognises broadcaster brands, not just exact names; beats a fan re-cut", () => {
@@ -392,13 +399,13 @@ test("pickHighlight: ignores non-official channels even when the title looks per
 
 test("pickHighlight: requires a highlights video that names BOTH teams", () => {
   // names only one team
-  assert.equal(pickHighlight([hlItem("England Highlights", "FIFA", "2026-06-20T21:00:00Z")], "England", "Senegal", KO), null);
+  assert.equal(pickHighlight([hlItem("England Highlights", "BBC Sport", "2026-06-20T21:00:00Z")], "England", "Senegal", KO), null);
   // not a highlights video (a press conference)
-  assert.equal(pickHighlight([hlItem("England v Senegal press conference", "FIFA", "2026-06-20T21:00:00Z")], "England", "Senegal", KO), null);
+  assert.equal(pickHighlight([hlItem("England v Senegal press conference", "BBC Sport", "2026-06-20T21:00:00Z")], "England", "Senegal", KO), null);
 });
 
 test("pickHighlight: rejects a pre-kickoff upload (a previous edition / preview)", () => {
-  const items = [hlItem("England vs Senegal highlights (2022)", "FIFA", "2026-06-20T09:00:00Z")];   // before KO
+  const items = [hlItem("England vs Senegal highlights (2022)", "BBC Sport", "2026-06-20T09:00:00Z")];   // before KO
   assert.equal(pickHighlight(items, "England", "Senegal", KO), null);
 });
 
