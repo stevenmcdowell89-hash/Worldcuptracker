@@ -156,6 +156,7 @@ export function assignKnockoutSlots(matches) {
   const byRound = {};
   for (const m of matches) {
     if (m.group) continue;                              // group games key by fixture id
+    if (m._synthetic) continue;                         // seeded blank placeholder — no real match number to claim
     const r = normRound(m.stage);
     if (!r || r.type !== "ko" || !m.kickoff) continue;
     (byRound[r.rd] = byRound[r.rd] || []).push(m);
