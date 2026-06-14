@@ -1340,18 +1340,32 @@ export default {
       const dueLive = live && now - meta.lastLive >= liveMs;
       const dueNews = now - (meta.lastNews || 0) >= newsMs;
       if (!dueFull && !dueLive) {
-        // No data poll due — but keep the news fresh on its own ~30-min cadence (cheap,
-        // no API-Football quota, doesn't touch lastFull/lastLive).
-        if (dueNews && prev) {
-          try {
-            prev.news = await fetchNews(env);
-            // Bump meta.updated: the frontend only repaints an open tab when it changes,
-            // so without this fresh headlines sit unseen until the next full/live poll.
-            prev.meta = { ...prev.meta, updated: new Date().toISOString() };
-            await writeSnapshot(env, prev);
-            await env.SNAPSHOT.put(META_KEY, JSON.stringify({ ...meta, lastNews: now }));
-          } catch {}
+        // No data poll due, but two things keep their own cadence here, decoupled from the
+        // 6h baseline (neither touches lastFull/lastLive):
+        if (!prev) return;
+        let metaDirty = false, dataDirty = false;
+        // (a) News — cheap, ~30-min cadence, no football quota.
+        if (dueNews) { try { prev.news = await fetchNews(env); meta.lastNews = now; metaDirty = dataDirty = true; } catch {} }
+        // (b) Match-highlights catch-up. Official uploads land 1–3h after full time, but a
+        // finished match would otherwise wait for the next 6h poll to be re-searched. Re-scan
+        // recent finished matches still missing one every ~25 min and patch them straight in.
+        // Stamp _hlTriedAt so the next full poll's search doesn't duplicate the work.
+        if (env.YOUTUBE_API_KEY && now - (meta.lastHlSweep || 0) >= 25 * 60e3) {
+          meta.lastHlSweep = now; metaDirty = true;
+          const pending = (prev.matches || []).filter((m) => m.status === "ft" && !m.highlights?.id
+            && m.kickoff && now - Date.parse(m.kickoff) < 48 * 3600e3);
+          for (const m of pending) {
+            m._hlTriedAt = now; m._hlV = HIGHLIGHTS_V;
+            try {
+              const hl = await findHighlights(env, prev.teams?.[m.home.code]?.name || m.home.code, prev.teams?.[m.away.code]?.name || m.away.code, m.kickoff);
+              if (hl) { m.highlights = hl; delete m._hlTriedAt; delete m._hlV; dataDirty = true; }
+            } catch { /* best-effort */ }
+          }
         }
+        // Bump meta.updated only when something visible changed (the frontend repaints on
+        // it); persist the snapshot whenever we wrote _hlTriedAt stamps so the throttle holds.
+        if (dataDirty) prev.meta = { ...prev.meta, updated: new Date().toISOString() };
+        if (metaDirty) { await writeSnapshot(env, prev); await env.SNAPSHOT.put(META_KEY, JSON.stringify(meta)); }
         return;
       }
 
