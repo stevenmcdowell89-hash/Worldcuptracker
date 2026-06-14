@@ -237,6 +237,34 @@ test("penalty shootout: tally captured, knockout slot assigned, group games unto
   assert.equal(grp.pens, undefined);                   // null penalty block → no pens field
 });
 
+test("knockout bracket seeded (blank teams, real dates) when the feed has no KO games", async () => {
+  globalThis.fetch = async (url) => {
+    const u = new URL(url);
+    if (u.pathname === "/fixtures") return { ok: true, status: 200, headers: { get: () => null }, json: async () => ({ response: [
+      { fixture: { id: 6001, date: "2026-06-20T16:00:00Z", status: { short: "FT", elapsed: 90 }, venue: { name: "Stadium" } },
+        league: { round: "Group Stage - 1" }, teams: { home: { id: 100, code: "ENG" }, away: { id: 102, code: "SEN" } },
+        goals: { home: 1, away: 0 }, score: { penalty: { home: null, away: null } } },
+    ] }) };
+    return { ok: true, status: 200, headers: { get: () => null }, json: async () => ({ response: cannedFetch(url) }) };
+  };
+  const s = await buildSnapshot({ APIFOOTBALL_KEY: "t", WC_LEAGUE_ID: "1", WC_SEASON: "2026" }, null, false);
+  const ko = s.matches.filter((m) => m.stage !== "Group Stage");
+  assert.equal(ko.length, 32, "all 32 knockout fixtures seeded");
+  assert.ok(ko.every((m) => m.status === "scheduled" && m.home.code === "TBD" && m.away.code === "TBD"), "teams blank, all scheduled");
+  assert.equal(ko.filter((m) => m.stage === "Round of 32").length, 16);
+  const final = s.matches.find((m) => m.id === "ko104");
+  assert.equal(final.stage, "Final");
+  assert.equal(final.kickoff, "2026-07-19T19:00:00Z");
+  assert.match(final.venue, /MetLife/);
+  assert.ok(!s.matches.some((m) => m._synthetic), "internal _synthetic flag stripped before serialisation");
+});
+
+test("seeded knockout skeleton is dropped once the feed carries a real KO fixture", () => {
+  // The setup fixtures() already include a real Round of 32 (5004) → no skeleton.
+  assert.ok(!snap.matches.some((m) => String(m.id).startsWith("ko")), "no placeholders beside a real KO game");
+  assert.equal(snap.matches.filter((m) => m.stage !== "Group Stage").length, 1, "only the real KO fixture remains");
+});
+
 test("discipline leaderboard populated", () => {
   assert.ok(snap.discipline.length > 0);
   assert.ok(snap.discipline[0].y >= 0);

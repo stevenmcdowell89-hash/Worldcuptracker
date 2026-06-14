@@ -48,6 +48,14 @@ const STAKE = {
   seeding: { cls: "seeding", lbl: "Seeding" },
   dead: { cls: "dead", lbl: "Dead rubber" },
 };
+// A knockout slot whose team isn't confirmed yet (seeded fixture, or an API placeholder).
+const isBlankTeam = (code) => !code || code === "TBD";
+function sideHTML(code, which) {
+  if (isBlankTeam(code)) return `<span class="side ${which} tbd"><span class="nm">—</span></span>`;
+  const nm = `<span class="nm">${teamName(code)}</span>`;
+  return which === "home" ? `<span class="side home">${nm}${flag(code)}</span>`
+                          : `<span class="side away">${flag(code)}${nm}</span>`;
+}
 function matchRow(m, opts = {}) {
   const live = m.status === "live" || m.status === "ht";
   const ft = m.status === "ft";
@@ -67,11 +75,15 @@ function matchRow(m, opts = {}) {
   ].filter(Boolean).join("");
   const bell = bellHTML(m);   // reminder bell (feature 3) — scheduled fixtures only
   const meta = tags || bell ? `<div class="match-meta">${tags}${bell}</div>` : "";
+  // A fixture with neither team confirmed has nothing to drill into yet — show it, but
+  // don't make it tappable until at least one side is locked in.
+  const blankRow = isBlankTeam(m.home.code) && isBlankTeam(m.away.code);
+  const open = blankRow ? `<div class="match">` : `<div class="match clickable" data-nav="match/${m.id}">`;
   return `<div class="match-card${live ? " live-card" : ""}">
-    <div class="match clickable" data-nav="match/${m.id}">
-      <span class="side home"><span class="nm">${teamName(m.home.code)}</span>${flag(m.home.code)}</span>
+    ${open}
+      ${sideHTML(m.home.code, "home")}
       <span class="mid">${mid}</span>
-      <span class="side away">${flag(m.away.code)}<span class="nm">${teamName(m.away.code)}</span></span>
+      ${sideHTML(m.away.code, "away")}
     </div>${meta}</div>`;
 }
 
@@ -160,17 +172,19 @@ export function renderMatches(ctx = {}) {
     return `${stale}${preHero(upcoming)}${resultsSec}${upNext}${byDay.map(daySec).join("")}${foot}`;
   }
 
-  // ── GROUP FINAL: interleave each group's table beneath that group's final games ──
+  // ── GROUP FINAL: interleave each group's table beneath that group's final games,
+  // then the seeded knockout fixtures (no group) by day below. ──
   if (ph === "groupFinal") {
     const byGroup = {};
-    for (const m of upcoming) (byGroup[m.group || "—"] = byGroup[m.group || "—"] || []).push(m);
+    for (const m of upcoming) if (m.group) (byGroup[m.group] = byGroup[m.group] || []).push(m);
     const groupBlocks = Object.keys(byGroup).sort().map((g) => {
       const fixtures = byGroup[g].map((m) => matchRow(m, { showStakes })).join("");
       const table = S().groups?.[g]
         ? `<div class="block embed-table">${groupTableHTML(g)}</div>` : "";
       return `<div class="day-label">Group ${g} · final games</div><div class="section">${fixtures}</div>${table}`;
     }).join("");
-    return `${toggle}${head}${compactRaceCard(true)}${groupBlocks}${foot}`;
+    const koBlocks = upcomingByDay(upcoming.filter((m) => !m.group)).map(daySec).join("");
+    return `${toggle}${head}${compactRaceCard(true)}${groupBlocks}${koBlocks}${foot}`;
   }
 
   // ── KNOCKOUT: KO fixtures lead, then the bracket embedded inline (§11/§13) ──

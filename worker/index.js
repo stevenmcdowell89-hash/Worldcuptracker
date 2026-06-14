@@ -18,7 +18,7 @@ import { buildBracket } from "../web/js/bracket.js";
 import ANNEXC from "../web/js/annexC.data.js";
 import TVSEED from "../web/js/tvUK.data.js";
 import { sendWebPush } from "./push.js";
-import { mergeListings, annotateTv, fetchTvListings, ukTimeOf, TV_SOURCE_DEFAULT } from "./tv.js";
+import { mergeListings, annotateTv, fetchTvListings, ukTimeOf, TV_SOURCE_DEFAULT, normRound } from "./tv.js";
 
 const API = "https://v3.football.api-sports.io";
 const KV_KEY = "latest.json";
@@ -250,6 +250,56 @@ function normFixtures(resp, dir, idToGroup) {
   return { matches, remainingFixtures };
 }
 
+// ── Knockout skeleton ────────────────────────────────────────────────────────────
+// API-Football doesn't carry the World Cup knockout fixtures until the bracket is
+// seeded (after the group stage), so the Matches feed dead-ends at the group games.
+// Seed the 16 R32 → final fixtures from the published 2026 schedule (match nos 73–104)
+// so their dates/times/venues show ahead of time, with both teams BLANK ("TBD") until
+// confirmed. The moment the live feed carries ANY knockout fixture it takes over (see
+// buildSnapshot) — so real teams/scores are never overridden and nothing double-lists.
+// Kickoffs are UTC; rounds/venues per the official schedule.
+const KO_SCHEDULE = [
+  { id: "ko73", round: "Round of 32", kickoff: "2026-06-28T19:00:00Z", venue: "SoFi Stadium, Inglewood" },
+  { id: "ko74", round: "Round of 32", kickoff: "2026-06-29T20:30:00Z", venue: "Gillette Stadium, Foxborough" },
+  { id: "ko75", round: "Round of 32", kickoff: "2026-06-30T01:00:00Z", venue: "Estadio BBVA, Guadalupe" },
+  { id: "ko76", round: "Round of 32", kickoff: "2026-06-29T17:00:00Z", venue: "NRG Stadium, Houston" },
+  { id: "ko77", round: "Round of 32", kickoff: "2026-06-30T21:00:00Z", venue: "MetLife Stadium, East Rutherford" },
+  { id: "ko78", round: "Round of 32", kickoff: "2026-06-30T17:00:00Z", venue: "AT&T Stadium, Arlington" },
+  { id: "ko79", round: "Round of 32", kickoff: "2026-07-01T01:00:00Z", venue: "Estadio Azteca, Mexico City" },
+  { id: "ko80", round: "Round of 32", kickoff: "2026-07-01T16:00:00Z", venue: "Mercedes-Benz Stadium, Atlanta" },
+  { id: "ko81", round: "Round of 32", kickoff: "2026-07-02T00:00:00Z", venue: "Levi's Stadium, Santa Clara" },
+  { id: "ko82", round: "Round of 32", kickoff: "2026-07-01T20:00:00Z", venue: "Lumen Field, Seattle" },
+  { id: "ko83", round: "Round of 32", kickoff: "2026-07-02T23:00:00Z", venue: "BMO Field, Toronto" },
+  { id: "ko84", round: "Round of 32", kickoff: "2026-07-02T19:00:00Z", venue: "SoFi Stadium, Inglewood" },
+  { id: "ko85", round: "Round of 32", kickoff: "2026-07-03T03:00:00Z", venue: "BC Place, Vancouver" },
+  { id: "ko86", round: "Round of 32", kickoff: "2026-07-03T22:00:00Z", venue: "Hard Rock Stadium, Miami Gardens" },
+  { id: "ko87", round: "Round of 32", kickoff: "2026-07-04T01:30:00Z", venue: "Arrowhead Stadium, Kansas City" },
+  { id: "ko88", round: "Round of 32", kickoff: "2026-07-03T18:00:00Z", venue: "AT&T Stadium, Arlington" },
+  { id: "ko89", round: "Round of 16", kickoff: "2026-07-04T21:00:00Z", venue: "Lincoln Financial Field, Philadelphia" },
+  { id: "ko90", round: "Round of 16", kickoff: "2026-07-04T17:00:00Z", venue: "NRG Stadium, Houston" },
+  { id: "ko91", round: "Round of 16", kickoff: "2026-07-05T20:00:00Z", venue: "MetLife Stadium, East Rutherford" },
+  { id: "ko92", round: "Round of 16", kickoff: "2026-07-06T00:00:00Z", venue: "Estadio Azteca, Mexico City" },
+  { id: "ko93", round: "Round of 16", kickoff: "2026-07-06T19:00:00Z", venue: "AT&T Stadium, Arlington" },
+  { id: "ko94", round: "Round of 16", kickoff: "2026-07-07T00:00:00Z", venue: "Lumen Field, Seattle" },
+  { id: "ko95", round: "Round of 16", kickoff: "2026-07-07T16:00:00Z", venue: "Mercedes-Benz Stadium, Atlanta" },
+  { id: "ko96", round: "Round of 16", kickoff: "2026-07-07T20:00:00Z", venue: "BC Place, Vancouver" },
+  { id: "ko97", round: "Quarter-final", kickoff: "2026-07-09T20:00:00Z", venue: "Gillette Stadium, Foxborough" },
+  { id: "ko98", round: "Quarter-final", kickoff: "2026-07-10T19:00:00Z", venue: "SoFi Stadium, Inglewood" },
+  { id: "ko99", round: "Quarter-final", kickoff: "2026-07-11T21:00:00Z", venue: "Hard Rock Stadium, Miami Gardens" },
+  { id: "ko100", round: "Quarter-final", kickoff: "2026-07-12T01:00:00Z", venue: "Arrowhead Stadium, Kansas City" },
+  { id: "ko101", round: "Semi-final", kickoff: "2026-07-14T19:00:00Z", venue: "AT&T Stadium, Arlington" },
+  { id: "ko102", round: "Semi-final", kickoff: "2026-07-15T19:00:00Z", venue: "Mercedes-Benz Stadium, Atlanta" },
+  { id: "ko103", round: "3rd place", kickoff: "2026-07-18T21:00:00Z", venue: "Hard Rock Stadium, Miami Gardens" },
+  { id: "ko104", round: "Final", kickoff: "2026-07-19T19:00:00Z", venue: "MetLife Stadium, East Rutherford" },
+];
+function knockoutSkeleton() {
+  return KO_SCHEDULE.map((k) => ({
+    id: k.id, stage: k.round, venue: k.venue, kickoff: k.kickoff, status: "scheduled",
+    home: { code: "TBD", score: null }, away: { code: "TBD", score: null },
+    _synthetic: true,   // blank placeholder — not a real fixture yet
+  }));
+}
+
 function normEvents(resp, homeId) {
   return (resp || []).map((e) => ({
     min: `${e.time?.elapsed ?? ""}${e.time?.extra ? "+" + e.time.extra : ""}'`,
@@ -342,6 +392,13 @@ export async function buildSnapshot(env, prev, liveOnly) {
   // and a degraded write flips the app's layout. Fail the poll → keep last good.
   if (!fixturesResp.length && prev?.matches?.length) throw new Error("fixtures returned empty with a schedule on record — keeping the last good snapshot");
   const { matches, remainingFixtures } = normFixtures(fixturesResp, dir, idToGroup);
+
+  // Seed the knockout bracket with dates/venues (teams blank) while the live feed still
+  // dead-ends at the group stage. As soon as the API carries ANY knockout fixture it
+  // owns that round end-to-end, so drop the skeleton entirely — never double-list or
+  // override a confirmed team. Detect by round name (not group membership, which can be
+  // unresolved on an empty-standings poll).
+  if (!matches.some((m) => normRound(m.stage)?.type === "ko")) matches.push(...knockoutSkeleton());
 
   // Carry over finalised match detail (events/stats/lineups/ratings never change once
   // FT) so each finished match is fetched exactly once.
@@ -514,7 +571,7 @@ export async function buildSnapshot(env, prev, liveOnly) {
     byFixture: TVSEED.byFixture, bySlot: TVSEED.bySlot,
   });
 
-  for (const m of matches) { delete m._homeId; delete m._awayId; delete m._final; }  // strip internals
+  for (const m of matches) { delete m._homeId; delete m._awayId; delete m._final; delete m._synthetic; }  // strip internals
   for (const g of Object.keys(groups)) groups[g].forEach((r) => delete r._id);
   for (const t of Object.values(teams)) delete t._id;
 
