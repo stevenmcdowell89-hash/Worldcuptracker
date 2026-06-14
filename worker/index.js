@@ -425,14 +425,18 @@ export async function buildSnapshot(env, prev, liveOnly) {
   // surface that shows it) — see the cron's scheduled() handler.
   if (env.YOUTUBE_API_KEY && !liveOnly) {
     const now = Date.now();
+    // Resolve the search name the same way the diagnostic/sweep do — prefer the snapshot's
+    // team directory, fall back to the dir, then the code — so a thin /teams response can't
+    // silently blank the name (which made findHighlights bail before it searched).
+    const nm = (id, code) => prev?.teams?.[code]?.name || dir.byId[id]?.name || code;
     for (const m of matches) {
       if (m.status !== "ft" || m.highlights) continue;
       const koMs = m.kickoff ? new Date(m.kickoff).getTime() : 0;
-      if (koMs && now > koMs + 48 * 3600e3) continue;                 // gave up — the upload never appeared
+      if (koMs && now > koMs + 96 * 3600e3) continue;                 // gave up — ~4 days on, the upload never appeared
       if (m._hlTriedAt && now - m._hlTriedAt < 45 * 60e3) continue;   // throttle retries between polls
       m._hlTriedAt = now; m._hlV = HIGHLIGHTS_V;
       try {
-        const hl = await findHighlights(env, dir.byId[m._homeId]?.name, dir.byId[m._awayId]?.name, m.kickoff);
+        const hl = await findHighlights(env, nm(m._homeId, m.home.code), nm(m._awayId, m.away.code), m.kickoff);
         if (hl) { m.highlights = hl; delete m._hlTriedAt; delete m._hlV; }
       } catch { /* highlights are best-effort */ }
     }
@@ -868,7 +872,7 @@ async function fetchCommentary(env, id) {
 // FIFA + the broadcasters YouTube named as 2026 media partners — so we surface the
 // official upload, not a fan re-cut. Frozen once captured (carried over per poll).
 const YOUTUBE = "https://www.googleapis.com/youtube/v3";
-const HIGHLIGHTS_V = 4;   // bump to force one re-fetch/re-search of frozen highlights after a scoring change
+const HIGHLIGHTS_V = 5;   // bump to force one re-fetch/re-search of frozen highlights after a scoring change
 // UK rights-holders only. BBC and ITV hold the UK World Cup rights and post highlights for
 // every match; everyone else's uploads (Fox, FIFA+, beIN, …) are geo-blocked in the UK and
 // would embed as "unavailable". Match channelTitle by brand, case-insensitively — "BBC Sport",
@@ -935,20 +939,29 @@ async function findHighlights(env, home, away, kickoffIso) {
 // The day's official round-up (one per match day, for the morning catch-up) — stricter
 // than a match search: an official channel AND a round-up signal in the title, so we
 // never mistake a single tie's highlights for the whole day.
+// Pick the day's official round-up from a result set (or null). Pure → unit-tested.
+// A whole-day round-up signal (BBC/ITV title these e.g. "Matchday 3 Roundup", "All the
+// action…"). Don't also require the word "highlights" — broadcasters often don't use it on
+// the round-up — but DO exclude single-match videos (a "X v Y" title) so a tie's own
+// highlights are never mistaken for the day's round-up.
+export function pickDayRoundup(items) {
+  const roundup = /(match\s?day|round[\s-]?up|all the goals|every goal|today at the|recap|day \d)/i;
+  for (const it of items || []) {
+    const title = it.snippet?.title || "";
+    if (!ytOfficial(it.snippet?.channelTitle)) continue;   // BBC/ITV only
+    if (!roundup.test(title) || /\bvs?\b/i.test(title)) continue;
+    return { id: it.id?.videoId, title, channel: it.snippet?.channelTitle };
+  }
+  return null;
+}
 async function findDayHighlights(env, dateIso) {
   const koMs = Date.parse(dateIso);
   const after = isNaN(koMs) ? undefined : new Date(koMs - 6 * 3600e3).toISOString();
   const items = await youtubeSearch(env, "FIFA World Cup 2026 matchday highlights all the goals", {
     order: "date", maxResults: "25", ...(after ? { publishedAfter: after } : {}),   // dig past fan re-uploads
   });
-  const roundup = /(match\s?day|round[\s-]?up|all the goals|every goal|today at the|recap|day \d)/i;
-  for (const it of items) {
-    const title = it.snippet?.title || "";
-    if (!ytOfficial(it.snippet?.channelTitle)) continue;
-    if (!/highlight|goals|recap/i.test(title) || !roundup.test(title)) continue;
-    return { id: it.id?.videoId, title, channel: it.snippet?.channelTitle, date: dateIso, source: "youtube", v: HIGHLIGHTS_V };
-  }
-  return null;
+  const hit = pickDayRoundup(items);
+  return hit && hit.id ? { ...hit, date: dateIso, source: "youtube", v: HIGHLIGHTS_V } : null;
 }
 
 // ── football-data.org fallback (fixtures/standings only — resilience, never primary) ──
@@ -1347,7 +1360,8 @@ export default {
         if (env.YOUTUBE_API_KEY && now - (meta.lastHlSweep || 0) >= 25 * 60e3) {
           meta.lastHlSweep = now; metaDirty = true;
           const pending = (prev.matches || []).filter((m) => m.status === "ft" && !m.highlights?.id
-            && m.kickoff && now - Date.parse(m.kickoff) < 48 * 3600e3);
+            && m.kickoff && now - Date.parse(m.kickoff) < 96 * 3600e3
+            && !(m._hlTriedAt && now - m._hlTriedAt < 45 * 60e3));   // per-match throttle → bounds quota
           for (const m of pending) {
             m._hlTriedAt = now; m._hlV = HIGHLIGHTS_V;
             try {
@@ -1566,7 +1580,7 @@ export default {
     if (path === "/debug/highlights") {
       if (env.DEBUG_TOKEN && url.searchParams.get("t") !== env.DEBUG_TOKEN) return json({ error: "forbidden" }, 403);
       if (!env.YOUTUBE_API_KEY) return json({ error: "YOUTUBE_API_KEY not set" }, 503);
-      const out = { uk: ukParts() };
+      const out = { uk: ukParts(), highlightsVersion: HIGHLIGHTS_V };   // confirm which build is live
       const snap = await readSnapshot(env);
       const fts = (snap?.matches || []).filter((m) => m.status === "ft")
         .sort((a, b) => (b.kickoff || "").localeCompare(a.kickoff || ""));

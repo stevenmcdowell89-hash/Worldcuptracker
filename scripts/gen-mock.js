@@ -208,7 +208,7 @@ matches.push({
   },
   // Highlights (worker-sourced from the YouTube Data API in production). A real WC26 clip
   // is used here purely so the embed renders in the local mock demo.
-  highlights: { id: "DjYkkRPqV18", title: "England 2-1 Senegal · Highlights", channel: "BBC Sport", source: "youtube", v: 4 },
+  highlights: { id: "DjYkkRPqV18", title: "England 2-1 Senegal · Highlights", channel: "BBC Sport", source: "youtube", v: 5 },
 });
 
 // Scheduled matchday-3 fixtures become "scheduled" matches.
@@ -414,7 +414,7 @@ const snapshot = {
   teams, players, clubWatch, news,
   // The day's official round-up video for the morning catch-up (worker-sourced in
   // production). Real WC26 clip here so the morning-view embed renders in the demo.
-  dayHighlights: { id: "DjYkkRPqV18", title: "World Cup 2026 · Matchday highlights", channel: "BBC Sport", date: new Date().toISOString().slice(0, 10), source: "youtube", v: 4 },
+  dayHighlights: { id: "DjYkkRPqV18", title: "World Cup 2026 · Matchday highlights", channel: "BBC Sport", date: new Date().toISOString().slice(0, 10), source: "youtube", v: 5 },
 };
 
 mkdirSync(dirname(OUT), { recursive: true });
