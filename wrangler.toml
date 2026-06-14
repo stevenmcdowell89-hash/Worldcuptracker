@@ -42,6 +42,12 @@ BASELINE_INTERVAL_MIN = "360"   # 6h baseline refresh
 # on the next tick (~60s later) and the poll actually landed every 2 MINUTES — the
 # match minute visibly skipped. 45 ⇒ a live poll every cron minute (~6-10 API calls).
 LIVE_INTERVAL_SEC = "45"
+# Pre-match lineups: confirmed XIs publish ~1h before kickoff while a match is still
+# "scheduled", before the live-gate (KO−5min) opens. LINEUP_LEAD_MIN sets how far ahead
+# of kickoff to start fetching them; LINEUP_INTERVAL_MIN is the (gentle) pre-match poll
+# cadence — lineups are static once published, so a few minutes apart is plenty.
+LINEUP_LEAD_MIN = "60"
+LINEUP_INTERVAL_MIN = "5"
 # Max API subrequests per poll. Keep under the Workers plan cap (Free=50, Paid=1000).
 # On Workers Paid: a full poll (~110 calls) fits comfortably, so everything fills in
 # a single poll. (On Free, set this to ~45 so heavy enrichment spreads across polls.)

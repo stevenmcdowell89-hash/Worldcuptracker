@@ -3,7 +3,7 @@
 // end, asserting the snapshot shape the frontend depends on. Run: npm test
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildSnapshot, resultsDigest, todayDigest, fixtureLabel, normPlayer, pickHighlight, pickDayRoundup } from "../worker/index.js";
+import { buildSnapshot, resultsDigest, todayDigest, fixtureLabel, normPlayer, pickHighlight, pickDayRoundup, lineupWindowOpen } from "../worker/index.js";
 
 // ── canned API-Football responses keyed by path (+ a little param awareness) ──
 const NATIONS = {
@@ -300,6 +300,19 @@ test("lineups load pre-match once kickoff is imminent (match still 'scheduled')"
   assert.ok(m, "imminent scheduled match present");
   assert.equal(m.status, "scheduled");
   assert.ok(m.lineups?.h?.xi?.length, "home XI populated before kickoff");
+});
+
+test("lineup poll gate opens only for scheduled fixtures inside the lead window", () => {
+  const lead = 60 * 60e3;   // 60 min
+  const at = (min) => new Date(Date.now() + min * 60e3).toISOString();
+  // A scheduled match 45 min out → poll gate open; one 90 min out → still closed.
+  assert.equal(lineupWindowOpen({ matches: [{ status: "scheduled", kickoff: at(45) }] }, lead), true, "opens 45 min before KO");
+  assert.equal(lineupWindowOpen({ matches: [{ status: "scheduled", kickoff: at(90) }] }, lead), false, "closed 90 min before KO");
+  // Already kicked off / live / no kickoff → not driven by this gate.
+  assert.equal(lineupWindowOpen({ matches: [{ status: "scheduled", kickoff: at(-5) }] }, lead), false, "closed once kickoff has passed");
+  assert.equal(lineupWindowOpen({ matches: [{ status: "live", kickoff: at(20) }] }, lead), false, "ignores non-scheduled matches");
+  assert.equal(lineupWindowOpen({ matches: [{ status: "scheduled" }] }, lead), false, "ignores matches with no kickoff");
+  assert.equal(lineupWindowOpen(null, lead), false, "no snapshot → closed");
 });
 
 test("bracket built with full structure", () => {
