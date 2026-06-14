@@ -374,6 +374,17 @@ test("pickHighlight: recognises broadcaster brands, not just exact names; beats 
   assert.ok(["BBC Football", "ITV Sport"].includes(hit.channel));
 });
 
+test("pickHighlight: matches Türkiye even when the broadcaster title says Turkey", () => {
+  // API-Football name carries the diacritic ("Türkiye"); ITV/BBC title anglicises to "Turkey"
+  const items = [hlItem("Australia v Turkey | Highlights | FIFA World Cup 2026", "ITV Sport", "2026-06-20T18:00:00Z")];
+  assert.equal(pickHighlight(items, "Australia", "Türkiye", KO)?.channel, "ITV Sport");
+});
+
+test("pickHighlight: matches multi-word names by any word (Korea Republic → 'Korea')", () => {
+  const items = [hlItem("Ghana vs South Korea Highlights | World Cup 2026", "BBC Sport", "2026-06-20T18:00:00Z")];
+  assert.ok(pickHighlight(items, "Ghana", "Korea Republic", KO));
+});
+
 test("pickHighlight: ignores non-official channels even when the title looks perfect", () => {
   const items = [hlItem("England vs Senegal 2-1 | Highlights | FIFA World Cup 2026", "Global Football Highlights", "2026-06-20T17:00:00Z")];
   assert.equal(pickHighlight(items, "England", "Senegal", KO), null);   // → frontend shows the search-link fallback

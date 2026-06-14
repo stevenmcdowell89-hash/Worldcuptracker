@@ -868,7 +868,7 @@ async function fetchCommentary(env, id) {
 // FIFA + the broadcasters YouTube named as 2026 media partners — so we surface the
 // official upload, not a fan re-cut. Frozen once captured (carried over per poll).
 const YOUTUBE = "https://www.googleapis.com/youtube/v3";
-const HIGHLIGHTS_V = 2;   // bump to force one re-fetch/re-search of frozen highlights after a scoring change
+const HIGHLIGHTS_V = 3;   // bump to force one re-fetch/re-search of frozen highlights after a scoring change
 // Recognise the official rights-holders by channel-title brand (case-insensitive) — robust
 // to YouTube channel-id churn (a hardcoded UC… id silently rots), and broadcasters all
 // brand their channel. Real titles vary ("BBC Football", "ITV Sport", "CBS Sports"), so
@@ -898,16 +898,28 @@ async function youtubeSearch(env, q, params = {}) {
 
 // Score a result set and return the best official MATCH highlight (or null). Pure, so
 // the scoring is unit-tested (scripts/worker.test.js) without touching the network.
+// Diacritic-insensitive (Türkiye/Turkiye, ü as one codepoint or u+combining mark, etc.)
+// and word-by-word, with a small alias map for the names broadcasters anglicise — the
+// last-word-only trick missed "Türkiye" (title says "Turkey") and "Korea Republic".
+const normName = (s) => (s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+const NAME_ALIAS = {                          // normalised API name → extra title tokens to accept
+  "turkiye": ["turkey"], "usa": ["united states"], "korea republic": ["south korea", "korea"],
+  "ir iran": ["iran"], "cote d'ivoire": ["ivory", "coast"], "czechia": ["czech"], "china pr": ["china"],
+};
+function teamTokens(name) {
+  const n = normName(name);
+  const words = n.split(/[^a-z0-9]+/).filter((w) => w.length >= 3);   // skip "ir"/"pr"/two-letter noise
+  return [...new Set([...words, ...(NAME_ALIAS[n] || []).map(normName)])];
+}
 export function pickHighlight(items, home, away, koMs) {
-  const lower = (s) => (s || "").toLowerCase();
-  const tok = (n) => lower(n).split(/\s+/).pop();   // last word of a team name (e.g. "South Korea" → "korea")
-  const ht = tok(home), at = tok(away);
+  const homeToks = teamTokens(home), awayToks = teamTokens(away);
   let best = null, bestScore = -Infinity;
   for (const it of items || []) {
     if (!ytOfficial(it.snippet?.channelTitle)) continue;             // official broadcaster only — never a fan re-cut
-    const title = lower(it.snippet?.title);
+    const title = normName(it.snippet?.title);
     if (!/highlight/.test(title)) continue;                          // must be a highlights video
-    if (!(ht.length > 2 && title.includes(ht)) || !(at.length > 2 && title.includes(at))) continue;  // names BOTH teams
+    const has = (toks) => toks.some((t) => title.includes(t));
+    if (!has(homeToks) || !has(awayToks)) continue;                  // names BOTH teams (any word / alias)
     const pub = Date.parse(it.snippet?.publishedAt || "");
     if (!isNaN(pub) && !isNaN(koMs) && pub < koMs) continue;         // pre-kickoff ⇒ a previous edition
     const score = (!isNaN(pub) && !isNaN(koMs)) ? Math.max(0, 3 - (pub - koMs) / (24 * 3600e3)) : 0;  // sooner after KO wins
@@ -920,7 +932,7 @@ async function findHighlights(env, home, away, kickoffIso) {
   if (!home || !away) return null;
   const koMs = Date.parse(kickoffIso || "");
   const items = await youtubeSearch(env, `${home} vs ${away} highlights World Cup 2026`, {
-    order: "relevance", ...(isNaN(koMs) ? {} : { publishedAfter: new Date(koMs).toISOString() }),
+    order: "relevance", maxResults: "20", ...(isNaN(koMs) ? {} : { publishedAfter: new Date(koMs).toISOString() }),
   });
   const hit = pickHighlight(items, home, away, koMs);
   return hit && hit.id ? { ...hit, source: "youtube", v: HIGHLIGHTS_V } : null;
