@@ -186,29 +186,18 @@ export function renderMatches(ctx = {}) {
   return `${toggle}${head}${upNext}${byDay.map(daySec).join("")}${foot}`;
 }
 
-// Highlights for the morning catch-up. Per-match official highlights are the reliable
-// source (a whole-day round-up is rarely posted), so they lead: one tap-through link per
-// last-night game we sourced an official video for — links, not a stack of heavy players.
-// A whole-day round-up embeds above them as a bonus when one was found; if nothing was
-// sourced at all, a YouTube search link keeps a way through. Only called with a night to recap.
+// Highlights for the morning catch-up. Per-match is the reliable, specific source (a
+// whole-day round-up is rarely posted), so EVERY last-night game gets its own row — a
+// direct link to the official video once sourced, otherwise a match-specific search.
+// A whole-day round-up embeds above them as a bonus when an official one was found.
+// No generic day-level search button. Only called when there's a night to recap.
 function morningHighlights(mm) {
-  const blocks = [];
   const day = mm.highlights;
-  if (day?.id) {
-    const credit = day.channel ? `<div class="hl-credit">Day highlights · ${day.channel} on YouTube</div>` : "";
-    blocks.push(`<div class="hl hl-day">${ytEmbed(day.id, "Day highlights")}${credit}</div>`);
-  }
-  const sourced = mm.lastNight.filter((m) => m.highlights?.id);
-  if (sourced.length) {
-    const rows = sourced.map((m) => `<a class="hl-matchlink" href="https://www.youtube.com/watch?v=${encodeURIComponent(m.highlights.id)}" target="_blank" rel="noopener noreferrer">
-        <span class="hl-mx">▶ ${teamName(m.home.code)} ${m.home.score ?? ""}–${m.away.score ?? ""} ${teamName(m.away.code)}</span>
-        <span class="hl-ch">${m.highlights.channel || "Highlights"} ›</span></a>`).join("");
-    blocks.push(`<div class="hl-matches"><div class="hl-matches-h">Match highlights</div>${rows}</div>`);
-  }
-  if (!blocks.length) {
-    blocks.push(`<div class="hl hl-day">${ytSearchLink("FIFA World Cup 2026 highlights all the goals", "Watch the day's highlights on YouTube")}</div>`);
-  }
-  return blocks.join("");
+  const dayEmbed = day?.id
+    ? `<div class="hl hl-day">${ytEmbed(day.id, "Day highlights")}${day.channel ? `<div class="hl-credit">Day highlights · ${day.channel} on YouTube</div>` : ""}</div>`
+    : "";
+  const rows = mm.lastNight.map(matchHighlightRow).join("");
+  return `${dayEmbed}<div class="hl-matches"><div class="hl-matches-h">Match highlights</div>${rows}</div>`;
 }
 
 // Morning catch-up layout (feature 2). The model (morning.js) is pure/engine-driven;
@@ -490,8 +479,21 @@ function ytEmbed(id, title) {
     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
     allowfullscreen></iframe></div>`;
 }
+const ytSearchUrl = (query) => `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
 function ytSearchLink(query, label) {
-  return `<a class="hl-link" href="https://www.youtube.com/results?search_query=${encodeURIComponent(query)}" target="_blank" rel="noopener noreferrer">▶ ${label}</a>`;
+  return `<a class="hl-link" href="${ytSearchUrl(query)}" target="_blank" rel="noopener noreferrer">▶ ${label}</a>`;
+}
+// A per-match highlights row for the morning catch-up: a direct link to the official video
+// once the Worker has sourced one, otherwise a MATCH-SPECIFIC YouTube search (never a
+// generic day search). Same fallback shape as a finished match's commentary highlights.
+function matchHighlightRow(m) {
+  const label = `▶ ${teamName(m.home.code)} ${m.home.score ?? ""}–${m.away.score ?? ""} ${teamName(m.away.code)}`;
+  const href = m.highlights?.id
+    ? `https://www.youtube.com/watch?v=${encodeURIComponent(m.highlights.id)}`
+    : ytSearchUrl(`${teamName(m.home.code)} vs ${teamName(m.away.code)} highlights World Cup 2026`);
+  const right = m.highlights?.id ? (m.highlights.channel || "Watch") : "Search";
+  return `<a class="hl-matchlink" href="${href}" target="_blank" rel="noopener noreferrer">
+      <span class="hl-mx">${label}</span><span class="hl-ch${m.highlights?.id ? "" : " hl-search"}">${right} ›</span></a>`;
 }
 // Highlights for a finished match: embed the official video the Worker sourced, else a
 // link out to a YouTube search (works with zero config / no API key). Empty until FT.

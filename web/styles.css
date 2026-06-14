@@ -358,6 +358,7 @@ a { color:inherit; text-decoration:none; }
 .hl-matchlink:last-child { margin-bottom:0; }
 .hl-mx { font-size:14px; font-weight:700; }
 .hl-ch { font-size:12px; font-weight:700; color:var(--brand); white-space:nowrap; }
+.hl-ch.hl-search { color:var(--faint); }
 
 /* ── news ── */
 .newslist { background:var(--card); }
