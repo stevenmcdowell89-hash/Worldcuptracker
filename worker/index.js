@@ -988,13 +988,26 @@ export function pickHighlight(items, home, away, koMs) {
   return best ? { id: best.id?.videoId, title: best.snippet?.title, channel: best.snippet?.channelTitle } : null;
 }
 
+// Broadcaster-friendly name for the SEARCH QUERY only (pickHighlight still matches the full
+// API name + aliases). The API's official names ("Cape Verde Islands", "Korea Republic", …)
+// differ from how BBC/ITV title their videos, which skews relevance and buries the official
+// uploads under fan re-cuts. Map the awkward ones to what broadcasters actually write.
+const QUERY_NAME = {
+  "Cape Verde Islands": "Cape Verde", "Korea Republic": "South Korea", "IR Iran": "Iran",
+  "China PR": "China", "Czechia": "Czech Republic", "Türkiye": "Turkey", "USA": "USA",
+  "Côte d'Ivoire": "Ivory Coast",
+};
+const searchName = (n) => QUERY_NAME[n] || n;
+
 async function findHighlights(env, home, away, kickoffIso) {
   if (!home || !away) return null;
   const koMs = Date.parse(kickoffIso || "");
-  const items = await youtubeSearch(env, `${home} vs ${away} highlights World Cup 2026`, {
-    order: "relevance", maxResults: "20", ...(isNaN(koMs) ? {} : { publishedAfter: new Date(koMs).toISOString() }),
+  // "v" (broadcaster style), cleaned names, and scan 50 — Spain-sized fixtures flood YouTube
+  // with fan re-uploads, so the official BBC/ITV video often isn't in the top 10.
+  const items = await youtubeSearch(env, `${searchName(home)} v ${searchName(away)} highlights World Cup 2026`, {
+    order: "relevance", maxResults: "50", ...(isNaN(koMs) ? {} : { publishedAfter: new Date(koMs).toISOString() }),
   });
-  const hit = pickHighlight(items, home, away, koMs);
+  const hit = pickHighlight(items, home, away, koMs);   // matched against the full API name (+ aliases)
   return hit && hit.id ? { ...hit, source: "youtube", v: HIGHLIGHTS_V } : null;
 }
 
@@ -1635,9 +1648,9 @@ export default {
         const home = snap.teams?.[probe.home.code]?.name || probe.home.code;
         const away = snap.teams?.[probe.away.code]?.name || probe.away.code;
         const koMs = Date.parse(probe.kickoff || "");
-        out.matchProbe = { id: probe.id, query: `${home} vs ${away} highlights World Cup 2026` };
+        out.matchProbe = { id: probe.id, query: `${searchName(home)} v ${searchName(away)} highlights World Cup 2026` };
         try {
-          const items = await youtubeSearch(env, out.matchProbe.query, { order: "relevance", ...(isNaN(koMs) ? {} : { publishedAfter: new Date(koMs).toISOString() }) });
+          const items = await youtubeSearch(env, out.matchProbe.query, { order: "relevance", maxResults: "50", ...(isNaN(koMs) ? {} : { publishedAfter: new Date(koMs).toISOString() }) });
           out.matchProbe.candidates = items.map((it) => ({ title: it.snippet?.title, channel: it.snippet?.channelTitle, published: it.snippet?.publishedAt, id: it.id?.videoId }));
           out.matchProbe.picked = pickHighlight(items, home, away, koMs);
         } catch (e) { out.matchProbe.error = e.message; }
