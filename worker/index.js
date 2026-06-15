@@ -419,13 +419,13 @@ export async function buildSnapshot(env, prev, liveOnly) {
     if (m.status === "ft" && p.lineups) {
       m.events = p.events; m.stats = p.stats; m.lineups = p.lineups; m.progressionLine = p.progressionLine; m._final = true;
     }
-    // Highlights are sourced once then frozen — carry them (and the last-tried stamp, so the
-    // retry throttle survives across polls). Both are version-stamped: bumping HIGHLIGHTS_V
-    // forces one clean re-fetch/re-search after a scoring change (stale-version stamps don't
-    // carry, so a previously-tried-but-empty match is retried right away).
+    // Keep a previously-sourced highlight across polls AS LONG AS it's still from an official
+    // UK channel (BBC/ITV) — so a deploy or a ~45s live poll (which doesn't re-search) never
+    // blanks a good video. A pick from a now-unofficial source (an old FIFA/Fox one) is NOT
+    // carried, so it re-sources to BBC/ITV. Carry the retry stamp so the throttle holds.
     if (m.status === "ft") {
-      if (p.highlights?.v === HIGHLIGHTS_V) m.highlights = p.highlights;
-      if (p._hlTriedAt && p._hlV === HIGHLIGHTS_V) { m._hlTriedAt = p._hlTriedAt; m._hlV = p._hlV; }
+      if (p.highlights?.id && ytOfficial(p.highlights.channel)) m.highlights = p.highlights;
+      if (p._hlTriedAt) m._hlTriedAt = p._hlTriedAt;
     }
   }
   // Fetch detail: live/HT every poll; newly-finished matches once (incl FT ratings).
@@ -506,10 +506,10 @@ export async function buildSnapshot(env, prev, liveOnly) {
       const koMs = m.kickoff ? new Date(m.kickoff).getTime() : 0;
       if (koMs && now > koMs + 96 * 3600e3) continue;                 // gave up — ~4 days on, the upload never appeared
       if (m._hlTriedAt && now - m._hlTriedAt < 45 * 60e3) continue;   // throttle retries between polls
-      m._hlTriedAt = now; m._hlV = HIGHLIGHTS_V;
+      m._hlTriedAt = now;
       try {
         const hl = await findHighlights(env, nm(m._homeId, m.home.code), nm(m._awayId, m.away.code), m.kickoff);
-        if (hl) { m.highlights = hl; delete m._hlTriedAt; delete m._hlV; }
+        if (hl) { m.highlights = hl; delete m._hlTriedAt; }
       } catch { /* highlights are best-effort */ }
     }
   }
@@ -948,7 +948,8 @@ async function fetchCommentary(env, id) {
 // FIFA + the broadcasters YouTube named as 2026 media partners — so we surface the
 // official upload, not a fan re-cut. Frozen once captured (carried over per poll).
 const YOUTUBE = "https://www.googleapis.com/youtube/v3";
-const HIGHLIGHTS_V = 5;   // bump to force one re-fetch/re-search of frozen highlights after a scoring change
+const HIGHLIGHTS_V = 5;   // metadata stamp on a stored pick (debugging). NOT used to expire/carry —
+                          // carry-over keeps any pick from a still-official channel, so a deploy never blanks it.
 // UK rights-holders only. BBC and ITV hold the UK World Cup rights and post highlights for
 // every match; everyone else's uploads (Fox, FIFA+, beIN, …) are geo-blocked in the UK and
 // would embed as "unavailable". Match channelTitle by brand, case-insensitively — "BBC Sport",
@@ -1445,10 +1446,10 @@ export default {
             && m.kickoff && now - Date.parse(m.kickoff) < 96 * 3600e3
             && !(m._hlTriedAt && now - m._hlTriedAt < 45 * 60e3));   // per-match throttle → bounds quota
           for (const m of pending) {
-            m._hlTriedAt = now; m._hlV = HIGHLIGHTS_V;
+            m._hlTriedAt = now;
             try {
               const hl = await findHighlights(env, prev.teams?.[m.home.code]?.name || m.home.code, prev.teams?.[m.away.code]?.name || m.away.code, m.kickoff);
-              if (hl) { m.highlights = hl; delete m._hlTriedAt; delete m._hlV; dataDirty = true; }
+              if (hl) { m.highlights = hl; delete m._hlTriedAt; dataDirty = true; }
             } catch { /* best-effort */ }
           }
         }
