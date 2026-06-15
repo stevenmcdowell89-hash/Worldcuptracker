@@ -1281,7 +1281,7 @@ async function sourceMatchHighlights(env, snap, mode = "due", { force = false } 
       touched = true;
       if (hl) { m.highlights = hl; found = true; report.push({ id: m.id, found: hl.channel }); }
       else report.push({ id: m.id, found: null });
-    } catch (e) { report.push({ id: m.id, error: e.message }); break; }   // 403/network: don't burn the check; stop (likely quota)
+    } catch (e) { report.push({ id: m.id, error: e.message }); if (!force) break; }   // quota 403: stop the sweep; force: keep going for a full report
   }
   return { found, touched, report };
 }
