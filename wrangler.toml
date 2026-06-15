@@ -73,13 +73,14 @@ VAPID_PUBLIC_KEY = "BPfPUEER1NnhSRaHUktTYQSKKHv6cPVqokU-3iCd1wgk5K8nV13AAj5WLkei
 #   5,000 calls/day. Without it, the live Commentary tab simply doesn't appear.
 #
 # YOUTUBE_API_KEY (match + daily highlights, optional):  wrangler secret put YOUTUBE_API_KEY
-#   YouTube Data API v3 key from a Google Cloud project (free: 10,000 quota units/day;
-#   search.list = 100 units ⇒ ~100 searches/day). Separate from the API-Football quota.
-#   Per finished match: searched on full polls, throttled to ~45 min/match, frozen once
-#   found. Daily round-up (morning catch-up): searched ONLY inside the morning window
-#   (05:00–13:00 UK), ~every 30 min until found, so it's ready when the view is live and a
-#   late-afternoon upload is never used. Without the key, both degrade gracefully to a
-#   "Watch on YouTube" search link (finished-match commentary + morning catch-up).
+#   YouTube Data API v3 key from a Google Cloud project. IMPORTANT: the free tier is only
+#   10,000 units/day and search.list costs 100 ⇒ ~100 searches/day — easily exceeded during
+#   a busy match day, which 403s and leaves recent matches without an embed. Search rates are
+#   kept well under that: per match throttled to ~90 min and given up after 36h (frozen once
+#   found, and a found BBC/ITV pick is kept across deploys); the daily round-up retries hourly
+#   only inside the morning window (05:00–13:00 UK). If you still hit the cap, request a quota
+#   increase in Google Cloud. Without the key, everything degrades to a "Watch on YouTube"
+#   search link. Force + diagnose: /admin/refresh-highlights (reports any 403), /debug/highlights.
 #
 # Web push notifications (brief §14) — OPTIONAL. The feature stays inert until set.
 #   Generate a key pair once:  npm run gen:vapid

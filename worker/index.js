@@ -504,8 +504,8 @@ export async function buildSnapshot(env, prev, liveOnly) {
     for (const m of matches) {
       if (m.status !== "ft" || m.highlights) continue;
       const koMs = m.kickoff ? new Date(m.kickoff).getTime() : 0;
-      if (koMs && now > koMs + 96 * 3600e3) continue;                 // gave up — ~4 days on, the upload never appeared
-      if (m._hlTriedAt && now - m._hlTriedAt < 45 * 60e3) continue;   // throttle retries between polls
+      if (koMs && now > koMs + HL_GIVEUP_H * 3600e3) continue;            // gave up — the upload never appeared
+      if (m._hlTriedAt && now - m._hlTriedAt < HL_RETRY_MIN * 60e3) continue;   // throttle retries (quota)
       m._hlTriedAt = now;
       try {
         const hl = await findHighlights(env, nm(m._homeId, m.home.code), nm(m._awayId, m.away.code), m.kickoff);
@@ -1310,6 +1310,35 @@ async function refreshDayHighlights(env) {
   } catch (e) { return { ok: false, date, error: e.message }; }
 }
 
+// Search any finished match that still lacks a highlight and patch finds into the snapshot.
+// Quota-bounded: skips matches tried within HL_RETRY_MIN (unless force) and ones older than
+// HL_GIVEUP_H. Used by the cron sweep (non-force, throttled) and by /admin/refresh-highlights
+// (force) — the latter returns a per-match report (incl. any "YouTube /search 403" quota error).
+const HL_RETRY_MIN = 90, HL_GIVEUP_H = 36;
+async function refreshMatchHighlights(env, { force = false } = {}) {
+  if (!env.YOUTUBE_API_KEY) return { ok: false, error: "YOUTUBE_API_KEY not set" };
+  const snap = await readSnapshot(env);
+  if (!snap) return { ok: false, error: "no snapshot yet" };
+  const now = Date.now();
+  const nm = (code) => snap.teams?.[code]?.name || code;
+  const pending = (snap.matches || []).filter((m) => m.status === "ft" && !m.highlights?.id
+    && m.kickoff && now - Date.parse(m.kickoff) < HL_GIVEUP_H * 3600e3
+    && (force || !(m._hlTriedAt && now - m._hlTriedAt < HL_RETRY_MIN * 60e3)));
+  const report = [];
+  let changed = false;
+  for (const m of pending) {
+    m._hlTriedAt = now;
+    try {
+      const hl = await findHighlights(env, nm(m.home.code), nm(m.away.code), m.kickoff);
+      if (hl) { m.highlights = hl; delete m._hlTriedAt; changed = true; report.push({ id: m.id, found: hl.channel }); }
+      else report.push({ id: m.id, found: null });
+    } catch (e) { report.push({ id: m.id, error: e.message }); }   // surfaces a 403 quota error
+  }
+  if (changed) snap.meta = { ...snap.meta, updated: new Date().toISOString() };
+  if (pending.length) await writeSnapshot(env, snap);   // persist finds + retry stamps
+  return { ok: true, searched: pending.length, report };
+}
+
 // Verdict-flip alerts (brief §14) — live qualification moments, waking hours only
 // (overnight flips fold into the morning results digest). This diffs the previous
 // snapshot against the freshly-built one, so it only makes sense right after a data
@@ -1405,7 +1434,7 @@ export default {
         const uk = ukParts();
         if (env.YOUTUBE_API_KEY && uk.hour >= 5 && uk.hour < 13) {
           const have = await env.SNAPSHOT.get("day-highlights", "json");
-          if (have?.date !== uk.date && now - (meta.lastHighlights || 0) >= 30 * 60e3) {
+          if (have?.date !== uk.date && now - (meta.lastHighlights || 0) >= 60 * 60e3) {
             meta.lastHighlights = now;
             await env.SNAPSHOT.put(META_KEY, JSON.stringify(meta));
             await refreshDayHighlights(env);   // searches, stores, surfaces — see the helper
@@ -1433,30 +1462,23 @@ export default {
         // No data poll due, but two things keep their own cadence here, decoupled from the
         // 6h baseline (neither touches lastFull/lastLive):
         if (!prev) return;
-        let metaDirty = false, dataDirty = false;
-        // (a) News — cheap, ~30-min cadence, no football quota.
-        if (dueNews) { try { prev.news = await fetchNews(env); meta.lastNews = now; metaDirty = dataDirty = true; } catch {} }
-        // (b) Match-highlights catch-up. Official uploads land 1–3h after full time, but a
-        // finished match would otherwise wait for the next 6h poll to be re-searched. Re-scan
-        // recent finished matches still missing one every ~25 min and patch them straight in.
-        // Stamp _hlTriedAt so the next full poll's search doesn't duplicate the work.
-        if (env.YOUTUBE_API_KEY && now - (meta.lastHlSweep || 0) >= 25 * 60e3) {
-          meta.lastHlSweep = now; metaDirty = true;
-          const pending = (prev.matches || []).filter((m) => m.status === "ft" && !m.highlights?.id
-            && m.kickoff && now - Date.parse(m.kickoff) < 96 * 3600e3
-            && !(m._hlTriedAt && now - m._hlTriedAt < 45 * 60e3));   // per-match throttle → bounds quota
-          for (const m of pending) {
-            m._hlTriedAt = now;
-            try {
-              const hl = await findHighlights(env, prev.teams?.[m.home.code]?.name || m.home.code, prev.teams?.[m.away.code]?.name || m.away.code, m.kickoff);
-              if (hl) { m.highlights = hl; delete m._hlTriedAt; dataDirty = true; }
-            } catch { /* best-effort */ }
-          }
+        // (a) News — cheap, ~30-min cadence, no football quota. Writes prev itself.
+        if (dueNews) {
+          try {
+            prev.news = await fetchNews(env);
+            prev.meta = { ...prev.meta, updated: new Date().toISOString() };
+            await writeSnapshot(env, prev);
+            meta.lastNews = now;
+          } catch {}
         }
-        // Bump meta.updated only when something visible changed (the frontend repaints on
-        // it); persist the snapshot whenever we wrote _hlTriedAt stamps so the throttle holds.
-        if (dataDirty) prev.meta = { ...prev.meta, updated: new Date().toISOString() };
-        if (metaDirty) { await writeSnapshot(env, prev); await env.SNAPSHOT.put(META_KEY, JSON.stringify(meta)); }
+        // (b) Match-highlights catch-up on a quota-safe ~90-min cadence (official uploads land
+        // 1–3h after full time; full polls idle to 6h). refreshMatchHighlights reads/writes the
+        // snapshot itself, so run it AFTER the news write so it sees the fresh headlines.
+        if (env.YOUTUBE_API_KEY && now - (meta.lastHlSweep || 0) >= HL_RETRY_MIN * 60e3) {
+          meta.lastHlSweep = now;
+          try { await refreshMatchHighlights(env); } catch (e) { console.error("hl sweep failed:", e.message); }
+        }
+        if (dueNews || meta.lastHlSweep === now) await env.SNAPSHOT.put(META_KEY, JSON.stringify(meta));
         return;
       }
 
@@ -1649,11 +1671,14 @@ export default {
       return json(await refreshTvListings(env));
     }
 
-    // Force the day's highlights round-up now (same job the cron runs inside the morning
-    // window). Token-gated — useful for testing without waiting for the window/cron.
+    // Force a full highlights refresh now — the day's round-up AND every finished match
+    // still missing one (ignoring the retry throttle). Token-gated. Returns a per-match
+    // report incl. any "YouTube /search 403", which is how to confirm a quota exhaustion.
     if (path === "/admin/refresh-highlights") {
       if (env.DEBUG_TOKEN && url.searchParams.get("t") !== env.DEBUG_TOKEN) return json({ error: "forbidden" }, 403);
-      return json(await refreshDayHighlights(env));
+      const roundup = await refreshDayHighlights(env);
+      const matches = await refreshMatchHighlights(env, { force: true });
+      return json({ roundup, matches });
     }
 
     // Diagnose highlights sourcing (token-gated, read-only). Shows the stored state plus
