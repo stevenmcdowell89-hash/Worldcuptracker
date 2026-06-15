@@ -200,18 +200,12 @@ export function renderMatches(ctx = {}) {
   return `${toggle}${head}${upNext}${byDay.map(daySec).join("")}${foot}`;
 }
 
-// Highlights for the morning catch-up. Per-match is the reliable, specific source (a
-// whole-day round-up is rarely posted), so EVERY last-night game gets its own row — a
-// direct link to the official video once sourced, otherwise a match-specific search.
-// A whole-day round-up embeds above them as a bonus when an official one was found.
-// No generic day-level search button. Only called when there's a night to recap.
+// Highlights for the morning catch-up — per match. EVERY last-night game gets its own row:
+// a direct link to the official BBC/ITV video once sourced, otherwise a match-specific
+// YouTube search. Only called when there's a night to recap.
 function morningHighlights(mm) {
-  const day = mm.highlights;
-  const dayEmbed = day?.id
-    ? `<div class="hl hl-day">${ytEmbed(day.id, "Day highlights")}${day.channel ? `<div class="hl-credit">Day highlights · ${day.channel} on YouTube</div>` : ""}</div>`
-    : "";
   const rows = mm.lastNight.map(matchHighlightRow).join("");
-  return `${dayEmbed}<div class="hl-matches"><div class="hl-matches-h">Match highlights</div>${rows}</div>`;
+  return `<div class="hl-matches"><div class="hl-matches-h">Match highlights</div>${rows}</div>`;
 }
 
 // Morning catch-up layout (feature 2). The model (morning.js) is pure/engine-driven;

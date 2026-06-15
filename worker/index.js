@@ -420,12 +420,14 @@ export async function buildSnapshot(env, prev, liveOnly) {
       m.events = p.events; m.stats = p.stats; m.lineups = p.lineups; m.progressionLine = p.progressionLine; m._final = true;
     }
     // Keep a previously-sourced highlight across polls AS LONG AS it's still from an official
-    // UK channel (BBC/ITV) — so a deploy or a ~45s live poll (which doesn't re-search) never
-    // blanks a good video. A pick from a now-unofficial source (an old FIFA/Fox one) is NOT
-    // carried, so it re-sources to BBC/ITV. Carry the retry stamp so the throttle holds.
+    // UK channel (BBC/ITV) — so a deploy or a ~45s live poll never blanks a good video; a pick
+    // from a now-unofficial source (an old FIFA/Fox one) is dropped so it re-sources. Stamp
+    // _ftAt the first time a match is seen finished (the real end — extra time / pens included)
+    // and carry the highlights check-count: the cron sources at fixed offsets from _ftAt.
     if (m.status === "ft") {
       if (p.highlights?.id && ytOfficial(p.highlights.channel)) m.highlights = p.highlights;
-      if (p._hlTriedAt) m._hlTriedAt = p._hlTriedAt;
+      m._ftAt = p._ftAt || Date.now();
+      if (p._hlChecks) m._hlChecks = p._hlChecks;
     }
   }
   // Fetch detail: live/HT every poll; newly-finished matches once (incl FT ratings).
@@ -489,30 +491,9 @@ export async function buildSnapshot(env, prev, liveOnly) {
     }
   }
 
-  // YouTube match highlights (best-effort, gated on a key). Finished matches only, on FULL
-  // polls only — never the ~45s live ticks, which would burn the daily quota — fetched once
-  // then frozen (carried over above). Official highlights post ~1–3h after full time, so
-  // retry a just-finished match every ~45 min, within a 48h window, until the upload lands.
-  // The DAILY round-up is sourced separately and time-gated to the morning window (the only
-  // surface that shows it) — see the cron's scheduled() handler.
-  if (env.YOUTUBE_API_KEY && !liveOnly) {
-    const now = Date.now();
-    // Resolve the search name the same way the diagnostic/sweep do — prefer the snapshot's
-    // team directory, fall back to the dir, then the code — so a thin /teams response can't
-    // silently blank the name (which made findHighlights bail before it searched).
-    const nm = (id, code) => prev?.teams?.[code]?.name || dir.byId[id]?.name || code;
-    for (const m of matches) {
-      if (m.status !== "ft" || m.highlights) continue;
-      const koMs = m.kickoff ? new Date(m.kickoff).getTime() : 0;
-      if (koMs && now > koMs + HL_GIVEUP_H * 3600e3) continue;            // gave up — the upload never appeared
-      if (m._hlTriedAt && now - m._hlTriedAt < HL_RETRY_MIN * 60e3) continue;   // throttle retries (quota)
-      m._hlTriedAt = now;
-      try {
-        const hl = await findHighlights(env, nm(m._homeId, m.home.code), nm(m._awayId, m.away.code), m.kickoff);
-        if (hl) { m.highlights = hl; delete m._hlTriedAt; }
-      } catch { /* highlights are best-effort */ }
-    }
-  }
+  // YouTube match highlights are sourced by the cron at fixed offsets after a match ends
+  // (+45 / +90 min) plus a 06:00 & 13:00 UK catch-up — see scheduled(). buildSnapshot only
+  // carries an already-found pick (above); it never searches, so live/full polls stay cheap.
 
   // Has the tournament actually started? (any match played or in play)
   const anyPlayed = matches.some((m) => m.status === "ft" || m.status === "live" || m.status === "ht")
@@ -562,10 +543,6 @@ export async function buildSnapshot(env, prev, liveOnly) {
   // (written by the cron's background check). Conservative matching — never a guess.
   let tvLive = null;
   try { tvLive = env.SNAPSHOT ? await env.SNAPSHOT.get("tv-listings", "json") : null; } catch {}
-  // The morning catch-up's daily round-up video is sourced by the cron during the morning
-  // window (see scheduled()) and stashed in KV — read it back here like the TV listings.
-  let dayHighlights = prev?.dayHighlights || null;
-  try { if (env.SNAPSHOT) { const dh = await env.SNAPSHOT.get("day-highlights", "json"); if (dh) dayHighlights = dh; } } catch {}
   const tvInfo = annotateTv(matches, teams, {
     listings: mergeListings(TVSEED.listings, tvLive?.listings || []),
     byFixture: TVSEED.byFixture, bySlot: TVSEED.bySlot,
@@ -599,7 +576,6 @@ export async function buildSnapshot(env, prev, liveOnly) {
     scorers, assists, discipline,
     teams, players, clubWatch, news,
     crests: dir.crests,           // code -> official crest/flag image URL
-    dayHighlights,                // the day's official round-up video (morning catch-up); null until sourced
   };
 }
 
@@ -1013,34 +989,6 @@ async function findHighlights(env, home, away, kickoffIso) {
   return hit && hit.id ? { ...hit, source: "youtube", v: HIGHLIGHTS_V } : null;
 }
 
-// The day's official round-up (one per match day, for the morning catch-up) — stricter
-// than a match search: an official channel AND a round-up signal in the title, so we
-// never mistake a single tie's highlights for the whole day.
-// Pick the day's official round-up from a result set (or null). Pure → unit-tested.
-// A whole-day round-up signal (BBC/ITV title these e.g. "Matchday 3 Roundup", "All the
-// action…"). Don't also require the word "highlights" — broadcasters often don't use it on
-// the round-up — but DO exclude single-match videos (a "X v Y" title) so a tie's own
-// highlights are never mistaken for the day's round-up.
-export function pickDayRoundup(items) {
-  const roundup = /(match\s?day|round[\s-]?up|all the goals|every goal|today at the|recap|day \d)/i;
-  for (const it of items || []) {
-    const title = it.snippet?.title || "";
-    if (!ytOfficial(it.snippet?.channelTitle)) continue;   // BBC/ITV only
-    if (!roundup.test(title) || /\bvs?\b/i.test(title)) continue;
-    return { id: it.id?.videoId, title, channel: it.snippet?.channelTitle };
-  }
-  return null;
-}
-async function findDayHighlights(env, dateIso) {
-  const koMs = Date.parse(dateIso);
-  const after = isNaN(koMs) ? undefined : new Date(koMs - 6 * 3600e3).toISOString();
-  const items = await youtubeSearch(env, "FIFA World Cup 2026 matchday highlights all the goals", {
-    order: "date", maxResults: "25", ...(after ? { publishedAfter: after } : {}),   // dig past fan re-uploads
-  });
-  const hit = pickDayRoundup(items);
-  return hit && hit.id ? { ...hit, date: dateIso, source: "youtube", v: HIGHLIGHTS_V } : null;
-}
-
 // ── football-data.org fallback (fixtures/standings only — resilience, never primary) ──
 async function fallbackSnapshot(env, prev) {
   if (!env.FOOTBALLDATA_KEY) return null;
@@ -1289,54 +1237,38 @@ async function refreshTvListings(env) {
   }
 }
 
-// Source the day's highlights round-up now and surface it — the same job the cron runs
-// inside the morning window. Best-effort; returns what it found. The cron (gated on the
-// window + a throttle) and the token-gated admin endpoint (force it during testing) both
-// call this, so the search/store/patch logic lives in one place.
-async function refreshDayHighlights(env) {
-  if (!env.YOUTUBE_API_KEY) return { ok: false, error: "YOUTUBE_API_KEY not set" };
-  const { date } = ukParts();
-  try {
-    const dh = await findDayHighlights(env, date);
-    if (!dh) return { ok: true, date, found: false };
-    await env.SNAPSHOT.put("day-highlights", JSON.stringify(dh));
-    const snap = await readSnapshot(env);
-    if (snap) {   // surface it immediately, like the TV refresh — no wait for the next poll
-      snap.dayHighlights = dh;
-      snap.meta = { ...snap.meta, updated: new Date().toISOString() };
-      await writeSnapshot(env, snap);
-    }
-    return { ok: true, date, found: true, dayHighlights: dh };
-  } catch (e) { return { ok: false, date, error: e.message }; }
-}
-
-// Search any finished match that still lacks a highlight and patch finds into the snapshot.
-// Quota-bounded: skips matches tried within HL_RETRY_MIN (unless force) and ones older than
-// HL_GIVEUP_H. Used by the cron sweep (non-force, throttled) and by /admin/refresh-highlights
-// (force) — the latter returns a per-match report (incl. any "YouTube /search 403" quota error).
-const HL_RETRY_MIN = 90, HL_GIVEUP_H = 36;
-async function refreshMatchHighlights(env, { force = false } = {}) {
-  if (!env.YOUTUBE_API_KEY) return { ok: false, error: "YOUTUBE_API_KEY not set" };
-  const snap = await readSnapshot(env);
-  if (!snap) return { ok: false, error: "no snapshot yet" };
+// Source BBC/ITV highlights for finished matches that still lack one, mutating `snap` in
+// place. Deliberately frugal (YouTube's free quota is ~100 searches/day): NO retry loop —
+//   mode "due": only matches crossing a fixed +45 or +90 min check since they ended (each
+//     fires once; _ftAt is the detected end, so extra time / penalties are already counted),
+//   mode "all": every still-empty match within the give-up window — the 06:00 & 13:00 UK
+//     catch-up, and the manual force endpoint.
+// Matches older than HL_GIVEUP_H are left to the per-match "Watch on YouTube" search link.
+// Returns { found, touched, report } — report carries any "YouTube /search 403" (quota).
+const HL_GIVEUP_H = 36;
+async function sourceMatchHighlights(env, snap, mode = "due") {
   const now = Date.now();
-  const nm = (code) => snap.teams?.[code]?.name || code;
-  const pending = (snap.matches || []).filter((m) => m.status === "ft" && !m.highlights?.id
-    && m.kickoff && now - Date.parse(m.kickoff) < HL_GIVEUP_H * 3600e3
-    && (force || !(m._hlTriedAt && now - m._hlTriedAt < HL_RETRY_MIN * 60e3)));
+  const nm = (code) => snap?.teams?.[code]?.name || code;
   const report = [];
-  let changed = false;
-  for (const m of pending) {
-    m._hlTriedAt = now;
+  let found = false, touched = false;
+  for (const m of snap?.matches || []) {
+    if (m.status !== "ft" || m.highlights?.id) continue;
+    const end = m._ftAt || (Date.parse(m.kickoff || "") + 120 * 60e3);   // fallback ≈ 2h after KO
+    if (!Number.isFinite(end) || now - end > HL_GIVEUP_H * 3600e3) continue;
+    const checks = m._hlChecks || 0;
+    let due;
+    if (mode === "all") due = true;
+    else { const mins = (now - end) / 60e3; due = (mins >= 45 && checks < 1) || (mins >= 90 && checks < 2); }
+    if (!due) continue;
+    m._hlChecks = mode === "all" ? Math.max(checks, 2) : checks + 1;   // record the check so it doesn't repeat
+    touched = true;
     try {
       const hl = await findHighlights(env, nm(m.home.code), nm(m.away.code), m.kickoff);
-      if (hl) { m.highlights = hl; delete m._hlTriedAt; changed = true; report.push({ id: m.id, found: hl.channel }); }
+      if (hl) { m.highlights = hl; found = true; report.push({ id: m.id, found: hl.channel }); }
       else report.push({ id: m.id, found: null });
-    } catch (e) { report.push({ id: m.id, error: e.message }); }   // surfaces a 403 quota error
+    } catch (e) { report.push({ id: m.id, error: e.message }); }
   }
-  if (changed) snap.meta = { ...snap.meta, updated: new Date().toISOString() };
-  if (pending.length) await writeSnapshot(env, snap);   // persist finds + retry stamps
-  return { ok: true, searched: pending.length, report };
+  return { found, touched, report };
 }
 
 // Verdict-flip alerts (brief §14) — live qualification moments, waking hours only
@@ -1423,24 +1355,23 @@ export default {
         }
       } catch (e) { console.error("tv refresh failed:", e.message); }
 
-      // Daily highlights round-up for the morning catch-up (feature: highlights). The
-      // official round-up surfaces overnight / early morning, so search ONLY inside the
-      // morning window (05:00–13:00 UK — a touch before the 06:00 view opens, until it
-      // closes at 13:00, mirroring morning.js): a video that only lands at 14:00 is useless
-      // to that surface. Retry ~every 30 min until found, then it's frozen for the day.
-      // Stashed in KV (read back in buildSnapshot); the patch below also surfaces it at once
-      // rather than waiting for the next baseline poll.
+      // Match highlights (feature: highlights). Frugal sourcing — no retry loop. Two fixed
+      // checks after a match ends (+45 and +90 min from the detected end, so extra time / pens
+      // are counted) plus a 06:00 & 13:00 UK catch-up sweep for anything still missing; the
+      // per-match "Watch on YouTube" link covers the rest. Runs on `prev` every tick: if a
+      // data poll also runs this tick, buildSnapshot carries the finds; otherwise the no-poll
+      // branch below persists them. (~<20 YouTube searches/day.)
+      let hlFound = false, hlTouched = false;
       try {
-        const uk = ukParts();
-        if (env.YOUTUBE_API_KEY && uk.hour >= 5 && uk.hour < 13) {
-          const have = await env.SNAPSHOT.get("day-highlights", "json");
-          if (have?.date !== uk.date && now - (meta.lastHighlights || 0) >= 60 * 60e3) {
-            meta.lastHighlights = now;
-            await env.SNAPSHOT.put(META_KEY, JSON.stringify(meta));
-            await refreshDayHighlights(env);   // searches, stores, surfaces — see the helper
-          }
+        if (env.YOUTUBE_API_KEY && prev) {
+          const uk = ukParts();
+          const slot = (uk.hour === 6 || uk.hour === 13) ? `${uk.date}:${uk.hour}` : null;   // daily catch-up slots
+          const sweepDue = slot && (await env.SNAPSHOT.get("hl-sweep")) !== slot;
+          const r = await sourceMatchHighlights(env, prev, sweepDue ? "all" : "due");
+          hlFound = r.found; hlTouched = r.touched;
+          if (sweepDue) await env.SNAPSHOT.put("hl-sweep", slot);
         }
-      } catch (e) { console.error("highlights refresh failed:", e.message); }
+      } catch (e) { console.error("highlights failed:", e.message); }
 
       // Enrichment backlog → catch up every few minutes until squads + Watch-player
       // profiles are all loaded, then fall back to the 6h baseline.
@@ -1459,26 +1390,14 @@ export default {
       const dueLineup = lineupWindow && now - (meta.lastLineup || 0) >= lineupMs;
       const dueNews = now - (meta.lastNews || 0) >= newsMs;
       if (!dueFull && !dueLive && !dueLineup) {
-        // No data poll due, but two things keep their own cadence here, decoupled from the
-        // 6h baseline (neither touches lastFull/lastLive):
+        // No data poll due. Persist any highlight finds from the step above, and keep the news
+        // fresh on its own ~30-min cadence (cheap, no football quota; doesn't touch lastFull).
         if (!prev) return;
-        // (a) News — cheap, ~30-min cadence, no football quota. Writes prev itself.
-        if (dueNews) {
-          try {
-            prev.news = await fetchNews(env);
-            prev.meta = { ...prev.meta, updated: new Date().toISOString() };
-            await writeSnapshot(env, prev);
-            meta.lastNews = now;
-          } catch {}
-        }
-        // (b) Match-highlights catch-up on a quota-safe ~90-min cadence (official uploads land
-        // 1–3h after full time; full polls idle to 6h). refreshMatchHighlights reads/writes the
-        // snapshot itself, so run it AFTER the news write so it sees the fresh headlines.
-        if (env.YOUTUBE_API_KEY && now - (meta.lastHlSweep || 0) >= HL_RETRY_MIN * 60e3) {
-          meta.lastHlSweep = now;
-          try { await refreshMatchHighlights(env); } catch (e) { console.error("hl sweep failed:", e.message); }
-        }
-        if (dueNews || meta.lastHlSweep === now) await env.SNAPSHOT.put(META_KEY, JSON.stringify(meta));
+        let newsOk = false;
+        if (dueNews) { try { prev.news = await fetchNews(env); meta.lastNews = now; newsOk = true; } catch {} }
+        if (hlFound || newsOk) prev.meta = { ...prev.meta, updated: new Date().toISOString() };
+        if (hlTouched || newsOk) await writeSnapshot(env, prev);   // persist finds / check stamps / news
+        if (newsOk) await env.SNAPSHOT.put(META_KEY, JSON.stringify(meta));
         return;
       }
 
@@ -1671,20 +1590,22 @@ export default {
       return json(await refreshTvListings(env));
     }
 
-    // Force a full highlights refresh now — the day's round-up AND every finished match
-    // still missing one (ignoring the retry throttle). Token-gated. Returns a per-match
-    // report incl. any "YouTube /search 403", which is how to confirm a quota exhaustion.
+    // Force a highlights refresh now — search every finished match still missing one
+    // (ignoring the timed checks). Token-gated. Returns a per-match report incl. any
+    // "YouTube /search 403", which is how to confirm a quota exhaustion.
     if (path === "/admin/refresh-highlights") {
       if (env.DEBUG_TOKEN && url.searchParams.get("t") !== env.DEBUG_TOKEN) return json({ error: "forbidden" }, 403);
-      const roundup = await refreshDayHighlights(env);
-      const matches = await refreshMatchHighlights(env, { force: true });
-      return json({ roundup, matches });
+      if (!env.YOUTUBE_API_KEY) return json({ error: "YOUTUBE_API_KEY not set" }, 503);
+      const snap = await readSnapshot(env);
+      if (!snap) return json({ error: "no snapshot yet" }, 503);
+      const r = await sourceMatchHighlights(env, snap, "all");
+      if (r.touched) await writeSnapshot(env, snap);
+      return json({ ok: true, ...r });
     }
 
-    // Diagnose highlights sourcing (token-gated, read-only). Shows the stored state plus
-    // the live YouTube candidates + what the picker / round-up filter accepts, so the
-    // matching can be tuned against real upload titles. ?fixture=<id> probes one match;
-    // otherwise the most recent finished match.
+    // Diagnose highlights sourcing (token-gated, read-only). Shows the stored state plus the
+    // live YouTube candidates + what the picker accepts, so matching can be tuned against real
+    // upload titles. ?fixture=<id> probes one match; otherwise the most recent finished match.
     if (path === "/debug/highlights") {
       if (env.DEBUG_TOKEN && url.searchParams.get("t") !== env.DEBUG_TOKEN) return json({ error: "forbidden" }, 403);
       if (!env.YOUTUBE_API_KEY) return json({ error: "YOUTUBE_API_KEY not set" }, 503);
@@ -1693,12 +1614,6 @@ export default {
       const fts = (snap?.matches || []).filter((m) => m.status === "ft")
         .sort((a, b) => (b.kickoff || "").localeCompare(a.kickoff || ""));
       out.finishedMatches = fts.map((m) => ({ id: m.id, teams: `${m.home.code} v ${m.away.code}`, kickoff: m.kickoff, highlights: m.highlights || null }));
-      out.dayHighlightsStored = await env.SNAPSHOT.get("day-highlights", "json");
-      try {
-        const items = await youtubeSearch(env, "FIFA World Cup 2026 matchday highlights all the goals", { order: "date" });
-        out.roundupCandidates = items.map((it) => ({ title: it.snippet?.title, channel: it.snippet?.channelTitle, published: it.snippet?.publishedAt, id: it.id?.videoId }));
-        out.roundupPicked = await findDayHighlights(env, out.uk.date);
-      } catch (e) { out.roundupError = e.message; }
       const probe = url.searchParams.get("fixture") ? fts.find((m) => m.id === url.searchParams.get("fixture")) : fts[0];
       if (probe) {
         const home = snap.teams?.[probe.home.code]?.name || probe.home.code;

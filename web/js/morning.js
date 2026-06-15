@@ -212,10 +212,5 @@ export function morningModel(snap, annexC, now = Date.now(), force = false) {
     ? knockoutStakeLines(snap, today)
     : groupStakeLines(snap, annexC, today, phase, todayUkDate);
 
-  // The day's official round-up video (worker-sourced during this morning's window; null
-  // until found). Tagged with the UK date it was sourced — only surface it for THIS
-  // morning, never a stale previous day's. The renderer also gates on lastNight presence.
-  const dh = snap.dayHighlights;
-  const highlights = dh && dh.date === todayUkDate ? dh : null;
-  return { phase, date: todayUkDate, lastNight, flips, today, stakes, restDay: !today.length, highlights };
+  return { phase, date: todayUkDate, lastNight, flips, today, stakes, restDay: !today.length };
 }

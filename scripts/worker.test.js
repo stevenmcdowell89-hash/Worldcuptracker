@@ -3,7 +3,7 @@
 // end, asserting the snapshot shape the frontend depends on. Run: npm test
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildSnapshot, resultsDigest, todayDigest, fixtureLabel, normPlayer, pickHighlight, pickDayRoundup, lineupWindowOpen } from "../worker/index.js";
+import { buildSnapshot, resultsDigest, todayDigest, fixtureLabel, normPlayer, pickHighlight, lineupWindowOpen } from "../worker/index.js";
 
 // ── canned API-Football responses keyed by path (+ a little param awareness) ──
 const NATIONS = {
@@ -470,17 +470,6 @@ test("pickHighlight: rejects a pre-kickoff upload (a previous edition / preview)
 
 test("pickHighlight: nothing confident → null", () => {
   assert.equal(pickHighlight([], "England", "Senegal", KO), null);
-});
-
-test("pickDayRoundup: official 'Matchday N Roundup' chosen; a single match is not", () => {
-  const it = (title, channel) => ({ id: { videoId: title.replace(/\W+/g, "").slice(0, 11) }, snippet: { title, channelTitle: channel } });
-  // a single-match official video must NOT be taken as the day's round-up
-  assert.equal(pickDayRoundup([it("HIGHLIGHTS - Haiti v Scotland | FIFA World Cup 2026", "ITV Sport")]), null);
-  // the real ITV round-up (no "highlights" word, but a clear round-up signal) IS chosen
-  const hit = pickDayRoundup([it("All the action from Day 3 of the 2026 World Cup | Matchday 3 Roundup", "ITV Sport")]);
-  assert.equal(hit?.channel, "ITV Sport");
-  // a fan round-up is ignored
-  assert.equal(pickDayRoundup([it("Matchday 3 Roundup | All Goals", "Goal Storm")]), null);
 });
 
 test("empty /fixtures with a schedule on record → poll fails (last good kept)", async () => {

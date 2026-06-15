@@ -412,9 +412,6 @@ const snapshot = {
   bracket,
   scorers, assists, discipline,
   teams, players, clubWatch, news,
-  // The day's official round-up video for the morning catch-up (worker-sourced in
-  // production). Real WC26 clip here so the morning-view embed renders in the demo.
-  dayHighlights: { id: "DjYkkRPqV18", title: "World Cup 2026 · Matchday highlights", channel: "BBC Sport", date: new Date().toISOString().slice(0, 10), source: "youtube", v: 5 },
 };
 
 mkdirSync(dirname(OUT), { recursive: true });
