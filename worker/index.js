@@ -933,6 +933,13 @@ const HIGHLIGHTS_V = 5;   // metadata stamp on a stored pick (debugging). NOT us
 const HL_OFFICIAL = ["bbc", "itv"];
 const ytOfficial = (channelTitle) => { const c = (channelTitle || "").toLowerCase(); return HL_OFFICIAL.some((o) => c.includes(o)); };
 
+// YouTube's free quota resets at midnight Pacific ≈ 07:00 UTC. ISO of the next reset.
+function nextQuotaReset(now = Date.now()) {
+  const d = new Date(now), r = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 7, 0, 0));
+  if (r <= d) r.setUTCDate(r.getUTCDate() + 1);
+  return r.toISOString();
+}
+
 async function youtubeSearch(env, q, params = {}) {
   const url = new URL(YOUTUBE + "/search");
   url.searchParams.set("key", env.YOUTUBE_API_KEY);
@@ -943,6 +950,8 @@ async function youtubeSearch(env, q, params = {}) {
   url.searchParams.set("q", q);
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
   const r = await fetch(url, { headers: { accept: "application/json" } });
+  // 403 ⇒ daily quota exhausted: park searches until the next reset so we stop hammering.
+  if (r.status === 403) { try { await env.SNAPSHOT?.put("yt-quota-block", nextQuotaReset()); } catch {} }
   if (!r.ok) throw new Error(`YouTube /search ${r.status}`);
   return (await r.json()).items || [];
 }
@@ -1246,8 +1255,14 @@ async function refreshTvListings(env) {
 // Matches older than HL_GIVEUP_H are left to the per-match "Watch on YouTube" search link.
 // Returns { found, touched, report } — report carries any "YouTube /search 403" (quota).
 const HL_GIVEUP_H = 36;
-async function sourceMatchHighlights(env, snap, mode = "due") {
+async function sourceMatchHighlights(env, snap, mode = "due", { force = false } = {}) {
   const now = Date.now();
+  // Respect a quota block (set when a search 403s) so we don't hammer a spent quota — unless
+  // forced (the admin endpoint, so a real 403 still surfaces). It self-clears at the reset.
+  if (!force) {
+    const block = await env.SNAPSHOT?.get("yt-quota-block");
+    if (block && Date.parse(block) > now) return { found: false, touched: false, blockedUntil: block, report: [] };
+  }
   const nm = (code) => snap?.teams?.[code]?.name || code;
   const report = [];
   let found = false, touched = false;
@@ -1260,13 +1275,13 @@ async function sourceMatchHighlights(env, snap, mode = "due") {
     if (mode === "all") due = true;
     else { const mins = (now - end) / 60e3; due = (mins >= 45 && checks < 1) || (mins >= 90 && checks < 2); }
     if (!due) continue;
-    m._hlChecks = mode === "all" ? Math.max(checks, 2) : checks + 1;   // record the check so it doesn't repeat
-    touched = true;
     try {
       const hl = await findHighlights(env, nm(m.home.code), nm(m.away.code), m.kickoff);
+      m._hlChecks = mode === "all" ? Math.max(checks, 2) : checks + 1;   // count the check only if the search ran
+      touched = true;
       if (hl) { m.highlights = hl; found = true; report.push({ id: m.id, found: hl.channel }); }
       else report.push({ id: m.id, found: null });
-    } catch (e) { report.push({ id: m.id, error: e.message }); }
+    } catch (e) { report.push({ id: m.id, error: e.message }); break; }   // 403/network: don't burn the check; stop (likely quota)
   }
   return { found, touched, report };
 }
@@ -1598,7 +1613,7 @@ export default {
       if (!env.YOUTUBE_API_KEY) return json({ error: "YOUTUBE_API_KEY not set" }, 503);
       const snap = await readSnapshot(env);
       if (!snap) return json({ error: "no snapshot yet" }, 503);
-      const r = await sourceMatchHighlights(env, snap, "all");
+      const r = await sourceMatchHighlights(env, snap, "all", { force: true });
       if (r.touched) await writeSnapshot(env, snap);
       return json({ ok: true, ...r });
     }
@@ -1610,6 +1625,7 @@ export default {
       if (env.DEBUG_TOKEN && url.searchParams.get("t") !== env.DEBUG_TOKEN) return json({ error: "forbidden" }, 403);
       if (!env.YOUTUBE_API_KEY) return json({ error: "YOUTUBE_API_KEY not set" }, 503);
       const out = { uk: ukParts(), highlightsVersion: HIGHLIGHTS_V };   // confirm which build is live
+      out.quotaBlockedUntil = (await env.SNAPSHOT.get("yt-quota-block")) || null;   // set when a search 403s
       const snap = await readSnapshot(env);
       const fts = (snap?.matches || []).filter((m) => m.status === "ft")
         .sort((a, b) => (b.kickoff || "").localeCompare(a.kickoff || ""));
