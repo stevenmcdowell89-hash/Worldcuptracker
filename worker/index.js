@@ -1260,14 +1260,16 @@ async function refreshTvListings(env) {
 }
 
 // Source BBC/ITV highlights for finished matches that still lack one, mutating `snap` in
-// place. Deliberately frugal (YouTube's free quota is ~100 searches/day): NO retry loop —
-//   mode "due": only matches crossing a fixed +45 or +90 min check since they ended (each
-//     fires once; _ftAt is the detected end, so extra time / penalties are already counted),
+// place. Frugal (YouTube's free quota is ~100 searches/day) and NO open retry loop —
+//   mode "due": checks at +90 / +180 / +300 min after a match ENDS (each fires once). BBC/ITV
+//     post highlights ~1–3h after full time, so the checks span that window — earlier checks
+//     (+45/+90) fired before the upload existed and burned both attempts. _ftAt is the detected
+//     end, so extra time / penalties are already counted.
 //   mode "all": every still-empty match within the give-up window — the 06:00 & 13:00 UK
 //     catch-up, and the manual force endpoint.
 // Matches older than HL_GIVEUP_H are left to the per-match "Watch on YouTube" search link.
 // Returns { found, touched, report } — report carries any "YouTube /search 403" (quota).
-const HL_GIVEUP_H = 36;
+const HL_GIVEUP_H = 36, HL_CHECKS = [90, 180, 300];   // minutes after the match ends
 async function sourceMatchHighlights(env, snap, mode = "due", { force = false } = {}) {
   const now = Date.now();
   // Respect a quota block (set when a search 403s) so we don't hammer a spent quota — unless
@@ -1286,11 +1288,11 @@ async function sourceMatchHighlights(env, snap, mode = "due", { force = false } 
     const checks = m._hlChecks || 0;
     let due;
     if (mode === "all") due = true;
-    else { const mins = (now - end) / 60e3; due = (mins >= 45 && checks < 1) || (mins >= 90 && checks < 2); }
+    else { const mins = (now - end) / 60e3; due = checks < HL_CHECKS.length && mins >= HL_CHECKS[checks]; }   // next scheduled check is due
     if (!due) continue;
     try {
       const hl = await findHighlights(env, nm(m.home.code), nm(m.away.code), m.kickoff);
-      m._hlChecks = mode === "all" ? Math.max(checks, 2) : checks + 1;   // count the check only if the search ran
+      m._hlChecks = mode === "all" ? Math.max(checks, HL_CHECKS.length) : checks + 1;   // count the check only if the search ran
       touched = true;
       if (hl) { m.highlights = hl; found = true; report.push({ id: m.id, found: hl.channel }); }
       else report.push({ id: m.id, found: null });

@@ -75,8 +75,9 @@ VAPID_PUBLIC_KEY = "BPfPUEER1NnhSRaHUktTYQSKKHv6cPVqokU-3iCd1wgk5K8nV13AAj5WLkei
 # YOUTUBE_API_KEY (match highlights, optional):  wrangler secret put YOUTUBE_API_KEY
 #   YouTube Data API v3 key from a Google Cloud project. The free tier is only 10,000 units/
 #   day and search.list costs 100 ⇒ ~100 searches/day, so sourcing is deliberately frugal:
-#   per finished match TWO fixed checks (+45 and +90 min after it ends), plus a 06:00 & 13:00
-#   UK catch-up sweep for anything still missing — no retry loop (~<20 searches/day). Only
+#   per finished match a few fixed checks (+90/+180/+300 min after it ends — broadcasters post
+#   ~1–3h after FT), plus a 06:00 & 13:00 UK catch-up sweep for anything still missing — no
+#   open retry loop (found ⇒ stops; ~1–3 searches/match). Only
 #   official UK rights-holders (BBC/ITV) are embedded — others (Fox/FIFA+) are geo-blocked
 #   here; a found pick is kept across deploys. No key, or nothing found ⇒ a "Watch on YouTube"
 #   search link. Force + diagnose: /admin/refresh-highlights (reports any 403), /debug/highlights.
