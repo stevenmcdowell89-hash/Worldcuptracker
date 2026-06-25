@@ -213,7 +213,12 @@ function normFixtures(resp, dir, idToGroup) {
     const ht = st === "HT";
     const done = ["FT", "AET", "PEN"].includes(st);
     const home = f.teams?.home, away = f.teams?.away;
-    const groupLetter = idToGroup[home?.id] || idToGroup[away?.id];
+    // A genuine group-stage match pairs two teams from the SAME group. Deriving the
+    // group from EITHER side (the old `homeGroup || awayGroup`) mislabelled cross-group
+    // ties — e.g. a knockout fixture involving one group team — as a phantom group game
+    // (and pushed it into the third-place race). Require both sides in the same group.
+    const homeGroup = idToGroup[home?.id], awayGroup = idToGroup[away?.id];
+    const groupLetter = homeGroup && homeGroup === awayGroup ? homeGroup : undefined;
     const isGroup = !!groupLetter;
     // Knockout placeholders can arrive with no teams assigned yet — keep them honest.
     const hc = home?.id ? codeOf(dir, home.id) : "TBD", ac = away?.id ? codeOf(dir, away.id) : "TBD";
