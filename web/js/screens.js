@@ -177,11 +177,17 @@ export function renderMatches(ctx = {}) {
   if (ph === "groupFinal") {
     const byGroup = {};
     for (const m of upcoming) if (m.group) (byGroup[m.group] = byGroup[m.group] || []).push(m);
-    const groupBlocks = Object.keys(byGroup).sort().map((g) => {
+    // Final group games are staggered across the last two days. Order the blocks by
+    // kickoff (soonest first) and date each header, so "what's next, and after that"
+    // is clear rather than a flat alphabetical list of undated kickoff times.
+    const groupOrder = Object.keys(byGroup).sort((a, b) =>
+      (byGroup[a][0]?.kickoff || "").localeCompare(byGroup[b][0]?.kickoff || "") || a.localeCompare(b));
+    const groupBlocks = groupOrder.map((g) => {
       const fixtures = byGroup[g].map((m) => matchRow(m, { showStakes })).join("");
       const table = S().groups?.[g]
         ? `<div class="block embed-table">${groupTableHTML(g)}</div>` : "";
-      return `<div class="day-label">Group ${g} · final games</div><div class="section">${fixtures}</div>${table}`;
+      const day = byGroup[g][0]?.kickoff ? ` · ${fmtDay(byGroup[g][0].kickoff)}` : "";
+      return `<div class="day-label">Group ${g} · final games${day}</div><div class="section">${fixtures}</div>${table}`;
     }).join("");
     const koBlocks = upcomingByDay(upcoming.filter((m) => !m.group)).map(daySec).join("");
     return `${toggle}${head}${compactRaceCard(true)}${groupBlocks}${koBlocks}${foot}`;

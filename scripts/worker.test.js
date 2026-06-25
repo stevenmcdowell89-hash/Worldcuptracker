@@ -237,6 +237,27 @@ test("penalty shootout: tally captured, knockout slot assigned, group games unto
   assert.equal(grp.pens, undefined);                   // null penalty block → no pens field
 });
 
+test("cross-group tie with real teams is not mislabelled a phantom group game", async () => {
+  globalThis.fetch = async (url) => {
+    const u = new URL(url);
+    if (u.pathname === "/fixtures") return { ok: true, status: 200, headers: { get: () => null }, json: async () => ({ response: [
+      // ENG (Group A) v RSA (Group B): real teams from DIFFERENT groups → a knockout
+      // tie, not a group game. The old `homeGroup || awayGroup` took ENG's group and
+      // mislabelled it "Group Stage", even pushing it into the third-place race.
+      { fixture: { id: 7777, date: "2026-06-30T16:00:00Z", status: { short: "NS", elapsed: null }, venue: { name: "Stadium" } },
+        league: { round: "Round of 32" }, teams: { home: { id: 100, code: "ENG" }, away: { id: 113, code: "RSA" } },
+        goals: { home: null, away: null }, score: { penalty: { home: null, away: null } } },
+    ] }) };
+    return { ok: true, status: 200, headers: { get: () => null }, json: async () => ({ response: cannedFetch(url) }) };
+  };
+  const s = await buildSnapshot({ APIFOOTBALL_KEY: "t", WC_LEAGUE_ID: "1", WC_SEASON: "2026" }, null, false);
+  const m = s.matches.find((x) => x.id === "7777");
+  assert.ok(m, "fixture present in matches");
+  assert.equal(m.group, undefined, "no group assigned to a cross-group tie");
+  assert.notEqual(m.stage, "Group Stage");
+  assert.ok(!s.remainingFixtures.some((f) => f.id === "7777"), "kept out of the third-place race");
+});
+
 test("knockout bracket seeded (blank teams, real dates) when the feed has no KO games", async () => {
   globalThis.fetch = async (url) => {
     const u = new URL(url);
