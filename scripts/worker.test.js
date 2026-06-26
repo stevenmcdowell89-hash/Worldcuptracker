@@ -152,6 +152,29 @@ test("third-place race derived for both groups", () => {
   snap.thirdPlaceRace.forEach((t) => assert.ok(["qualified", "in", "sweating", "out", "eliminated"].includes(t.status)));
 });
 
+test("standings: a group repeated under two labels is de-duplicated", async () => {
+  // Live API can list the same group twice once under way — "Group A" AND
+  // "Group Stage - Group A" — and both match the letter regex. Each team must still
+  // appear once, or the table doubles and the 3rd-place row (index 2) becomes a 2nd.
+  const dupStandings = () => {
+    const s = standings();
+    const groupA = s[0].league.standings[0];                       // the "Group Stage - Group A" block
+    const clone = groupA.map((r) => ({ ...r, group: "Group A" }));  // same teams, legacy label
+    s[0].league.standings.push(clone);
+    return s;
+  };
+  globalThis.fetch = async (url) => {
+    const u = new URL(url);
+    if (u.pathname === "/standings") return { ok: true, status: 200, headers: { get: () => null }, json: async () => ({ response: dupStandings() }) };
+    return { ok: true, status: 200, headers: { get: () => null }, json: async () => ({ response: cannedFetch(url) }) };
+  };
+  const s = await buildSnapshot({ APIFOOTBALL_KEY: "t", WC_LEAGUE_ID: "1", WC_SEASON: "2026" }, null, false);
+  assert.equal(s.groups.A.length, 4, "no doubled teams in a repeated group");
+  const ids = s.groups.A.map((r) => r.code);
+  assert.equal(new Set(ids).size, 4, "all four teams distinct");
+  assert.equal(s.thirdPlaceRace.length, 2, "one 3rd-placed team per group, not a 2nd");
+});
+
 test("matches: events mapped to correct side, FT ratings merged", () => {
   const ft = snap.matches.find((m) => m.id === "5001");
   assert.equal(ft.status, "ft");
