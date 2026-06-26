@@ -187,8 +187,14 @@ function normStandings(resp, dir) {
     const m = /group\s+([a-l])\s*$/i.exec(groupRows?.[0]?.group || "");
     if (!m) continue;
     const letter = m[1].toUpperCase();
+    const arr = (groups[letter] = groups[letter] || []);
     for (const r of groupRows) {
       const id = r.team?.id;
+      // The API can present a group under more than one label once the tournament is
+      // under way (e.g. both "Group A" and "Group Stage - Group A"), and both now match
+      // the letter regex. A team can only sit in a group once, so guard against repeats
+      // — otherwise every team doubles up and the 3rd-place row (index 2) becomes a 2nd.
+      if (arr.some((x) => x._id === id)) continue;
       const row = {
         code: codeOf(dir, id), name: r.team?.name, _id: id, logo: dir.byId[id]?.logo,
         P: r.all?.played ?? 0, W: r.all?.win ?? 0, D: r.all?.draw ?? 0, L: r.all?.lose ?? 0,
@@ -197,7 +203,7 @@ function normStandings(resp, dir) {
         yellow: 0, red: 0,   // filled from /teams/statistics (fair-play tiebreak)
       };
       row.GD = row.GF - row.GA;
-      (groups[letter] = groups[letter] || []).push(row);
+      arr.push(row);
     }
   }
   return groups;
